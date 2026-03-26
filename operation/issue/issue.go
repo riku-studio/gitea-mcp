@@ -61,6 +61,7 @@ var (
 		mcp.WithNumber("commentID", mcp.Description("id of issue comment (required for 'edit_comment')")),
 		mcp.WithArray("labels", mcp.Description("array of label IDs (for 'create', 'add_labels', 'replace_labels')"), mcp.Items(map[string]any{"type": "number"})),
 		mcp.WithNumber("label_id", mcp.Description("label ID to remove (required for 'remove_label')")),
+		mcp.WithString("ref", mcp.Description("branch name to associate with the issue (for 'create', 'update')")),
 		mcp.WithString("deadline", mcp.Description("due date in ISO 8601 format (for 'create', 'update')")),
 		mcp.WithBoolean("remove_deadline", mcp.Description("unset due date (for 'update')")),
 	)
@@ -229,6 +230,9 @@ func createIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	if labelIDs, err := params.GetInt64Slice(req.GetArguments(), "labels"); err == nil {
 		opt.Labels = labelIDs
 	}
+	if ref, ok := req.GetArguments()["ref"].(string); ok {
+		opt.Ref = ref
+	}
 	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "deadline")
 	issue, _, err := client.CreateIssue(owner, repo, opt)
 	if err != nil {
@@ -305,6 +309,9 @@ func editIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	state, ok := req.GetArguments()["state"].(string)
 	if ok {
 		opt.State = new(gitea_sdk.StateType(state))
+	}
+	if ref, ok := req.GetArguments()["ref"].(string); ok {
+		opt.Ref = &ref
 	}
 	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "deadline")
 	if removeDeadline, ok := req.GetArguments()["remove_deadline"].(bool); ok {

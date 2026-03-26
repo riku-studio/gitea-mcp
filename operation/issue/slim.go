@@ -63,6 +63,12 @@ func slimIssue(i *gitea_sdk.Issue) map[string]any {
 			"title": i.Milestone.Title,
 		}
 	}
+	if i.Ref != "" {
+		m["ref"] = i.Ref
+	}
+	if i.Deadline != nil {
+		m["deadline"] = i.Deadline
+	}
 	if i.PullRequest != nil {
 		m["is_pull"] = true
 	}
@@ -87,6 +93,12 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 		}
 		if len(i.Labels) > 0 {
 			m["labels"] = labelNames(i.Labels)
+		}
+		if i.Ref != "" {
+			m["ref"] = i.Ref
+		}
+		if i.Deadline != nil {
+			m["deadline"] = i.Deadline
 		}
 		out = append(out, m)
 	}

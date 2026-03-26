@@ -129,6 +129,12 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 		if i.Repository != nil {
 			m["repository"] = i.Repository.FullName
 		}
+		if i.Ref != "" {
+			m["ref"] = i.Ref
+		}
+		if i.Deadline != nil {
+			m["deadline"] = i.Deadline
+		}
 		if i.PullRequest != nil {
 			m["is_pull"] = true
 		}
