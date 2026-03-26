@@ -26,7 +26,7 @@ var GetRepoTreeTool = mcp.NewTool(
 	mcp.WithString("tree_sha", mcp.Required(), mcp.Description("SHA, branch name, or tag name")),
 	mcp.WithBoolean("recursive", mcp.Description("whether to get the tree recursively")),
 	mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-	mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+	mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 )
 
 func init() {

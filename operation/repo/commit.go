@@ -28,7 +28,7 @@ var (
 		mcp.WithString("sha", mcp.Description("SHA or branch to start listing commits from")),
 		mcp.WithString("path", mcp.Description("path indicates that only commits that include the path's file/dir should be returned.")),
 		mcp.WithNumber("page", mcp.Required(), mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Required(), mcp.Description("results per page"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithNumber("perPage", mcp.Required(), mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	GetCommitTool = mcp.NewTool(

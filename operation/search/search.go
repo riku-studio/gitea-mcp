@@ -31,7 +31,7 @@ var (
 		mcp.WithDescription("search users"),
 		mcp.WithString("keyword", mcp.Required(), mcp.Description("Keyword")),
 		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	SearOrgTeamsTool = mcp.NewTool(
@@ -41,7 +41,7 @@ var (
 		mcp.WithString("query", mcp.Required(), mcp.Description("search organization teams")),
 		mcp.WithBoolean("includeDescription", mcp.Description("include description?")),
 		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	SearchReposTool = mcp.NewTool(
@@ -56,7 +56,7 @@ var (
 		mcp.WithString("sort", mcp.Description("Sort")),
 		mcp.WithString("order", mcp.Description("Order")),
 		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	SearchIssuesTool = mcp.NewTool(
@@ -68,7 +68,7 @@ var (
 		mcp.WithString("labels", mcp.Description("comma-separated list of label names")),
 		mcp.WithString("owner", mcp.Description("filter by repository owner")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 )
 

@@ -35,7 +35,7 @@ var (
 		mcp.WithString("sort", mcp.Description("sort"), mcp.Enum("oldest", "recentupdate", "leastupdate", "mostcomment", "leastcomment", "priority"), mcp.DefaultString("recentupdate")),
 		mcp.WithNumber("milestone", mcp.Description("milestone")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	PullRequestReadTool = mcp.NewTool(
@@ -48,7 +48,7 @@ var (
 		mcp.WithNumber("review_id", mcp.Description("review ID (required for 'get_review', 'get_review_comments')")),
 		mcp.WithBoolean("binary", mcp.Description("whether to include binary file changes (for 'get_diff')")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	PullRequestWriteTool = mcp.NewTool(

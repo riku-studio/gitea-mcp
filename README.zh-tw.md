@@ -163,8 +163,11 @@ cp gitea-mcp /usr/local/bin/
 **預設日誌路徑**: `$HOME/.gitea-mcp/gitea-mcp.log`
 
 > [!注意]
-> 可用命令列參數或環境變數提供 Gitea 主機與存取令牌。  
+> 可用命令列參數或環境變數提供 Gitea 主機與存取令牌。
 > 命令列參數優先。
+
+> [!注意]
+> 許多工具支援 `page` 和 `perPage` 分頁參數。最大有效頁面大小由 Gitea 伺服器的 `[api].MAX_RESPONSE_ITEMS` 設定決定（預設值：**50**）。請求超過此限制的 `perPage` 值將被伺服器靜默截斷。
 
 一切設定完成後，可在 MCP 聊天框輸入：
 

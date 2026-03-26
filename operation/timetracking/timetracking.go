@@ -32,7 +32,7 @@ var (
 		mcp.WithString("repo", mcp.Description("repository name (required for 'list_issue_times', 'list_repo_times')")),
 		mcp.WithNumber("index", mcp.Description("issue index (required for 'list_issue_times')")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	TimetrackingWriteTool = mcp.NewTool(

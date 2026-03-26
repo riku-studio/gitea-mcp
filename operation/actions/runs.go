@@ -39,7 +39,7 @@ var (
 		mcp.WithNumber("max_bytes", mcp.Description("max bytes to return (for 'get_job_log_preview')"), mcp.DefaultNumber(65536), mcp.Min(1024)),
 		mcp.WithString("output_path", mcp.Description("output file path (for 'download_job_log')")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	ActionsRunWriteTool = mcp.NewTool(

@@ -163,8 +163,11 @@ cp gitea-mcp /usr/local/bin/
 **默认日志路径**: `$HOME/.gitea-mcp/gitea-mcp.log`
 
 > [!注意]
-> 可通过命令行参数或环境变量提供 Gitea 主机和访问令牌。  
+> 可通过命令行参数或环境变量提供 Gitea 主机和访问令牌。
 > 命令行参数优先。
+
+> [!注意]
+> 许多工具支持 `page` 和 `perPage` 分页参数。最大有效页面大小由 Gitea 服务器的 `[api].MAX_RESPONSE_ITEMS` 设置决定（默认值：**50**）。请求超过此限制的 `perPage` 值将被服务器静默截断。
 
 一切设置完成后，可在 MCP 聊天框输入：
 

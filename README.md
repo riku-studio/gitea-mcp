@@ -166,6 +166,9 @@ To configure the MCP server for Gitea, add the following to your MCP configurati
 > You can provide your Gitea host and access token either as command-line arguments or environment variables.
 > Command-line arguments have the highest priority
 
+> [!NOTE]
+> Many tools support `page` and `perPage` parameters for pagination. The maximum effective page size is determined by the Gitea server's `[api].MAX_RESPONSE_ITEMS` setting (default: **50**). Requesting a `perPage` value higher than this limit will be silently capped by the server.
+
 Once everything is set up, try typing the following in your MCP-compatible chatbox:
 
 ```text

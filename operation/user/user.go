@@ -44,7 +44,7 @@ var (
 		GetUserOrgsToolName,
 		mcp.WithDescription("Get organizations associated with the authenticated user"),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(defaultPage)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(defaultPageSize)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(defaultPageSize)),
 	)
 )
 

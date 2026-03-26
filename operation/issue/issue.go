@@ -34,7 +34,7 @@ var (
 		mcp.WithString("since", mcp.Description("filter issues updated after this ISO 8601 timestamp")),
 		mcp.WithString("before", mcp.Description("filter issues updated before this ISO 8601 timestamp")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page"), mcp.DefaultNumber(30)),
+		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
 	)
 
 	IssueReadTool = mcp.NewTool(
