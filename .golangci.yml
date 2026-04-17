@@ -102,9 +102,16 @@ issues:
   max-same-issues: 0
 formatters:
   enable:
-    - gofmt
+    - gci
     - gofumpt
   settings:
+    gci:
+      custom-order: true
+      sections:
+        - standard
+        - prefix(gitea.com/gitea/gitea-mcp)
+        - blank
+        - default
     gofumpt:
       extra-rules: true
   exclusions:

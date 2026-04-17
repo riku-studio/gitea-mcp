@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+
 	"github.com/mark3labs/mcp-go/mcp"
 )
 

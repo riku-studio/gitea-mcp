@@ -3,9 +3,8 @@ EXECUTABLE := gitea-mcp
 VERSION ?= $(shell git describe --tags --always | sed 's/-/+/' | sed 's/^v//')
 LDFLAGS := -X "main.Version=$(VERSION)"
 
-GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1
+GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
 GOVULNCHECK_PACKAGE ?= golang.org/x/vuln/cmd/govulncheck@v1
-GOFUMPT_PACKAGE ?= mvdan.cc/gofumpt@v0.9.2
 
 .PHONY: help
 help: ## print this help message
@@ -51,7 +50,16 @@ dev: air ## run the application with hot reload
 
 .PHONY: fmt
 fmt: ## format the Go code
-	$(GO) run $(GOFUMPT_PACKAGE) -w .
+	$(GO) run $(GOLANGCI_LINT_PACKAGE) fmt
+
+.PHONY: fmt-check
+fmt-check: fmt ## check that Go code is formatted
+	@diff=$$(git diff --color=always); \
+	if [ -n "$$diff" ]; then \
+		echo "Please run 'make fmt' and commit the result:"; \
+		printf "%s" "$${diff}"; \
+		exit 1; \
+	fi
 
 .PHONY: lint
 lint: lint-go ## lint everything

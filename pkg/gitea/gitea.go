@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.gitea.io/sdk/gitea"
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+
+	"code.gitea.io/sdk/gitea"
 )
 
 func NewClient(token string) (*gitea.Client, error) {

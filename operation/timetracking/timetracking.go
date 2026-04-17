@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
+	gitea_sdk "code.gitea.io/sdk/gitea"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )

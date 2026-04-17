@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gitea.com/gitea/gitea-mcp/pkg/log"
+
 	"github.com/mark3labs/mcp-go/mcp"
 )
 

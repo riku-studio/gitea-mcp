@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
