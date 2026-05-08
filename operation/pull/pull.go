@@ -3,6 +3,7 @@ package pull
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
@@ -209,7 +210,17 @@ func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
 
-	return to.TextResult(slimPullRequest(pr))
+	// /pulls/{n} omits `assets`; PRs are issues internally, so the issue
+	// assets endpoint surfaces description attachments.
+	var assets []*gitea_sdk.Attachment
+	assetsPath := fmt.Sprintf("repos/%s/%s/issues/%d/assets", url.PathEscape(owner), url.PathEscape(repo), index)
+	if _, err := gitea.DoJSON(ctx, "GET", assetsPath, nil, nil, &assets); err != nil {
+		log.Debugf("fetch %v/%v/issues/%v/assets err: %v", owner, repo, index, err)
+	}
+
+	m := slimPullRequest(pr)
+	m["body"] = bodyWithAttachments(pr.Body, assets)
+	return to.TextResult(m)
 }
 
 func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

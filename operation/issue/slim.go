@@ -1,6 +1,9 @@
 package issue
 
 import (
+	"fmt"
+	"strings"
+
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
 
@@ -35,6 +38,24 @@ func labelNames(labels []*gitea_sdk.Label) []string {
 		}
 	}
 	return out
+}
+
+func bodyWithAttachments(body string, atts []*gitea_sdk.Attachment) string {
+	links := make([]string, 0, len(atts))
+	for _, a := range atts {
+		if a == nil || a.DownloadURL == "" {
+			continue
+		}
+		links = append(links, fmt.Sprintf("[%s](%s)", a.Name, a.DownloadURL))
+	}
+	if len(links) == 0 {
+		return body
+	}
+	joined := strings.Join(links, "\n")
+	if body == "" {
+		return joined
+	}
+	return body + "\n\n" + joined
 }
 
 func slimIssue(i *gitea_sdk.Issue) map[string]any {
@@ -117,14 +138,6 @@ func slimComment(c *gitea_sdk.Comment) map[string]any {
 		"created_at": c.Created,
 		"updated_at": c.Updated,
 	}
-}
-
-func slimComments(comments []*gitea_sdk.Comment) []map[string]any {
-	out := make([]map[string]any, 0, len(comments))
-	for _, c := range comments {
-		out = append(out, slimComment(c))
-	}
-	return out
 }
 
 func slimLabels(labels []*gitea_sdk.Label) []map[string]any {

@@ -1,8 +1,29 @@
 package pull
 
 import (
+	"fmt"
+	"strings"
+
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
+
+func bodyWithAttachments(body string, atts []*gitea_sdk.Attachment) string {
+	links := make([]string, 0, len(atts))
+	for _, a := range atts {
+		if a == nil || a.DownloadURL == "" {
+			continue
+		}
+		links = append(links, fmt.Sprintf("[%s](%s)", a.Name, a.DownloadURL))
+	}
+	if len(links) == 0 {
+		return body
+	}
+	joined := strings.Join(links, "\n")
+	if body == "" {
+		return joined
+	}
+	return body + "\n\n" + joined
+}
 
 func userLogin(u *gitea_sdk.User) string {
 	if u == nil {

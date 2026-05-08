@@ -3,6 +3,7 @@ package issue
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
@@ -14,6 +15,18 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// issueWithAssets / commentWithAssets wrap the SDK types to capture the
+// `assets` field that the SDK currently drops on these endpoints.
+type issueWithAssets struct {
+	gitea_sdk.Issue
+	Assets []*gitea_sdk.Attachment `json:"assets"`
+}
+
+type commentWithAssets struct {
+	gitea_sdk.Comment
+	Assets []*gitea_sdk.Attachment `json:"assets"`
+}
 
 var Tool = tool.New()
 
@@ -142,16 +155,14 @@ func getIssueByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	client, err := gitea.ClientFromContext(ctx)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
-	}
-	issue, _, err := client.GetIssue(owner, repo, index)
-	if err != nil {
+	var issue issueWithAssets
+	path := fmt.Sprintf("repos/%s/%s/issues/%d", url.PathEscape(owner), url.PathEscape(repo), index)
+	if _, err := gitea.DoJSON(ctx, "GET", path, nil, nil, &issue); err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/issue/%v err: %v", owner, repo, index, err))
 	}
-
-	return to.TextResult(slimIssue(issue))
+	m := slimIssue(&issue.Issue)
+	m["body"] = bodyWithAttachments(issue.Body, issue.Assets)
+	return to.TextResult(m)
 }
 
 func listRepoIssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -377,17 +388,18 @@ func getIssueCommentsByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	opt := gitea_sdk.ListIssueCommentOptions{}
-	client, err := gitea.ClientFromContext(ctx)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
-	}
-	issue, _, err := client.ListIssueComments(owner, repo, index, opt)
-	if err != nil {
+	var comments []commentWithAssets
+	path := fmt.Sprintf("repos/%s/%s/issues/%d/comments", url.PathEscape(owner), url.PathEscape(repo), index)
+	if _, err := gitea.DoJSON(ctx, "GET", path, nil, nil, &comments); err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/%v/comments err: %v", owner, repo, index, err))
 	}
-
-	return to.TextResult(slimComments(issue))
+	out := make([]map[string]any, 0, len(comments))
+	for i := range comments {
+		m := slimComment(&comments[i].Comment)
+		m["body"] = bodyWithAttachments(comments[i].Body, comments[i].Assets)
+		out = append(out, m)
+	}
+	return to.TextResult(out)
 }
 
 func getIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -768,5 +769,145 @@ func Test_getPullRequestDiffFn(t *testing.T) {
 				t.Fatalf("diff = %q, want %q", parsed, diffRaw)
 			}
 		})
+	}
+}
+
+func Test_getPullRequestByIndexFn_includesAttachments(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 9
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"number":9,"title":"feat","body":"see screenshot","state":"open"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/%d/assets", owner, repo, index):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{"id":1,"name":"shot.png","browser_download_url":"https://example/shot.png"}]`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo, "index": float64(index),
+	}}}
+	res, err := getPullRequestByIndexFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
+	}
+	if res.IsError {
+		t.Fatalf("unexpected error result: %v", res.Content)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `[shot.png](https://example/shot.png)`) {
+		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
+	}
+}
+
+func Test_getPullRequestByIndexFn_emptyAssetsLeavesBody(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 9
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"number":9,"title":"feat","body":"plain body","state":"open"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/%d/assets", owner, repo, index):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo, "index": float64(index),
+	}}}
+	res, err := getPullRequestByIndexFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `"body":"plain body"`) {
+		t.Fatalf("expected body unchanged when assets are empty, got: %s", body)
+	}
+}
+
+func Test_getPullRequestByIndexFn_assetsFailureNonFatal(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 9
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"number":9,"title":"feat","body":"plain body","state":"open"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/%d/assets", owner, repo, index):
+			http.Error(w, "boom", http.StatusInternalServerError)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo, "index": float64(index),
+	}}}
+	res, err := getPullRequestByIndexFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
+	}
+	if res.IsError {
+		t.Fatalf("assets fetch failure should not fail the PR fetch: %v", res.Content)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `"plain body"`) {
+		t.Fatalf("expected PR body preserved when assets fail, got: %s", body)
 	}
 }

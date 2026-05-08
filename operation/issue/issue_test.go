@@ -166,3 +166,104 @@ func Test_createIssueFn_labels(t *testing.T) {
 		t.Fatalf("expected due_date to be set")
 	}
 }
+
+func Test_getIssueByIndexFn_includesAttachments(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/42", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"number": 42,
+				"title": "bug with screenshot",
+				"body": "see attached",
+				"state": "open",
+				"assets": [
+					{"id": 1, "name": "shot.png", "size": 1024, "browser_download_url": "https://example/shot.png"}
+				]
+			}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo, "index": float64(42),
+	}}}
+	res, err := getIssueByIndexFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("getIssueByIndexFn() error = %v", err)
+	}
+	if res.IsError {
+		t.Fatalf("unexpected error result: %v", res.Content)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `[shot.png](https://example/shot.png)`) {
+		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
+	}
+	if strings.Contains(body, `"attachments"`) {
+		t.Fatalf("attachments should be inlined into body, not a separate field: %s", body)
+	}
+}
+
+func Test_getIssueCommentsByIndexFn_includesAttachments(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/7/comments", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[
+				{"id": 1, "body": "see this", "assets": [
+					{"id": 9, "name": "log.txt", "size": 200, "browser_download_url": "https://example/log.txt"}
+				]},
+				{"id": 2, "body": "no attachment", "assets": []}
+			]`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo, "index": float64(7),
+	}}}
+	res, err := getIssueCommentsByIndexFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("getIssueCommentsByIndexFn() error = %v", err)
+	}
+	if res.IsError {
+		t.Fatalf("unexpected error result: %v", res.Content)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `[log.txt](https://example/log.txt)`) {
+		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
+	}
+	if strings.Contains(body, `"attachments"`) {
+		t.Fatalf("attachments should be inlined into body, not a separate field: %s", body)
+	}
+}
