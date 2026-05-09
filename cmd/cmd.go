@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"gitea.com/gitea/gitea-mcp/operation"
@@ -53,6 +54,7 @@ func init() {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Environment variables:")
 		fmt.Fprintf(w, "  GITEA_ACCESS_TOKEN\tProvide access token\n")
+		fmt.Fprintf(w, "  GITEA_ACCESS_TOKEN_FILE\tPath to a file containing the access token (e.g. a Docker secret)\n")
 		fmt.Fprintf(w, "  GITEA_DEBUG\tSet to 'true' for debug mode\n")
 		fmt.Fprintf(w, "  GITEA_HOST\tOverride Gitea host URL\n")
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
@@ -73,6 +75,16 @@ func init() {
 	flagPkg.Token = token
 	if flagPkg.Token == "" {
 		flagPkg.Token = os.Getenv("GITEA_ACCESS_TOKEN")
+	}
+	if flagPkg.Token == "" {
+		if tokenFile := os.Getenv("GITEA_ACCESS_TOKEN_FILE"); tokenFile != "" {
+			data, err := os.ReadFile(tokenFile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error reading GITEA_ACCESS_TOKEN_FILE: %v\n", err)
+				os.Exit(1)
+			}
+			flagPkg.Token = strings.TrimRight(string(data), "\r\n")
+		}
 	}
 
 	if os.Getenv("MCP_MODE") != "" {
