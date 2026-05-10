@@ -16,6 +16,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/operation/label"
 	"gitea.com/gitea/gitea-mcp/operation/milestone"
 	"gitea.com/gitea/gitea-mcp/operation/notification"
+	"gitea.com/gitea/gitea-mcp/operation/packages"
 	"gitea.com/gitea/gitea-mcp/operation/pull"
 	"gitea.com/gitea/gitea-mcp/operation/repo"
 	"gitea.com/gitea/gitea-mcp/operation/search"
@@ -53,6 +54,9 @@ func RegisterTool(s *server.MCPServer) {
 
 	// Milestone Tool
 	s.AddTools(milestone.Tool.Tools()...)
+
+	// Package Tool
+	s.AddTools(packages.Tool.Tools()...)
 
 	// Pull Tool
 	s.AddTools(pull.Tool.Tools()...)
