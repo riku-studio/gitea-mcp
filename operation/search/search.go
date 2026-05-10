@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -29,6 +30,7 @@ var (
 	SearchUsersTool = mcp.NewTool(
 		SearchUsersToolName,
 		mcp.WithDescription("search users"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Search users")),
 		mcp.WithString("keyword", mcp.Required(), mcp.Description("Keyword")),
 		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
 		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
@@ -37,6 +39,7 @@ var (
 	SearOrgTeamsTool = mcp.NewTool(
 		SearchOrgTeamsToolName,
 		mcp.WithDescription("search organization teams"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Search organization teams")),
 		mcp.WithString("org", mcp.Required(), mcp.Description("organization name")),
 		mcp.WithString("query", mcp.Required(), mcp.Description("search organization teams")),
 		mcp.WithBoolean("includeDescription", mcp.Description("include description?")),
@@ -47,6 +50,7 @@ var (
 	SearchReposTool = mcp.NewTool(
 		SearchReposToolName,
 		mcp.WithDescription("search repos"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Search repositories")),
 		mcp.WithString("keyword", mcp.Required(), mcp.Description("Keyword")),
 		mcp.WithBoolean("keywordIsTopic", mcp.Description("KeywordIsTopic")),
 		mcp.WithBoolean("keywordInDescription", mcp.Description("KeywordInDescription")),
@@ -62,6 +66,7 @@ var (
 	SearchIssuesTool = mcp.NewTool(
 		SearchIssuesToolName,
 		mcp.WithDescription("Search for issues and pull requests across all accessible repositories"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Search issues")),
 		mcp.WithString("query", mcp.Required(), mcp.Description("search keyword")),
 		mcp.WithString("state", mcp.Description("filter by state: open, closed, all"), mcp.Enum("open", "closed", "all")),
 		mcp.WithString("type", mcp.Description("filter by type: issues, pulls"), mcp.Enum("issues", "pulls")),

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -48,6 +49,7 @@ var (
 	ActionsConfigReadTool = mcp.NewTool(
 		ActionsConfigReadToolName,
 		mcp.WithDescription("Read Actions secrets and variables configuration."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions secrets and variables")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_repo_secrets", "list_org_secrets", "list_repo_variables", "get_repo_variable", "list_org_variables", "get_org_variable")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
 		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),
@@ -60,6 +62,7 @@ var (
 	ActionsConfigWriteTool = mcp.NewTool(
 		ActionsConfigWriteToolName,
 		mcp.WithDescription("Manage Actions secrets and variables: create, update, or delete."),
+		mcp.WithToolAnnotation(annotation.Destructive("Manage Actions secrets and variables")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("upsert_repo_secret", "delete_repo_secret", "upsert_org_secret", "delete_org_secret", "create_repo_variable", "update_repo_variable", "delete_repo_variable", "create_org_variable", "update_org_variable", "delete_org_variable")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
 		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),

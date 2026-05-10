@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -28,6 +29,7 @@ var (
 	ActionsRunReadTool = mcp.NewTool(
 		ActionsRunReadToolName,
 		mcp.WithDescription("Read Actions workflow, run, and job data. Use method 'list_workflows'/'get_workflow' for workflows, 'list_runs'/'get_run' for runs, 'list_jobs'/'list_run_jobs' for jobs, 'get_job_log_preview'/'download_job_log' for logs."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions workflow, run, and job data")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job_log_preview", "download_job_log")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -45,6 +47,7 @@ var (
 	ActionsRunWriteTool = mcp.NewTool(
 		ActionsRunWriteToolName,
 		mcp.WithDescription("Trigger, cancel, or rerun Actions workflows."),
+		mcp.WithToolAnnotation(annotation.Write("Trigger, cancel, or rerun Actions workflows")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("dispatch_workflow", "cancel_run", "rerun_run")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),

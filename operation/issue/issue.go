@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -40,6 +41,7 @@ var (
 	ListRepoIssuesTool = mcp.NewTool(
 		ListRepoIssuesToolName,
 		mcp.WithDescription("List repository issues"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List repository issues")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("state", mcp.Description("issue state"), mcp.DefaultString("all")),
@@ -53,6 +55,7 @@ var (
 	IssueReadTool = mcp.NewTool(
 		IssueReadToolName,
 		mcp.WithDescription("Get information about a specific issue. Use method 'get' for issue details, 'get_comments' for issue comments, 'get_labels' for issue labels."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read issue details")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "get_comments", "get_labels")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -62,6 +65,7 @@ var (
 	IssueWriteTool = mcp.NewTool(
 		IssueWriteToolName,
 		mcp.WithDescription("Create or update issues and comments, manage labels. Use method 'create' to create an issue, 'update' to edit, 'add_comment'/'edit_comment' for comments, 'add_labels'/'remove_label'/'replace_labels'/'clear_labels' for label management."),
+		mcp.WithToolAnnotation(annotation.Write("Create or update issues, comments, and labels")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "add_comment", "edit_comment", "add_labels", "remove_label", "replace_labels", "clear_labels")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),

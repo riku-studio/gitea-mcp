@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -29,6 +30,7 @@ var (
 	GetFileContentTool = mcp.NewTool(
 		GetFileToolName,
 		mcp.WithDescription("Get file Content and Metadata"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get file content")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("ref", mcp.Required(), mcp.Description("ref can be branch/tag/commit")),
@@ -39,6 +41,7 @@ var (
 	GetDirContentTool = mcp.NewTool(
 		GetDirToolName,
 		mcp.WithDescription("Get a list of entries in a directory"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get directory contents")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("ref", mcp.Required(), mcp.Description("ref can be branch/tag/commit")),
@@ -48,6 +51,7 @@ var (
 	CreateOrUpdateFileTool = mcp.NewTool(
 		CreateOrUpdateFileToolName,
 		mcp.WithDescription("Create or update a file. If sha is provided, updates the existing file; otherwise creates a new file."),
+		mcp.WithToolAnnotation(annotation.Write("Create or update a file")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("filePath", mcp.Required(), mcp.Description("file path")),
@@ -61,6 +65,7 @@ var (
 	DeleteFileTool = mcp.NewTool(
 		DeleteFileToolName,
 		mcp.WithDescription("Delete file"),
+		mcp.WithToolAnnotation(annotation.Destructive("Delete a file")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("filePath", mcp.Required(), mcp.Description("file path")),

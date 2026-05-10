@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
@@ -22,6 +23,7 @@ const (
 var GetGiteaMCPServerVersionTool = mcp.NewTool(
 	GetGiteaMCPServerVersion,
 	mcp.WithDescription("Get Gitea MCP Server Version"),
+	mcp.WithToolAnnotation(annotation.ReadOnly("Get server version")),
 )
 
 func init() {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -27,6 +28,7 @@ var (
 	TimetrackingReadTool = mcp.NewTool(
 		TimetrackingReadToolName,
 		mcp.WithDescription("Read time tracking data. Use method 'list_issue_times' for issue times, 'list_repo_times' for repository times, 'get_my_stopwatches' for active stopwatches, 'get_my_times' for all your tracked times."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read tracked time")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_issue_times", "list_repo_times", "get_my_stopwatches", "get_my_times")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for 'list_issue_times', 'list_repo_times')")),
 		mcp.WithString("repo", mcp.Description("repository name (required for 'list_issue_times', 'list_repo_times')")),
@@ -38,6 +40,7 @@ var (
 	TimetrackingWriteTool = mcp.NewTool(
 		TimetrackingWriteToolName,
 		mcp.WithDescription("Manage time tracking: stopwatches and tracked time entries."),
+		mcp.WithToolAnnotation(annotation.Write("Add or manage tracked time")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("start_stopwatch", "stop_stopwatch", "delete_stopwatch", "add_time", "delete_time")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for all methods)")),
 		mcp.WithString("repo", mcp.Description("repository name (required for all methods)")),

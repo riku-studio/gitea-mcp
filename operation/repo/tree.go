@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -21,6 +22,7 @@ const (
 var GetRepoTreeTool = mcp.NewTool(
 	GetRepoTreeToolName,
 	mcp.WithDescription("Get the file tree of a repository"),
+	mcp.WithToolAnnotation(annotation.ReadOnly("Get repository file tree")),
 	mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 	mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 	mcp.WithString("tree_sha", mcp.Required(), mcp.Description("SHA, branch name, or tag name")),

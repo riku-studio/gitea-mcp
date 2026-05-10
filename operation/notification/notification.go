@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -27,6 +28,7 @@ var (
 	NotificationReadTool = mcp.NewTool(
 		NotificationReadToolName,
 		mcp.WithDescription("Get notifications. Use method 'list' to list notifications (optionally scoped to a repo), 'get' to get a single notification thread by ID."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read notifications")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list", "get")),
 		mcp.WithString("owner", mcp.Description("repository owner (for 'list' to scope to a repo)")),
 		mcp.WithString("repo", mcp.Description("repository name (for 'list' to scope to a repo)")),
@@ -42,6 +44,7 @@ var (
 	NotificationWriteTool = mcp.NewTool(
 		NotificationWriteToolName,
 		mcp.WithDescription("Manage notifications. Use method 'mark_read' to mark a single notification as read, 'mark_all_read' to mark all notifications as read (optionally scoped to a repo)."),
+		mcp.WithToolAnnotation(annotation.Write("Manage notifications")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("mark_read", "mark_all_read")),
 		mcp.WithNumber("id", mcp.Description("notification thread ID (required for 'mark_read')")),
 		mcp.WithString("owner", mcp.Description("repository owner (for 'mark_all_read' to scope to a repo)")),

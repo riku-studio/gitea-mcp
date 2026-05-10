@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -29,6 +30,7 @@ var (
 	CreateRepoTool = mcp.NewTool(
 		CreateRepoToolName,
 		mcp.WithDescription("Create repository in personal account or organization"),
+		mcp.WithToolAnnotation(annotation.Write("Create a new repository")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Name of the repository to create")),
 		mcp.WithString("description", mcp.Description("Description of the repository to create")),
 		mcp.WithBoolean("private", mcp.Description("Whether the repository is private")),
@@ -47,6 +49,7 @@ var (
 	ForkRepoTool = mcp.NewTool(
 		ForkRepoToolName,
 		mcp.WithDescription("Fork repository"),
+		mcp.WithToolAnnotation(annotation.Write("Fork a repository")),
 		mcp.WithString("user", mcp.Required(), mcp.Description("User name of the repository to fork")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("Repository name to fork")),
 		mcp.WithString("organization", mcp.Description("Organization name to fork")),
@@ -56,6 +59,7 @@ var (
 	ListMyReposTool = mcp.NewTool(
 		ListMyReposToolName,
 		mcp.WithDescription("List my repositories"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List my repositories")),
 		mcp.WithNumber("page", mcp.Required(), mcp.Description("Page number"), mcp.DefaultNumber(1), mcp.Min(1)),
 		mcp.WithNumber("perPage", mcp.Required(), mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
@@ -63,6 +67,7 @@ var (
 	ListOrgReposTool = mcp.NewTool(
 		ListOrgReposToolName,
 		mcp.WithDescription("List repositories of an organization"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List organization repositories")),
 		mcp.WithString("org", mcp.Required(), mcp.Description("Organization name")),
 		mcp.WithNumber("page", mcp.Required(), mcp.Description("Page number"), mcp.DefaultNumber(1), mcp.Min(1)),
 		mcp.WithNumber("pageSize", mcp.Required(), mcp.Description("Page size number"), mcp.DefaultNumber(100), mcp.Min(1)),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -36,6 +37,7 @@ var (
 	GetMyUserInfoTool = mcp.NewTool(
 		GetMyUserInfoToolName,
 		mcp.WithDescription("Get my user info"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get current user information")),
 	)
 
 	// GetUserOrgsTool is the MCP tool for listing organizations for the authenticated user.
@@ -43,6 +45,7 @@ var (
 	GetUserOrgsTool = mcp.NewTool(
 		GetUserOrgsToolName,
 		mcp.WithDescription("Get organizations associated with the authenticated user"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get user organizations")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(defaultPage)),
 		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(defaultPageSize)),
 	)

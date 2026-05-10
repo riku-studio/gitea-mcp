@@ -911,3 +911,131 @@ func Test_getPullRequestByIndexFn_assetsFailureNonFatal(t *testing.T) {
 		t.Fatalf("expected PR body preserved when assets fail, got: %s", body)
 	}
 }
+
+func Test_closePullRequestFn(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 7
+	)
+
+	var gotBody map[string]any
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+			if r.Method != http.MethodPatch {
+				t.Errorf("expected PATCH method, got %s", r.Method)
+			}
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fmt.Appendf(nil, `{"index":%d,"title":"Fix bug","state":"closed","head":{"ref":"fix-branch"},"base":{"ref":"main"}}`, index))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	origHost := flag.Host
+	origToken := flag.Token
+	flag.Host = server.URL
+	flag.Token = "test-token"
+	t.Cleanup(func() { flag.Host = origHost; flag.Token = origToken })
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: map[string]any{
+				"method": "close",
+				"owner":  owner,
+				"repo":   repo,
+				"index":  float64(index),
+			},
+		},
+	}
+
+	result, err := closePullRequestFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("closePullRequestFn() error = %v", err)
+	}
+
+	if gotBody["state"] != "closed" {
+		t.Errorf("expected state=closed, got %v", gotBody["state"])
+	}
+
+	if len(result.Content) == 0 {
+		t.Fatalf("expected content in result")
+	}
+}
+
+func Test_reopenPullRequestFn(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 7
+	)
+
+	var gotBody map[string]any
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+			if r.Method != http.MethodPatch {
+				t.Errorf("expected PATCH method, got %s", r.Method)
+			}
+			_ = json.NewDecoder(r.Body).Decode(&gotBody)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fmt.Appendf(nil, `{"index":%d,"title":"Fix bug","state":"open","head":{"ref":"fix-branch"},"base":{"ref":"main"}}`, index))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	origHost := flag.Host
+	origToken := flag.Token
+	flag.Host = server.URL
+	flag.Token = "test-token"
+	t.Cleanup(func() { flag.Host = origHost; flag.Token = origToken })
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: map[string]any{
+				"method": "reopen",
+				"owner":  owner,
+				"repo":   repo,
+				"index":  float64(index),
+			},
+		},
+	}
+
+	result, err := reopenPullRequestFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("reopenPullRequestFn() error = %v", err)
+	}
+
+	if gotBody["state"] != "open" {
+		t.Errorf("expected state=open, got %v", gotBody["state"])
+	}
+
+	if len(result.Content) == 0 {
+		t.Fatalf("expected content in result")
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -30,6 +31,7 @@ var (
 	ListRepoPullRequestsTool = mcp.NewTool(
 		ListRepoPullRequestsToolName,
 		mcp.WithDescription("List repository pull requests"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List pull requests")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("state", mcp.Description("state"), mcp.Enum("open", "closed", "all"), mcp.DefaultString("all")),
@@ -42,6 +44,7 @@ var (
 	PullRequestReadTool = mcp.NewTool(
 		PullRequestReadToolName,
 		mcp.WithDescription("Get pull request information. Use method 'get' for PR details, 'get_diff' for diff, 'get_reviews'/'get_review'/'get_review_comments' for review data."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read pull request details")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "get_diff", "get_reviews", "get_review", "get_review_comments")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -54,8 +57,9 @@ var (
 
 	PullRequestWriteTool = mcp.NewTool(
 		PullRequestWriteToolName,
-		mcp.WithDescription("Create, update, or merge pull requests, manage reviewers."),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "merge", "add_reviewers", "remove_reviewers")),
+		mcp.WithDescription("Create, update, close, reopen, or merge pull requests, manage reviewers."),
+		mcp.WithToolAnnotation(annotation.Write("Create, update, close, reopen, or merge pull requests")),
+		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "close", "reopen", "merge", "add_reviewers", "remove_reviewers")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithNumber("index", mcp.Description("pull request index (required for all methods except 'create')")),
@@ -85,6 +89,7 @@ var (
 	PullRequestReviewWriteTool = mcp.NewTool(
 		PullRequestReviewWriteToolName,
 		mcp.WithDescription("Manage pull request reviews: create, submit, delete, or dismiss."),
+		mcp.WithToolAnnotation(annotation.Write("Submit a pull request review")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "submit", "delete", "dismiss")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -156,6 +161,10 @@ func pullRequestWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 		return createPullRequestFn(ctx, req)
 	case "update":
 		return editPullRequestFn(ctx, req)
+	case "close":
+		return closePullRequestFn(ctx, req)
+	case "reopen":
+		return reopenPullRequestFn(ctx, req)
 	case "merge":
 		return mergePullRequestFn(ctx, req)
 	case "add_reviewers":
@@ -165,6 +174,66 @@ func pullRequestWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
+}
+
+func closePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(req.GetArguments(), "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(req.GetArguments(), "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(req.GetArguments(), "index")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+
+	state := gitea_sdk.StateClosed
+	pr, _, err := client.EditPullRequest(owner, repo, index, gitea_sdk.EditPullRequestOption{
+		State: &state,
+	})
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("close %v/%v/pr/%v err: %v", owner, repo, index, err))
+	}
+
+	return to.TextResult(slimPullRequest(pr))
+}
+
+func reopenPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(req.GetArguments(), "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(req.GetArguments(), "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(req.GetArguments(), "index")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+
+	state := gitea_sdk.StateOpen
+	pr, _, err := client.EditPullRequest(owner, repo, index, gitea_sdk.EditPullRequestOption{
+		State: &state,
+	})
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("reopen %v/%v/pr/%v err: %v", owner, repo, index, err))
+	}
+
+	return to.TextResult(slimPullRequest(pr))
 }
 
 func pullRequestReviewWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

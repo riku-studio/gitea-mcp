@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -27,6 +28,7 @@ var (
 	WikiReadTool = mcp.NewTool(
 		WikiReadToolName,
 		mcp.WithDescription("Read wiki page information. Use method 'list' to list pages, 'get' to get page content, 'get_revisions' for revision history."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read wiki pages")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list", "get", "get_revisions")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -36,6 +38,7 @@ var (
 	WikiWriteTool = mcp.NewTool(
 		WikiWriteToolName,
 		mcp.WithDescription("Create, update, or delete wiki pages."),
+		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete wiki pages")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "delete")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),

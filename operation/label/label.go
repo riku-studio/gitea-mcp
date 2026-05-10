@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -26,6 +27,7 @@ var (
 	LabelReadTool = mcp.NewTool(
 		LabelReadToolName,
 		mcp.WithDescription("Read label information. Use method 'list_repo_labels' to list repository labels, 'get_repo_label' to get a specific repo label, 'list_org_labels' to list organization labels."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read labels")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_repo_labels", "get_repo_label", "list_org_labels")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
 		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),
@@ -38,6 +40,7 @@ var (
 	LabelWriteTool = mcp.NewTool(
 		LabelWriteToolName,
 		mcp.WithDescription("Create, edit, or delete labels for repositories or organizations."),
+		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete labels")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create_repo_label", "edit_repo_label", "delete_repo_label", "create_org_label", "edit_org_label", "delete_org_label")),
 		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
 		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -26,6 +27,7 @@ var (
 	MilestoneReadTool = mcp.NewTool(
 		MilestoneReadToolName,
 		mcp.WithDescription("Read milestone information. Use method 'get' to get a specific milestone, 'list' to list milestones."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read milestones")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "list")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
@@ -39,6 +41,7 @@ var (
 	MilestoneWriteTool = mcp.NewTool(
 		MilestoneWriteToolName,
 		mcp.WithDescription("Create, edit, or delete milestones."),
+		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete milestones")),
 		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "edit", "delete")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),

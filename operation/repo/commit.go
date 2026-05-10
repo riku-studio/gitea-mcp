@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -23,6 +24,7 @@ var (
 	ListRepoCommitsTool = mcp.NewTool(
 		ListRepoCommitsToolName,
 		mcp.WithDescription("List repository commits"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List repository commits")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("sha", mcp.Description("SHA or branch to start listing commits from")),
@@ -34,6 +36,7 @@ var (
 	GetCommitTool = mcp.NewTool(
 		GetCommitToolName,
 		mcp.WithDescription("Get details of a specific commit"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get commit details")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("sha", mcp.Required(), mcp.Description("commit SHA")),

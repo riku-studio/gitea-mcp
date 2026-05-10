@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -25,6 +26,7 @@ var (
 	CreateTagTool = mcp.NewTool(
 		CreateTagToolName,
 		mcp.WithDescription("Create tag"),
+		mcp.WithToolAnnotation(annotation.Write("Create a tag")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
@@ -35,6 +37,7 @@ var (
 	DeleteTagTool = mcp.NewTool(
 		DeleteTagToolName,
 		mcp.WithDescription("Delete tag"),
+		mcp.WithToolAnnotation(annotation.Destructive("Delete a tag")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
@@ -43,6 +46,7 @@ var (
 	GetTagTool = mcp.NewTool(
 		GetTagToolName,
 		mcp.WithDescription("Get tag"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get tag details")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
@@ -51,6 +55,7 @@ var (
 	ListTagsTool = mcp.NewTool(
 		ListTagsToolName,
 		mcp.WithDescription("List tags"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List tags")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),

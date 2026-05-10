@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
@@ -26,6 +27,7 @@ var (
 	CreateReleaseTool = mcp.NewTool(
 		CreateReleaseToolName,
 		mcp.WithDescription("Create release"),
+		mcp.WithToolAnnotation(annotation.Write("Create a release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
@@ -39,6 +41,7 @@ var (
 	DeleteReleaseTool = mcp.NewTool(
 		DeleteReleaseToolName,
 		mcp.WithDescription("Delete release"),
+		mcp.WithToolAnnotation(annotation.Destructive("Delete a release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithNumber("id", mcp.Required(), mcp.Description("release id")),
@@ -47,6 +50,7 @@ var (
 	GetReleaseTool = mcp.NewTool(
 		GetReleaseToolName,
 		mcp.WithDescription("Get release"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get release details")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithNumber("id", mcp.Required(), mcp.Description("release id")),
@@ -55,6 +59,7 @@ var (
 	GetLatestReleaseTool = mcp.NewTool(
 		GetLatestReleaseToolName,
 		mcp.WithDescription("Get latest release"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Get latest release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 	)
@@ -62,6 +67,7 @@ var (
 	ListReleasesTool = mcp.NewTool(
 		ListReleasesToolName,
 		mcp.WithDescription("List releases"),
+		mcp.WithToolAnnotation(annotation.ReadOnly("List releases")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
 		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
 		mcp.WithBoolean("is_draft", mcp.Description("Whether the release is draft"), mcp.DefaultBool(false)),
