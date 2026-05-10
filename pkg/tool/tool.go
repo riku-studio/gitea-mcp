@@ -1,7 +1,11 @@
 package tool
 
 import (
+	"slices"
+	"strings"
+
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+	"gitea.com/gitea/gitea-mcp/pkg/log"
 
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -27,12 +31,48 @@ func (t *Tool) RegisterRead(s server.ServerTool) {
 }
 
 func (t *Tool) Tools() []server.ServerTool {
-	tools := make([]server.ServerTool, 0, len(t.write)+len(t.read))
-	if flag.ReadOnly {
-		tools = append(tools, t.read...)
-		return tools
+	all := make([]server.ServerTool, 0, len(t.write)+len(t.read))
+	if !flag.ReadOnly {
+		all = append(all, t.write...)
 	}
-	tools = append(tools, t.write...)
-	tools = append(tools, t.read...)
-	return tools
+	all = append(all, t.read...)
+	if len(flag.AllowedTools) == 0 {
+		return all
+	}
+	filtered := make([]server.ServerTool, 0, len(all))
+	for _, st := range all {
+		if _, ok := flag.AllowedTools[st.Tool.Name]; ok {
+			filtered = append(filtered, st)
+		}
+	}
+	return filtered
+}
+
+// WarnUnmatchedAllowedTools logs any names in flag.AllowedTools that don't
+// match a tool registered on any of the given domains. No-op if the allowlist
+// is empty.
+func WarnUnmatchedAllowedTools(domains ...*Tool) {
+	if len(flag.AllowedTools) == 0 {
+		return
+	}
+	known := map[string]struct{}{}
+	for _, d := range domains {
+		for _, st := range d.read {
+			known[st.Tool.Name] = struct{}{}
+		}
+		for _, st := range d.write {
+			known[st.Tool.Name] = struct{}{}
+		}
+	}
+	var unmatched []string
+	for name := range flag.AllowedTools {
+		if _, ok := known[name]; !ok {
+			unmatched = append(unmatched, name)
+		}
+	}
+	if len(unmatched) == 0 {
+		return
+	}
+	slices.Sort(unmatched)
+	log.Warnf("Unknown tools in --tools allowlist (ignored): %s", strings.Join(unmatched, ", "))
 }

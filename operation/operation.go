@@ -27,53 +27,27 @@ import (
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var mcpServer *server.MCPServer
+var (
+	mcpServer *server.MCPServer
+
+	domainTools = []*tool.Tool{
+		user.Tool, actions.Tool, repo.Tool, notification.Tool, issue.Tool,
+		label.Tool, milestone.Tool, packages.Tool, pull.Tool, search.Tool,
+		version.Tool, wiki.Tool, timetracking.Tool,
+	}
+)
 
 func RegisterTool(s *server.MCPServer) {
-	// User Tool
-	s.AddTools(user.Tool.Tools()...)
-
-	// Actions Tool
-	s.AddTools(actions.Tool.Tools()...)
-
-	// Repo Tool
-	s.AddTools(repo.Tool.Tools()...)
-
-	// Notification Tool
-	s.AddTools(notification.Tool.Tools()...)
-
-	// Issue Tool
-	s.AddTools(issue.Tool.Tools()...)
-
-	// Label Tool
-	s.AddTools(label.Tool.Tools()...)
-
-	// Milestone Tool
-	s.AddTools(milestone.Tool.Tools()...)
-
-	// Package Tool
-	s.AddTools(packages.Tool.Tools()...)
-
-	// Pull Tool
-	s.AddTools(pull.Tool.Tools()...)
-
-	// Search Tool
-	s.AddTools(search.Tool.Tools()...)
-
-	// Version Tool
-	s.AddTools(version.Tool.Tools()...)
-
-	// Wiki Tool
-	s.AddTools(wiki.Tool.Tools()...)
-
-	// Time Tracking Tool
-	s.AddTools(timetracking.Tool.Tools()...)
-
+	for _, t := range domainTools {
+		s.AddTools(t.Tools()...)
+	}
 	s.DeleteTools("")
+	tool.WarnUnmatchedAllowedTools(domainTools...)
 }
 
 // parseAuthToken extracts the token from an Authorization header.

@@ -7,7 +7,8 @@ var (
 	Version string
 	Mode    string
 
-	Insecure bool
-	ReadOnly bool
-	Debug    bool
+	Insecure     bool
+	ReadOnly     bool
+	Debug        bool
+	AllowedTools map[string]struct{}
 )

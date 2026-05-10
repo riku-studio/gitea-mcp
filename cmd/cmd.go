@@ -17,6 +17,7 @@ var (
 	host    string
 	port    int
 	token   string
+	tools   string
 	version bool
 )
 
@@ -31,6 +32,9 @@ func init() {
 	flag.StringVar(&token, "token", "", "")
 	flag.BoolVar(&flagPkg.ReadOnly, "r", false, "")
 	flag.BoolVar(&flagPkg.ReadOnly, "read-only", false, "")
+	defaultTools := os.Getenv("GITEA_TOOLS")
+	flag.StringVar(&tools, "O", defaultTools, "")
+	flag.StringVar(&tools, "tools", defaultTools, "")
 	flag.BoolVar(&flagPkg.Debug, "d", false, "")
 	flag.BoolVar(&flagPkg.Debug, "debug", false, "")
 	flag.BoolVar(&flagPkg.Insecure, "k", false, "")
@@ -48,6 +52,7 @@ func init() {
 		fmt.Fprintf(w, "  -p, -port <number>\tHTTP server port (default: 8080)\n")
 		fmt.Fprintf(w, "  -T, -token <token>\tPersonal access token\n")
 		fmt.Fprintf(w, "  -r, -read-only\tExpose only read-only tools\n")
+		fmt.Fprintf(w, "  -O, -tools <names>\tComma-separated list of tool names to expose\n")
 		fmt.Fprintf(w, "  -d, -debug\tEnable debug mode\n")
 		fmt.Fprintf(w, "  -k, -insecure\tIgnore TLS certificate errors\n")
 		fmt.Fprintf(w, "  -v, -version\tPrint version and exit\n")
@@ -59,6 +64,7 @@ func init() {
 		fmt.Fprintf(w, "  GITEA_HOST\tOverride Gitea host URL\n")
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
 		fmt.Fprintf(w, "  GITEA_READONLY\tSet to 'true' for read-only mode\n")
+		fmt.Fprintf(w, "  GITEA_TOOLS\tComma-separated list of tool names to expose\n")
 		fmt.Fprintf(w, "  MCP_MODE\tOverride transport mode\n")
 		w.Flush()
 	}
@@ -93,6 +99,16 @@ func init() {
 
 	if os.Getenv("GITEA_READONLY") == "true" {
 		flagPkg.ReadOnly = true
+	}
+
+	allowed := map[string]struct{}{}
+	for t := range strings.SplitSeq(tools, ",") {
+		if t = strings.TrimSpace(t); t != "" {
+			allowed[t] = struct{}{}
+		}
+	}
+	if len(allowed) > 0 {
+		flagPkg.AllowedTools = allowed
 	}
 
 	if os.Getenv("GITEA_DEBUG") == "true" {
