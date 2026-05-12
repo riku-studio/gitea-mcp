@@ -177,6 +177,7 @@ func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if ok {
 		opt.Description = description
 	}
+	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "due_on")
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -219,6 +220,7 @@ func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if ok {
 		opt.State = new(gitea_sdk.StateType(state))
 	}
+	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "due_on")
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
