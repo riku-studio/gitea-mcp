@@ -71,7 +71,10 @@ linters:
         - name: unexported-return
         - name: var-declaration
         - name: var-naming
-          disabled: true
+          arguments:
+            - [] # AllowList - do not remove as args for the rule are positional and won't work without lists first
+            - [] # DenyList
+            - - skip-package-name-checks: true
     staticcheck:
       checks:
         - all
@@ -91,12 +94,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - linters:
-          - errcheck
-          - staticcheck
-          - unparam
-        path: _test\.go
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

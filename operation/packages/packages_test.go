@@ -26,7 +26,7 @@ func TestPackageReadList(t *testing.T) {
 		}
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`[{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0","html_url":"http://example.com","created_at":"2025-01-01T00:00:00Z","owner":{"login":"test-org"},"creator":{"login":"admin"}}]`))
+		_, _ = w.Write([]byte(`[{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0","html_url":"http://example.com","created_at":"2025-01-01T00:00:00Z","owner":{"login":"test-org"},"creator":{"login":"admin"}}]`))
 	}))
 	defer srv.Close()
 
@@ -128,7 +128,7 @@ func TestPackageReadListVersions(t *testing.T) {
 		}
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`[{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0"},{"id":2,"type":"container","name":"myrepo/myimage","version":"v2.0.0"}]`))
+		_, _ = w.Write([]byte(`[{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0"},{"id":2,"type":"container","name":"myrepo/myimage","version":"v2.0.0"}]`))
 	}))
 	defer srv.Close()
 
@@ -195,7 +195,7 @@ func TestPackageReadGet(t *testing.T) {
 		}
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0","html_url":"http://example.com","created_at":"2025-01-01T00:00:00Z","owner":{"login":"test-org"}}`))
+		_, _ = w.Write([]byte(`{"id":1,"type":"container","name":"myrepo/myimage","version":"v1.0.0","html_url":"http://example.com","created_at":"2025-01-01T00:00:00Z","owner":{"login":"test-org"}}`))
 	}))
 	defer srv.Close()
 

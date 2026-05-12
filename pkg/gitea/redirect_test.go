@@ -99,7 +99,7 @@ func TestDoJSON_GETRedirectFollowed(t *testing.T) {
 	mux.HandleFunc("GET /api/v1/repos/owner/new-name/pulls/1", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{"id": 1, "title": "found"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": 1, "title": "found"})
 	})
 	srv := httptest.NewServer(mux)
 	defer srv.Close()

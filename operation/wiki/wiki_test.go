@@ -32,10 +32,10 @@ func TestWikiWriteBase64Encoding(t *testing.T) {
 			var gotBody map[string]string
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, _ := io.ReadAll(r.Body)
-				json.Unmarshal(body, &gotBody)
+				_ = json.Unmarshal(body, &gotBody)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"title":"test"}`))
+				_, _ = w.Write([]byte(`{"title":"test"}`))
 			}))
 			defer srv.Close()
 
