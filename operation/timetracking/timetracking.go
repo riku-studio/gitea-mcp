@@ -27,26 +27,26 @@ const (
 var (
 	TimetrackingReadTool = mcp.NewTool(
 		TimetrackingReadToolName,
-		mcp.WithDescription("Read time tracking data. Use method 'list_issue_times' for issue times, 'list_repo_times' for repository times, 'get_my_stopwatches' for active stopwatches, 'get_my_times' for all your tracked times."),
+		mcp.WithDescription("Read time tracking: issue times, repo times, active stopwatches, your tracked times."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read tracked time")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_issue_times", "list_repo_times", "get_my_stopwatches", "get_my_times")),
-		mcp.WithString("owner", mcp.Description("repository owner (required for 'list_issue_times', 'list_repo_times')")),
-		mcp.WithString("repo", mcp.Description("repository name (required for 'list_issue_times', 'list_repo_times')")),
-		mcp.WithNumber("index", mcp.Description("issue index (required for 'list_issue_times')")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list_issue_times", "list_repo_times", "get_my_stopwatches", "get_my_times")),
+		mcp.WithString("owner", mcp.Description("for list_* methods")),
+		mcp.WithString("repo", mcp.Description("for list_* methods")),
+		mcp.WithNumber("issue_number", mcp.Description("for 'list_issue_times'")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	TimetrackingWriteTool = mcp.NewTool(
 		TimetrackingWriteToolName,
-		mcp.WithDescription("Manage time tracking: stopwatches and tracked time entries."),
+		mcp.WithDescription("Write time tracking: stopwatches and entries."),
 		mcp.WithToolAnnotation(annotation.Write("Add or manage tracked time")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("start_stopwatch", "stop_stopwatch", "delete_stopwatch", "add_time", "delete_time")),
-		mcp.WithString("owner", mcp.Description("repository owner (required for all methods)")),
-		mcp.WithString("repo", mcp.Description("repository name (required for all methods)")),
-		mcp.WithNumber("index", mcp.Description("issue index (required for all methods)")),
-		mcp.WithNumber("time", mcp.Description("time to add in seconds (required for 'add_time')")),
-		mcp.WithNumber("id", mcp.Description("tracked time entry ID (required for 'delete_time')")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("start_stopwatch", "stop_stopwatch", "delete_stopwatch", "add_time", "delete_time")),
+		mcp.WithString("owner", mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("issue_number"),
+		mcp.WithNumber("time", mcp.Description("seconds (for 'add_time')")),
+		mcp.WithNumber("id", mcp.Description("entry ID (for 'delete_time')")),
 	)
 )
 
@@ -107,7 +107,7 @@ func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -132,7 +132,7 @@ func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -157,7 +157,7 @@ func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -200,7 +200,7 @@ func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -235,7 +235,7 @@ func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -268,7 +268,7 @@ func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 		return to.ErrorResult(err)
 	}
 
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

@@ -40,47 +40,46 @@ const (
 var (
 	ListRepoIssuesTool = mcp.NewTool(
 		ListRepoIssuesToolName,
-		mcp.WithDescription("List repository issues"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository issues")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("state", mcp.Description("issue state"), mcp.DefaultString("all")),
-		mcp.WithArray("labels", mcp.Description("filter by label names"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithString("since", mcp.Description("filter issues updated after this ISO 8601 timestamp")),
-		mcp.WithString("before", mcp.Description("filter issues updated before this ISO 8601 timestamp")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("state", mcp.DefaultString("all")),
+		mcp.WithArray("labels", mcp.Description("label name filter"), mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithString("since", mcp.Description("updated after ISO 8601")),
+		mcp.WithString("before", mcp.Description("updated before ISO 8601")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	IssueReadTool = mcp.NewTool(
 		IssueReadToolName,
-		mcp.WithDescription("Get information about a specific issue. Use method 'get' for issue details, 'get_comments' for issue comments, 'get_labels' for issue labels."),
+		mcp.WithDescription("Read issue: details, comments, or labels."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read issue details")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "get_comments", "get_labels")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("index", mcp.Required(), mcp.Description("repository issue index")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "get_comments", "get_labels")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("issue_number", mcp.Required()),
 	)
 
 	IssueWriteTool = mcp.NewTool(
 		IssueWriteToolName,
-		mcp.WithDescription("Create or update issues and comments, manage labels. Use method 'create' to create an issue, 'update' to edit, 'add_comment'/'edit_comment' for comments, 'add_labels'/'remove_label'/'replace_labels'/'clear_labels' for label management."),
+		mcp.WithDescription("Write issues: create, update, manage comments and labels."),
 		mcp.WithToolAnnotation(annotation.Write("Create or update issues, comments, and labels")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "add_comment", "edit_comment", "add_labels", "remove_label", "replace_labels", "clear_labels")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("index", mcp.Description("issue index (required for all methods except 'create')")),
-		mcp.WithString("title", mcp.Description("issue title (required for 'create')")),
-		mcp.WithString("body", mcp.Description("issue/comment body (required for 'create', 'add_comment', 'edit_comment')")),
-		mcp.WithArray("assignees", mcp.Description("usernames to assign (for 'create', 'update')"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithNumber("milestone", mcp.Description("milestone number (for 'create', 'update')")),
-		mcp.WithString("state", mcp.Description("issue state, one of open, closed, all (for 'update')")),
-		mcp.WithNumber("commentID", mcp.Description("id of issue comment (required for 'edit_comment')")),
-		mcp.WithArray("labels", mcp.Description("array of label IDs (for 'create', 'add_labels', 'replace_labels')"), mcp.Items(map[string]any{"type": "number"})),
-		mcp.WithNumber("label_id", mcp.Description("label ID to remove (required for 'remove_label')")),
-		mcp.WithString("ref", mcp.Description("branch name to associate with the issue (for 'create', 'update')")),
-		mcp.WithString("deadline", mcp.Description("due date in ISO 8601 format (for 'create', 'update')")),
-		mcp.WithBoolean("remove_deadline", mcp.Description("unset due date (for 'update')")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "add_comment", "edit_comment", "add_labels", "remove_label", "replace_labels", "clear_labels")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("issue_number", mcp.Description("required except for 'create'")),
+		mcp.WithString("title", mcp.Description("required for 'create'")),
+		mcp.WithString("body", mcp.Description("required for 'create'/'add_comment'/'edit_comment'")),
+		mcp.WithArray("assignees", mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithNumber("milestone"),
+		mcp.WithString("state", mcp.Enum("open", "closed", "all")),
+		mcp.WithNumber("commentID", mcp.Description("for 'edit_comment'")),
+		mcp.WithArray("labels", mcp.Description("label IDs"), mcp.Items(map[string]any{"type": "number"})),
+		mcp.WithNumber("label_id", mcp.Description("for 'remove_label'")),
+		mcp.WithString("ref", mcp.Description("branch to associate")),
+		mcp.WithString("deadline", mcp.Description("ISO 8601")),
+		mcp.WithBoolean("remove_deadline"),
 	)
 )
 
@@ -155,7 +154,7 @@ func getIssueByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -267,7 +266,7 @@ func createIssueCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -300,7 +299,7 @@ func editIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -388,7 +387,7 @@ func getIssueCommentsByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -416,7 +415,7 @@ func getIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -444,7 +443,7 @@ func addIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -474,7 +473,7 @@ func replaceIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -504,7 +503,7 @@ func clearIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -530,7 +529,7 @@ func removeIssueLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

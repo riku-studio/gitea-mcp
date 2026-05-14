@@ -29,51 +29,48 @@ const (
 var (
 	SearchUsersTool = mcp.NewTool(
 		SearchUsersToolName,
-		mcp.WithDescription("search users"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search users")),
-		mcp.WithString("keyword", mcp.Required(), mcp.Description("Keyword")),
-		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("query", mcp.Required()),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	SearOrgTeamsTool = mcp.NewTool(
 		SearchOrgTeamsToolName,
-		mcp.WithDescription("search organization teams"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search organization teams")),
-		mcp.WithString("org", mcp.Required(), mcp.Description("organization name")),
-		mcp.WithString("query", mcp.Required(), mcp.Description("search organization teams")),
-		mcp.WithBoolean("includeDescription", mcp.Description("include description?")),
-		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("org", mcp.Required()),
+		mcp.WithString("query", mcp.Required()),
+		mcp.WithBoolean("includeDescription"),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	SearchReposTool = mcp.NewTool(
 		SearchReposToolName,
-		mcp.WithDescription("search repos"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search repositories")),
-		mcp.WithString("keyword", mcp.Required(), mcp.Description("Keyword")),
-		mcp.WithBoolean("keywordIsTopic", mcp.Description("KeywordIsTopic")),
-		mcp.WithBoolean("keywordInDescription", mcp.Description("KeywordInDescription")),
-		mcp.WithNumber("ownerID", mcp.Description("OwnerID")),
-		mcp.WithBoolean("isPrivate", mcp.Description("IsPrivate")),
-		mcp.WithBoolean("isArchived", mcp.Description("IsArchived")),
-		mcp.WithString("sort", mcp.Description("Sort")),
-		mcp.WithString("order", mcp.Description("Order")),
-		mcp.WithNumber("page", mcp.Description("Page"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("query", mcp.Required()),
+		mcp.WithBoolean("keywordIsTopic"),
+		mcp.WithBoolean("keywordInDescription"),
+		mcp.WithNumber("ownerID"),
+		mcp.WithBoolean("isPrivate"),
+		mcp.WithBoolean("isArchived"),
+		mcp.WithString("sort"),
+		mcp.WithString("order"),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	SearchIssuesTool = mcp.NewTool(
 		SearchIssuesToolName,
-		mcp.WithDescription("Search for issues and pull requests across all accessible repositories"),
+		mcp.WithDescription("Search issues and PRs across repositories"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search issues")),
-		mcp.WithString("query", mcp.Required(), mcp.Description("search keyword")),
-		mcp.WithString("state", mcp.Description("filter by state: open, closed, all"), mcp.Enum("open", "closed", "all")),
-		mcp.WithString("type", mcp.Description("filter by type: issues, pulls"), mcp.Enum("issues", "pulls")),
-		mcp.WithString("labels", mcp.Description("comma-separated list of label names")),
-		mcp.WithString("owner", mcp.Description("filter by repository owner")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("query", mcp.Required()),
+		mcp.WithString("state", mcp.Enum("open", "closed", "all")),
+		mcp.WithString("type", mcp.Enum("issues", "pulls")),
+		mcp.WithString("labels", mcp.Description("comma-separated")),
+		mcp.WithString("owner", mcp.Description("filter by owner")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 )
 
@@ -98,7 +95,7 @@ func init() {
 
 func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	log.Debugf("Called UsersFn")
-	keyword, err := params.GetString(req.GetArguments(), "keyword")
+	keyword, err := params.GetString(req.GetArguments(), "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -154,7 +151,7 @@ func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 
 func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	log.Debugf("Called ReposFn")
-	keyword, err := params.GetString(req.GetArguments(), "keyword")
+	keyword, err := params.GetString(req.GetArguments(), "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

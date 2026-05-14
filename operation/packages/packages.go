@@ -29,26 +29,26 @@ var (
 	PackageReadTool = mcp.NewTool(
 		PackageReadToolName,
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read package registry")),
-		mcp.WithDescription("Read package registry information. Use method 'list' to list all packages of an owner (returns one entry per version, use 'q' or 'type' to filter), 'list_versions' to list versions of a specific package, 'get' to get details of a specific package version."),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list", "list_versions", "get")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("package owner (user or org)")),
-		mcp.WithString("type", mcp.Description("package type, e.g. container, npm, maven, pypi, cargo, generic (optional filter for 'list', required for 'list_versions' and 'get')")),
-		mcp.WithString("name", mcp.Description("package name, slashes encoded automatically e.g. 'my-repo/my-image' (required for 'list_versions' and 'get')")),
-		mcp.WithString("version", mcp.Description("package version (required for 'get')")),
-		mcp.WithString("q", mcp.Description("search query (for 'list')")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithDescription("Read package registry: list packages (one entry per version, filter via 'q'/'type'), list versions, or get a version."),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "list_versions", "get")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description("user or org")),
+		mcp.WithString("type", mcp.Description("container/npm/maven/pypi/cargo/generic; required except 'list'")),
+		mcp.WithString("name", mcp.Description("slashes auto-encoded; required except 'list'")),
+		mcp.WithString("version", mcp.Description("for 'get'")),
+		mcp.WithString("q", mcp.Description("search query")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	PackageWriteTool = mcp.NewTool(
 		PackageWriteToolName,
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a package version")),
-		mcp.WithDescription("Modify the package registry. Use method 'delete' to delete a specific package version. This is destructive and irreversible."),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("package owner (user or org)")),
-		mcp.WithString("type", mcp.Required(), mcp.Description("package type, e.g. container, npm, maven, pypi, cargo, generic")),
-		mcp.WithString("name", mcp.Required(), mcp.Description("package name, slashes encoded automatically e.g. 'my-repo/my-image'")),
-		mcp.WithString("version", mcp.Required(), mcp.Description("package version")),
+		mcp.WithDescription("Delete a package version (irreversible)."),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("delete")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description("user or org")),
+		mcp.WithString("type", mcp.Required(), mcp.Description("container/npm/maven/pypi/cargo/generic")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("slashes auto-encoded")),
+		mcp.WithString("version", mcp.Required()),
 	)
 )
 

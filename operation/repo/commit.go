@@ -23,23 +23,21 @@ const (
 var (
 	ListRepoCommitsTool = mcp.NewTool(
 		ListRepoCommitsToolName,
-		mcp.WithDescription("List repository commits"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository commits")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("sha", mcp.Description("SHA or branch to start listing commits from")),
-		mcp.WithString("path", mcp.Description("path indicates that only commits that include the path's file/dir should be returned.")),
-		mcp.WithNumber("page", mcp.Required(), mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Required(), mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("sha", mcp.Description("starting SHA or branch")),
+		mcp.WithString("path", mcp.Description("only commits touching this path")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	GetCommitTool = mcp.NewTool(
 		GetCommitToolName,
-		mcp.WithDescription("Get details of a specific commit"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get commit details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("sha", mcp.Required(), mcp.Description("commit SHA")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("sha", mcp.Required()),
 	)
 )
 
@@ -65,20 +63,13 @@ func ListRepoCommitsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, err := params.GetIndex(args, "page")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-	pageSize, err := params.GetIndex(args, "perPage")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
+	page, pageSize := params.GetPagination(args, 30)
 	sha, _ := args["sha"].(string)
 	path, _ := args["path"].(string)
 	opt := gitea_sdk.ListCommitOptions{
 		ListOptions: gitea_sdk.ListOptions{
-			Page:     int(page),
-			PageSize: int(pageSize),
+			Page:     page,
+			PageSize: pageSize,
 		},
 		SHA:  sha,
 		Path: path,

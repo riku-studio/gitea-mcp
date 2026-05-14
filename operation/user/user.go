@@ -36,18 +36,18 @@ var (
 	// It is registered with a specific name and a description string.
 	GetMyUserInfoTool = mcp.NewTool(
 		GetMyUserInfoToolName,
-		mcp.WithDescription("Get my user info"),
+		mcp.WithDescription("Get current user"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get current user information")),
 	)
 
 	// GetUserOrgsTool is the MCP tool for listing organizations for the authenticated user.
-	// It supports pagination via "page" and "perPage" arguments with default values specified above.
+	// It supports pagination via "page" and "per_page" arguments with default values specified above.
 	GetUserOrgsTool = mcp.NewTool(
 		GetUserOrgsToolName,
-		mcp.WithDescription("Get organizations associated with the authenticated user"),
+		mcp.WithDescription("List current user's organizations"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get user organizations")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(defaultPage)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(defaultPageSize)),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(defaultPage)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(defaultPageSize)),
 	)
 )
 

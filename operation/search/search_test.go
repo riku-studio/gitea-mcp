@@ -16,7 +16,7 @@ func TestSearchToolsRequiredFields(t *testing.T) {
 		{
 			name:     "search_users",
 			tool:     SearchUsersTool,
-			required: []string{"keyword"},
+			required: []string{"query"},
 		},
 		{
 			name:     "search_org_teams",
@@ -26,7 +26,7 @@ func TestSearchToolsRequiredFields(t *testing.T) {
 		{
 			name:     "search_repos",
 			tool:     SearchReposTool,
-			required: []string{"keyword"},
+			required: []string{"query"},
 		},
 	}
 

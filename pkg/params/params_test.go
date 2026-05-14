@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func TestGetPagination(t *testing.T) {
+	page, perPage := GetPagination(map[string]any{"page": float64(2), "per_page": float64(40)}, 30)
+	if page != 2 || perPage != 40 {
+		t.Errorf("GetPagination = (%d, %d), want (2, 40)", page, perPage)
+	}
+	page, perPage = GetPagination(map[string]any{}, 30)
+	if page != 1 || perPage != 30 {
+		t.Errorf("GetPagination defaults = (%d, %d), want (1, 30)", page, perPage)
+	}
+}
+
 func TestToInt64(t *testing.T) {
 	tests := []struct {
 		name string

@@ -27,29 +27,29 @@ const (
 var (
 	NotificationReadTool = mcp.NewTool(
 		NotificationReadToolName,
-		mcp.WithDescription("Get notifications. Use method 'list' to list notifications (optionally scoped to a repo), 'get' to get a single notification thread by ID."),
+		mcp.WithDescription("Read notifications: list (optionally scoped to a repo) or get a thread by ID."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read notifications")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list", "get")),
-		mcp.WithString("owner", mcp.Description("repository owner (for 'list' to scope to a repo)")),
-		mcp.WithString("repo", mcp.Description("repository name (for 'list' to scope to a repo)")),
-		mcp.WithNumber("id", mcp.Description("notification thread ID (required for 'get')")),
-		mcp.WithString("status", mcp.Description("filter by status (for 'list')"), mcp.Enum("unread", "read", "pinned")),
-		mcp.WithString("subject_type", mcp.Description("filter by subject type (for 'list')"), mcp.Enum("Issue", "Pull", "Commit", "Repository")),
-		mcp.WithString("since", mcp.Description("filter notifications updated after this ISO 8601 timestamp (for 'list')")),
-		mcp.WithString("before", mcp.Description("filter notifications updated before this ISO 8601 timestamp (for 'list')")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "get")),
+		mcp.WithString("owner", mcp.Description("scope 'list' to a repo")),
+		mcp.WithString("repo", mcp.Description("scope 'list' to a repo")),
+		mcp.WithNumber("id", mcp.Description("thread ID (for 'get')")),
+		mcp.WithString("status", mcp.Enum("unread", "read", "pinned")),
+		mcp.WithString("subject_type", mcp.Enum("Issue", "Pull", "Commit", "Repository")),
+		mcp.WithString("since", mcp.Description("updated after ISO 8601")),
+		mcp.WithString("before", mcp.Description("updated before ISO 8601")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	NotificationWriteTool = mcp.NewTool(
 		NotificationWriteToolName,
-		mcp.WithDescription("Manage notifications. Use method 'mark_read' to mark a single notification as read, 'mark_all_read' to mark all notifications as read (optionally scoped to a repo)."),
+		mcp.WithDescription("Mark a notification or all notifications as read."),
 		mcp.WithToolAnnotation(annotation.Write("Manage notifications")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("mark_read", "mark_all_read")),
-		mcp.WithNumber("id", mcp.Description("notification thread ID (required for 'mark_read')")),
-		mcp.WithString("owner", mcp.Description("repository owner (for 'mark_all_read' to scope to a repo)")),
-		mcp.WithString("repo", mcp.Description("repository name (for 'mark_all_read' to scope to a repo)")),
-		mcp.WithString("last_read_at", mcp.Description("ISO 8601 timestamp, marks notifications before this time as read (for 'mark_all_read', defaults to now)")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("mark_read", "mark_all_read")),
+		mcp.WithNumber("id", mcp.Description("thread ID (for 'mark_read')")),
+		mcp.WithString("owner", mcp.Description("scope 'mark_all_read' to a repo")),
+		mcp.WithString("repo", mcp.Description("scope 'mark_all_read' to a repo")),
+		mcp.WithString("last_read_at", mcp.Description("ISO 8601; defaults to now")),
 	)
 )
 

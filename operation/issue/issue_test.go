@@ -201,7 +201,7 @@ func Test_getIssueByIndexFn_includesAttachments(t *testing.T) {
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
 	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-		"owner": owner, "repo": repo, "index": float64(42),
+		"owner": owner, "repo": repo, "issue_number": float64(42),
 	}}}
 	res, err := getIssueByIndexFn(context.Background(), req)
 	if err != nil {
@@ -250,7 +250,7 @@ func Test_getIssueCommentsByIndexFn_includesAttachments(t *testing.T) {
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
 	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-		"owner": owner, "repo": repo, "index": float64(7),
+		"owner": owner, "repo": repo, "issue_number": float64(7),
 	}}}
 	res, err := getIssueCommentsByIndexFn(context.Background(), req)
 	if err != nil {

@@ -27,24 +27,24 @@ const (
 var (
 	WikiReadTool = mcp.NewTool(
 		WikiReadToolName,
-		mcp.WithDescription("Read wiki page information. Use method 'list' to list pages, 'get' to get page content, 'get_revisions' for revision history."),
+		mcp.WithDescription("Read wiki: list pages, get content, revision history."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read wiki pages")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list", "get", "get_revisions")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("pageName", mcp.Description("wiki page name (required for 'get', 'get_revisions')")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "get", "get_revisions")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("pageName", mcp.Description("for 'get'/'get_revisions'")),
 	)
 
 	WikiWriteTool = mcp.NewTool(
 		WikiWriteToolName,
-		mcp.WithDescription("Create, update, or delete wiki pages."),
+		mcp.WithDescription("Write wiki pages: create, update, delete."),
 		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete wiki pages")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("pageName", mcp.Description("wiki page name (required for 'update', 'delete')")),
-		mcp.WithString("title", mcp.Description("wiki page title (required for 'create', optional for 'update')")),
-		mcp.WithString("content", mcp.Description("page content (required for 'create', 'update')")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "delete")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("pageName", mcp.Description("for 'update'/'delete'")),
+		mcp.WithString("title", mcp.Description("for 'create'")),
+		mcp.WithString("content", mcp.Description("for 'create'/'update'")),
 		mcp.WithString("message", mcp.Description("commit message")),
 	)
 )

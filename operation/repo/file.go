@@ -29,49 +29,47 @@ const (
 var (
 	GetFileContentTool = mcp.NewTool(
 		GetFileToolName,
-		mcp.WithDescription("Get file Content and Metadata"),
+		mcp.WithDescription("Get file content and metadata"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get file content")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("ref", mcp.Required(), mcp.Description("ref can be branch/tag/commit")),
-		mcp.WithString("filePath", mcp.Required(), mcp.Description("file path")),
-		mcp.WithBoolean("withLines", mcp.Description("whether to return file content with lines")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("ref", mcp.Required(), mcp.Description("branch, tag, or commit SHA")),
+		mcp.WithString("path", mcp.Required()),
+		mcp.WithBoolean("withLines", mcp.Description("return numbered lines")),
 	)
 
 	GetDirContentTool = mcp.NewTool(
 		GetDirToolName,
-		mcp.WithDescription("Get a list of entries in a directory"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get directory contents")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("ref", mcp.Required(), mcp.Description("ref can be branch/tag/commit")),
-		mcp.WithString("filePath", mcp.Required(), mcp.Description("directory path")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("ref", mcp.Required(), mcp.Description("branch, tag, or commit SHA")),
+		mcp.WithString("path", mcp.Required()),
 	)
 
 	CreateOrUpdateFileTool = mcp.NewTool(
 		CreateOrUpdateFileToolName,
-		mcp.WithDescription("Create or update a file. If sha is provided, updates the existing file; otherwise creates a new file."),
+		mcp.WithDescription("Create or update a file (provide sha to update an existing file)."),
 		mcp.WithToolAnnotation(annotation.Write("Create or update a file")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("filePath", mcp.Required(), mcp.Description("file path")),
-		mcp.WithString("content", mcp.Required(), mcp.Description("file content")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("path", mcp.Required()),
+		mcp.WithString("content", mcp.Required()),
 		mcp.WithString("message", mcp.Required(), mcp.Description("commit message")),
-		mcp.WithString("branch_name", mcp.Required(), mcp.Description("branch name")),
-		mcp.WithString("sha", mcp.Description("SHA of the existing file (required for update, omit for create)")),
-		mcp.WithString("new_branch_name", mcp.Description("new branch name (for create only)")),
+		mcp.WithString("branch_name", mcp.Required()),
+		mcp.WithString("sha", mcp.Description("existing file SHA (omit to create)")),
+		mcp.WithString("new_branch_name", mcp.Description("new branch (create only)")),
 	)
 
 	DeleteFileTool = mcp.NewTool(
 		DeleteFileToolName,
-		mcp.WithDescription("Delete file"),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a file")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("filePath", mcp.Required(), mcp.Description("file path")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("path", mcp.Required()),
 		mcp.WithString("message", mcp.Required(), mcp.Description("commit message")),
-		mcp.WithString("branch_name", mcp.Required(), mcp.Description("branch name")),
-		mcp.WithString("sha", mcp.Required(), mcp.Description("sha")),
+		mcp.WithString("branch_name", mcp.Required()),
+		mcp.WithString("sha", mcp.Required()),
 	)
 )
 
@@ -111,7 +109,7 @@ func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 		return to.ErrorResult(err)
 	}
 	ref, _ := args["ref"].(string)
-	filePath, err := params.GetString(args, "filePath")
+	filePath, err := params.GetString(args, "path")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -175,7 +173,7 @@ func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 		return to.ErrorResult(err)
 	}
 	ref, _ := args["ref"].(string)
-	filePath, err := params.GetString(args, "filePath")
+	filePath, err := params.GetString(args, "path")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -201,7 +199,7 @@ func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	filePath, err := params.GetString(args, "filePath")
+	filePath, err := params.GetString(args, "path")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -261,7 +259,7 @@ func DeleteFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	filePath, err := params.GetString(args, "filePath")
+	filePath, err := params.GetString(args, "path")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

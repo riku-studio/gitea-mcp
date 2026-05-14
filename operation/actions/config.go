@@ -48,29 +48,29 @@ func toSecretMetas(secrets []*gitea_sdk.Secret) []secretMeta {
 var (
 	ActionsConfigReadTool = mcp.NewTool(
 		ActionsConfigReadToolName,
-		mcp.WithDescription("Read Actions secrets and variables configuration."),
+		mcp.WithDescription("Read Actions secrets and variables."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions secrets and variables")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("list_repo_secrets", "list_org_secrets", "list_repo_variables", "get_repo_variable", "list_org_variables", "get_org_variable")),
-		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
-		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),
-		mcp.WithString("org", mcp.Description("organization name (required for org methods)")),
-		mcp.WithString("name", mcp.Description("variable name (required for get methods)")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list_repo_secrets", "list_org_secrets", "list_repo_variables", "get_repo_variable", "list_org_variables", "get_org_variable")),
+		mcp.WithString("owner", mcp.Description("for repo methods")),
+		mcp.WithString("repo", mcp.Description("for repo methods")),
+		mcp.WithString("org", mcp.Description("for org methods")),
+		mcp.WithString("name", mcp.Description("for get methods")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	ActionsConfigWriteTool = mcp.NewTool(
 		ActionsConfigWriteToolName,
-		mcp.WithDescription("Manage Actions secrets and variables: create, update, or delete."),
+		mcp.WithDescription("Write Actions secrets and variables: upsert, create, update, delete."),
 		mcp.WithToolAnnotation(annotation.Destructive("Manage Actions secrets and variables")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("upsert_repo_secret", "delete_repo_secret", "upsert_org_secret", "delete_org_secret", "create_repo_variable", "update_repo_variable", "delete_repo_variable", "create_org_variable", "update_org_variable", "delete_org_variable")),
-		mcp.WithString("owner", mcp.Description("repository owner (required for repo methods)")),
-		mcp.WithString("repo", mcp.Description("repository name (required for repo methods)")),
-		mcp.WithString("org", mcp.Description("organization name (required for org methods)")),
-		mcp.WithString("name", mcp.Description("secret or variable name (required for most methods)")),
-		mcp.WithString("data", mcp.Description("secret value (required for upsert secret methods)")),
-		mcp.WithString("value", mcp.Description("variable value (required for create/update variable methods)")),
-		mcp.WithString("description", mcp.Description("description for secret or variable")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("upsert_repo_secret", "delete_repo_secret", "upsert_org_secret", "delete_org_secret", "create_repo_variable", "update_repo_variable", "delete_repo_variable", "create_org_variable", "update_org_variable", "delete_org_variable")),
+		mcp.WithString("owner", mcp.Description("for repo methods")),
+		mcp.WithString("repo", mcp.Description("for repo methods")),
+		mcp.WithString("org", mcp.Description("for org methods")),
+		mcp.WithString("name", mcp.Description("secret or variable name")),
+		mcp.WithString("data", mcp.Description("secret value (upsert)")),
+		mcp.WithString("value", mcp.Description("variable value")),
+		mcp.WithString("description"),
 	)
 )
 

@@ -26,30 +26,30 @@ const (
 var (
 	MilestoneReadTool = mcp.NewTool(
 		MilestoneReadToolName,
-		mcp.WithDescription("Read milestone information. Use method 'get' to get a specific milestone, 'list' to list milestones."),
+		mcp.WithDescription("Read milestones: get one or list."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read milestones")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "list")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("id", mcp.Description("milestone id (required for 'get')")),
-		mcp.WithString("state", mcp.Description("milestone state (for 'list')"), mcp.DefaultString("all")),
-		mcp.WithString("name", mcp.Description("milestone name filter (for 'list')")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "list")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("id", mcp.Description("for 'get'")),
+		mcp.WithString("state", mcp.DefaultString("all")),
+		mcp.WithString("name", mcp.Description("name filter (for 'list')")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	MilestoneWriteTool = mcp.NewTool(
 		MilestoneWriteToolName,
-		mcp.WithDescription("Create, edit, or delete milestones."),
+		mcp.WithDescription("Write milestones: create, update, delete."),
 		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete milestones")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "edit", "delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("id", mcp.Description("milestone id (required for 'edit', 'delete')")),
-		mcp.WithString("title", mcp.Description("milestone title (required for 'create')")),
-		mcp.WithString("description", mcp.Description("milestone description")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "edit", "delete")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("id", mcp.Description("for 'update'/'delete'")),
+		mcp.WithString("title", mcp.Description("for 'create'")),
+		mcp.WithString("description"),
 		mcp.WithString("due_on", mcp.Description("due date")),
-		mcp.WithString("state", mcp.Description("milestone state, one of open, closed (for 'edit')")),
+		mcp.WithString("state", mcp.Enum("open", "closed")),
 	)
 )
 
@@ -87,6 +87,8 @@ func milestoneWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	switch method {
 	case "create":
 		return createMilestoneFn(ctx, req)
+	case "update":
+		return editMilestoneFn(ctx, req)
 	case "edit":
 		return editMilestoneFn(ctx, req)
 	case "delete":

@@ -26,54 +26,50 @@ const (
 var (
 	CreateReleaseTool = mcp.NewTool(
 		CreateReleaseToolName,
-		mcp.WithDescription("Create release"),
 		mcp.WithToolAnnotation(annotation.Write("Create a release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
-		mcp.WithString("target", mcp.Required(), mcp.Description("target commitish")),
-		mcp.WithString("title", mcp.Required(), mcp.Description("release title")),
-		mcp.WithBoolean("is_draft", mcp.Description("Whether the release is draft"), mcp.DefaultBool(false)),
-		mcp.WithBoolean("is_pre_release", mcp.Description("Whether the release is pre-release"), mcp.DefaultBool(false)),
-		mcp.WithString("body", mcp.Description("release body")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("tag_name", mcp.Required()),
+		mcp.WithString("target", mcp.Required(), mcp.Description("commitish")),
+		mcp.WithString("title", mcp.Required()),
+		mcp.WithBoolean("is_draft"),
+		mcp.WithBoolean("is_pre_release"),
+		mcp.WithString("body"),
 	)
 
 	DeleteReleaseTool = mcp.NewTool(
 		DeleteReleaseToolName,
-		mcp.WithDescription("Delete release"),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("id", mcp.Required(), mcp.Description("release id")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("id", mcp.Required()),
 	)
 
 	GetReleaseTool = mcp.NewTool(
 		GetReleaseToolName,
-		mcp.WithDescription("Get release"),
+		mcp.WithDescription("Get a release by ID"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get release details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("id", mcp.Required(), mcp.Description("release id")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("id", mcp.Required()),
 	)
 
 	GetLatestReleaseTool = mcp.NewTool(
 		GetLatestReleaseToolName,
-		mcp.WithDescription("Get latest release"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get latest release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
 	)
 
 	ListReleasesTool = mcp.NewTool(
 		ListReleasesToolName,
-		mcp.WithDescription("List releases"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List releases")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithBoolean("is_draft", mcp.Description("Whether the release is draft"), mcp.DefaultBool(false)),
-		mcp.WithBoolean("is_pre_release", mcp.Description("Whether the release is pre-release"), mcp.DefaultBool(false)),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(20), mcp.Min(1)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithBoolean("is_draft"),
+		mcp.WithBoolean("is_pre_release"),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(20), mcp.Min(1)),
 	)
 )
 
@@ -248,7 +244,7 @@ func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 		pIsPreRelease = new(isPreRelease)
 	}
 	page := params.GetOptionalInt(args, "page", 1)
-	pageSize := params.GetOptionalInt(args, "perPage", 20)
+	pageSize := params.GetOptionalInt(args, "per_page", 20)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

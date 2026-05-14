@@ -30,82 +30,81 @@ const (
 var (
 	ListRepoPullRequestsTool = mcp.NewTool(
 		ListRepoPullRequestsToolName,
-		mcp.WithDescription("List repository pull requests"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List pull requests")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("state", mcp.Description("state"), mcp.Enum("open", "closed", "all"), mcp.DefaultString("all")),
-		mcp.WithString("sort", mcp.Description("sort"), mcp.Enum("oldest", "recentupdate", "leastupdate", "mostcomment", "leastcomment", "priority"), mcp.DefaultString("recentupdate")),
-		mcp.WithNumber("milestone", mcp.Description("milestone")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("state", mcp.Enum("open", "closed", "all"), mcp.DefaultString("all")),
+		mcp.WithString("sort", mcp.Enum("oldest", "recentupdate", "leastupdate", "mostcomment", "leastcomment", "priority"), mcp.DefaultString("recentupdate")),
+		mcp.WithNumber("milestone"),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	PullRequestReadTool = mcp.NewTool(
 		PullRequestReadToolName,
-		mcp.WithDescription("Get pull request information. Use method 'get' for PR details, 'get_diff' for diff, 'get_reviews'/'get_review'/'get_review_comments' for review data."),
+		mcp.WithDescription("Read pull request: details, diff, changed files, head commit status, reviews."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read pull request details")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("get", "get_diff", "get_reviews", "get_review", "get_review_comments")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("index", mcp.Required(), mcp.Description("pull request index")),
-		mcp.WithNumber("review_id", mcp.Description("review ID (required for 'get_review', 'get_review_comments')")),
-		mcp.WithBoolean("binary", mcp.Description("whether to include binary file changes (for 'get_diff')")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("pull_number", mcp.Required()),
+		mcp.WithNumber("review_id", mcp.Description("for 'get_review'/'get_review_comments'")),
+		mcp.WithBoolean("binary", mcp.Description("include binary diff")),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 
 	PullRequestWriteTool = mcp.NewTool(
 		PullRequestWriteToolName,
-		mcp.WithDescription("Create, update, close, reopen, or merge pull requests, manage reviewers."),
+		mcp.WithDescription("Write pull requests: create, update, close, reopen, merge, update branch from base, manage reviewers."),
 		mcp.WithToolAnnotation(annotation.Write("Create, update, close, reopen, or merge pull requests")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "update", "close", "reopen", "merge", "add_reviewers", "remove_reviewers")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("index", mcp.Description("pull request index (required for all methods except 'create')")),
-		mcp.WithString("title", mcp.Description("PR title (required for 'create', optional for 'update', 'merge')")),
-		mcp.WithString("body", mcp.Description("PR body (required for 'create', optional for 'update')")),
-		mcp.WithString("head", mcp.Description("PR head branch (required for 'create')")),
-		mcp.WithString("base", mcp.Description("PR base branch (required for 'create', optional for 'update')")),
-		mcp.WithString("assignee", mcp.Description("username to assign (for 'update')")),
-		mcp.WithArray("assignees", mcp.Description("usernames to assign (for 'update')"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithNumber("milestone", mcp.Description("milestone number (for 'update')")),
-		mcp.WithString("state", mcp.Description("PR state (for 'update')"), mcp.Enum("open", "closed")),
-		mcp.WithBoolean("allow_maintainer_edit", mcp.Description("allow maintainer to edit (for 'update')")),
-		mcp.WithArray("labels", mcp.Description("array of label IDs (for 'create', 'update')"), mcp.Items(map[string]any{"type": "number"})),
-		mcp.WithString("deadline", mcp.Description("due date in ISO 8601 format (for 'create', 'update')")),
-		mcp.WithBoolean("remove_deadline", mcp.Description("unset due date (for 'update')")),
-		mcp.WithString("merge_style", mcp.Description("merge style (for 'merge')"), mcp.Enum("merge", "rebase", "rebase-merge", "squash", "fast-forward-only"), mcp.DefaultString("merge")),
-		mcp.WithString("message", mcp.Description("merge commit message (for 'merge') or dismissal reason")),
-		mcp.WithBoolean("delete_branch", mcp.Description("delete branch after merge (for 'merge')")),
-		mcp.WithBoolean("force_merge", mcp.Description("force merge even if checks are not passing (for 'merge')")),
-		mcp.WithBoolean("merge_when_checks_succeed", mcp.Description("auto-merge when checks succeed (for 'merge')")),
-		mcp.WithString("head_commit_id", mcp.Description("expected head commit SHA for merge conflict detection (for 'merge')")),
-		mcp.WithArray("reviewers", mcp.Description("reviewer usernames (for 'add_reviewers', 'remove_reviewers')"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithArray("team_reviewers", mcp.Description("team reviewer names (for 'add_reviewers', 'remove_reviewers')"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithBoolean("draft", mcp.Description("mark PR as draft (for 'create', 'update'). Gitea uses a 'WIP: ' title prefix for drafts.")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "close", "reopen", "merge", "update_branch", "add_reviewers", "remove_reviewers")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("pull_number", mcp.Description("required except for 'create'")),
+		mcp.WithString("title", mcp.Description("required for 'create'; optional for 'update'/'merge'")),
+		mcp.WithString("body", mcp.Description("required for 'create'; optional for 'update'")),
+		mcp.WithString("head", mcp.Description("head branch (required for 'create')")),
+		mcp.WithString("base", mcp.Description("base branch (required for 'create')")),
+		mcp.WithString("assignee", mcp.Description("for 'update'")),
+		mcp.WithArray("assignees", mcp.Description("for 'update'"), mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithNumber("milestone", mcp.Description("for 'update'")),
+		mcp.WithString("state", mcp.Description("for 'update'"), mcp.Enum("open", "closed")),
+		mcp.WithBoolean("allow_maintainer_edit", mcp.Description("for 'update'")),
+		mcp.WithArray("labels", mcp.Description("label IDs"), mcp.Items(map[string]any{"type": "number"})),
+		mcp.WithString("deadline", mcp.Description("ISO 8601")),
+		mcp.WithBoolean("remove_deadline", mcp.Description("for 'update'")),
+		mcp.WithString("merge_style", mcp.Description("for 'merge'"), mcp.Enum("merge", "rebase", "rebase-merge", "squash", "fast-forward-only"), mcp.DefaultString("merge")),
+		mcp.WithString("message", mcp.Description("merge commit message or dismissal reason")),
+		mcp.WithBoolean("delete_branch", mcp.Description("for 'merge'")),
+		mcp.WithBoolean("force_merge", mcp.Description("merge even if checks fail")),
+		mcp.WithBoolean("merge_when_checks_succeed", mcp.Description("for 'merge'")),
+		mcp.WithString("head_commit_id", mcp.Description("expected head SHA for conflict detection")),
+		mcp.WithArray("reviewers", mcp.Description("for 'add_reviewers'/'remove_reviewers'"), mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithArray("team_reviewers", mcp.Description("for 'add_reviewers'/'remove_reviewers'"), mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithBoolean("draft", mcp.Description("uses 'WIP: ' title prefix")),
 	)
 
 	PullRequestReviewWriteTool = mcp.NewTool(
 		PullRequestReviewWriteToolName,
-		mcp.WithDescription("Manage pull request reviews: create, submit, delete, or dismiss."),
+		mcp.WithDescription("Write PR reviews: create, submit, delete, dismiss."),
 		mcp.WithToolAnnotation(annotation.Write("Submit a pull request review")),
-		mcp.WithString("method", mcp.Required(), mcp.Description("operation to perform"), mcp.Enum("create", "submit", "delete", "dismiss")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("index", mcp.Required(), mcp.Description("pull request index")),
-		mcp.WithNumber("review_id", mcp.Description("review ID (required for 'submit', 'delete', 'dismiss')")),
-		mcp.WithString("state", mcp.Description("review state"), mcp.Enum("APPROVED", "REQUEST_CHANGES", "COMMENT", "PENDING")),
-		mcp.WithString("body", mcp.Description("review body/comment")),
-		mcp.WithString("commit_id", mcp.Description("commit SHA to review (for 'create')")),
-		mcp.WithString("message", mcp.Description("dismissal reason (for 'dismiss')")),
-		mcp.WithArray("comments", mcp.Description("inline review comments (for 'create')"), mcp.Items(map[string]any{
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "submit", "delete", "dismiss")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("pull_number", mcp.Required()),
+		mcp.WithNumber("review_id", mcp.Description("required except for 'create'")),
+		mcp.WithString("state", mcp.Enum("APPROVED", "REQUEST_CHANGES", "COMMENT", "PENDING")),
+		mcp.WithString("body"),
+		mcp.WithString("commit_id", mcp.Description("for 'create'")),
+		mcp.WithString("message", mcp.Description("dismissal reason")),
+		mcp.WithArray("comments", mcp.Description("inline comments (for 'create')"), mcp.Items(map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"path":         map[string]any{"type": "string", "description": "file path to comment on"},
-				"body":         map[string]any{"type": "string", "description": "comment body"},
-				"old_line_num": map[string]any{"type": "number", "description": "line number in the old file (for deletions/changes)"},
-				"new_line_num": map[string]any{"type": "number", "description": "line number in the new file (for additions/changes)"},
+				"path":         map[string]any{"type": "string"},
+				"body":         map[string]any{"type": "string"},
+				"old_line_num": map[string]any{"type": "number", "description": "old-file line (deletions)"},
+				"new_line_num": map[string]any{"type": "number", "description": "new-file line (additions)"},
 			},
 		})),
 	)
@@ -140,6 +139,10 @@ func pullRequestReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		return getPullRequestByIndexFn(ctx, req)
 	case "get_diff":
 		return getPullRequestDiffFn(ctx, req)
+	case "get_files":
+		return getPullRequestFilesFn(ctx, req)
+	case "get_status":
+		return getPullRequestStatusFn(ctx, req)
 	case "get_reviews":
 		return listPullRequestReviewsFn(ctx, req)
 	case "get_review":
@@ -167,6 +170,8 @@ func pullRequestWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 		return reopenPullRequestFn(ctx, req)
 	case "merge":
 		return mergePullRequestFn(ctx, req)
+	case "update_branch":
+		return updatePullRequestBranchFn(ctx, req)
 	case "add_reviewers":
 		return createPullRequestReviewerFn(ctx, req)
 	case "remove_reviewers":
@@ -185,7 +190,7 @@ func closePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -215,7 +220,7 @@ func reopenPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "index")
+	index, err := params.GetIndex(req.GetArguments(), "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -266,7 +271,7 @@ func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -303,7 +308,7 @@ func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -446,7 +451,7 @@ func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -489,7 +494,7 @@ func deletePullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -532,7 +537,7 @@ func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -567,7 +572,7 @@ func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -600,7 +605,7 @@ func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolReques
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -633,7 +638,7 @@ func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -698,7 +703,7 @@ func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -742,7 +747,7 @@ func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -782,7 +787,7 @@ func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -827,7 +832,7 @@ func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -891,7 +896,7 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(args, "index")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -959,4 +964,90 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	}
 
 	return to.TextResult(slimPullRequest(pr))
+}
+
+func updatePullRequestBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	log.Debugf("Called updatePullRequestBranchFn")
+	args := req.GetArguments()
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, "pull_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	path := fmt.Sprintf("repos/%s/%s/pulls/%d/update", url.PathEscape(owner), url.PathEscape(repo), index)
+	if _, err := gitea.DoJSON(ctx, "POST", path, nil, nil, nil); err != nil {
+		return to.ErrorResult(fmt.Errorf("update %v/%v/pr/%v branch err: %v", owner, repo, index, err))
+	}
+	return to.TextResult(map[string]any{"message": "branch updated from base"})
+}
+
+func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	log.Debugf("Called getPullRequestFilesFn")
+	args := req.GetArguments()
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, "pull_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	page, pageSize := params.GetPagination(args, 30)
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+	files, _, err := client.ListPullRequestFiles(owner, repo, index, gitea_sdk.ListPullRequestFilesOptions{
+		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+	})
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v files err: %v", owner, repo, index, err))
+	}
+	return to.TextResult(files)
+}
+
+func getPullRequestStatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	log.Debugf("Called getPullRequestStatusFn")
+	args := req.GetArguments()
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, "pull_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+	pr, _, err := client.GetPullRequest(owner, repo, index)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
+	}
+	if pr.Head == nil || pr.Head.Sha == "" {
+		return to.ErrorResult(fmt.Errorf("pr %v/%v/%v has no head SHA", owner, repo, index))
+	}
+
+	status, _, err := client.GetCombinedStatus(owner, repo, pr.Head.Sha)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v status err: %v", owner, repo, index, err))
+	}
+	return to.TextResult(status)
 }

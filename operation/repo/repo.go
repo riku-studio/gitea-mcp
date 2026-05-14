@@ -29,48 +29,44 @@ const (
 var (
 	CreateRepoTool = mcp.NewTool(
 		CreateRepoToolName,
-		mcp.WithDescription("Create repository in personal account or organization"),
 		mcp.WithToolAnnotation(annotation.Write("Create a new repository")),
-		mcp.WithString("name", mcp.Required(), mcp.Description("Name of the repository to create")),
-		mcp.WithString("description", mcp.Description("Description of the repository to create")),
-		mcp.WithBoolean("private", mcp.Description("Whether the repository is private")),
-		mcp.WithString("issue_labels", mcp.Description("Issue Label set to use")),
-		mcp.WithBoolean("auto_init", mcp.Description("Whether the repository should be auto-intialized?")),
-		mcp.WithBoolean("template", mcp.Description("Whether the repository is template")),
-		mcp.WithString("gitignores", mcp.Description("Gitignores to use")),
-		mcp.WithString("license", mcp.Description("License to use")),
-		mcp.WithString("readme", mcp.Description("Readme of the repository to create")),
-		mcp.WithString("default_branch", mcp.Description("DefaultBranch of the repository (used when initializes and in template)")),
-		mcp.WithString("trust_model", mcp.Description("Trust model for verifying GPG signatures"), mcp.Enum("default", "collaborator", "committer", "collaboratorcommitter")),
-		mcp.WithString("object_format_name", mcp.Description("Object format: sha1 or sha256"), mcp.Enum("sha1", "sha256")),
-		mcp.WithString("organization", mcp.Description("Organization name to create repository in (optional - defaults to personal account)")),
+		mcp.WithString("name", mcp.Required()),
+		mcp.WithString("description"),
+		mcp.WithBoolean("private"),
+		mcp.WithString("issue_labels"),
+		mcp.WithBoolean("auto_init"),
+		mcp.WithBoolean("template"),
+		mcp.WithString("gitignores"),
+		mcp.WithString("license"),
+		mcp.WithString("readme"),
+		mcp.WithString("default_branch"),
+		mcp.WithString("trust_model", mcp.Enum("default", "collaborator", "committer", "collaboratorcommitter")),
+		mcp.WithString("object_format_name", mcp.Enum("sha1", "sha256")),
+		mcp.WithString("organization", mcp.Description("defaults to personal account")),
 	)
 
 	ForkRepoTool = mcp.NewTool(
 		ForkRepoToolName,
-		mcp.WithDescription("Fork repository"),
 		mcp.WithToolAnnotation(annotation.Write("Fork a repository")),
-		mcp.WithString("user", mcp.Required(), mcp.Description("User name of the repository to fork")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("Repository name to fork")),
-		mcp.WithString("organization", mcp.Description("Organization name to fork")),
-		mcp.WithString("name", mcp.Description("Name of the forked repository")),
+		mcp.WithString("user", mcp.Required(), mcp.Description("owner of source repo")),
+		mcp.WithString("repo", mcp.Required()),
+		mcp.WithString("organization", mcp.Description("target org")),
+		mcp.WithString("name", mcp.Description("fork name")),
 	)
 
 	ListMyReposTool = mcp.NewTool(
 		ListMyReposToolName,
-		mcp.WithDescription("List my repositories"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List my repositories")),
-		mcp.WithNumber("page", mcp.Required(), mcp.Description("Page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Required(), mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30), mcp.Min(1)),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
 
 	ListOrgReposTool = mcp.NewTool(
 		ListOrgReposToolName,
-		mcp.WithDescription("List repositories of an organization"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List organization repositories")),
-		mcp.WithString("org", mcp.Required(), mcp.Description("Organization name")),
-		mcp.WithNumber("page", mcp.Required(), mcp.Description("Page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("pageSize", mcp.Required(), mcp.Description("Page size number"), mcp.DefaultNumber(100), mcp.Min(1)),
+		mcp.WithString("org", mcp.Required()),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(100), mcp.Min(1)),
 	)
 )
 
@@ -210,18 +206,11 @@ func ListOrgReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if !ok {
 		return to.ErrorResult(errors.New("organization name is required"))
 	}
-	page, ok := req.GetArguments()["page"].(float64)
-	if !ok {
-		page = 1
-	}
-	pageSize, ok := req.GetArguments()["pageSize"].(float64)
-	if !ok {
-		pageSize = 100
-	}
+	page, pageSize := params.GetPagination(req.GetArguments(), 100)
 	opt := gitea_sdk.ListOrgReposOptions{
 		ListOptions: gitea_sdk.ListOptions{
-			Page:     int(page),
-			PageSize: int(pageSize),
+			Page:     page,
+			PageSize: pageSize,
 		},
 	}
 	client, err := gitea.ClientFromContext(ctx)

@@ -25,41 +25,37 @@ const (
 var (
 	CreateTagTool = mcp.NewTool(
 		CreateTagToolName,
-		mcp.WithDescription("Create tag"),
 		mcp.WithToolAnnotation(annotation.Write("Create a tag")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
-		mcp.WithString("target", mcp.Description("target commitish"), mcp.DefaultString("")),
-		mcp.WithString("message", mcp.Description("tag message"), mcp.DefaultString("")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("tag_name", mcp.Required()),
+		mcp.WithString("target", mcp.Description("commitish")),
+		mcp.WithString("message", mcp.Description("tag message")),
 	)
 
 	DeleteTagTool = mcp.NewTool(
 		DeleteTagToolName,
-		mcp.WithDescription("Delete tag"),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a tag")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("tag_name", mcp.Required()),
 	)
 
 	GetTagTool = mcp.NewTool(
 		GetTagToolName,
-		mcp.WithDescription("Get tag"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get tag details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("tag_name", mcp.Required(), mcp.Description("tag name")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("tag_name", mcp.Required()),
 	)
 
 	ListTagsTool = mcp.NewTool(
 		ListTagsToolName,
-		mcp.WithDescription("List tags"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List tags")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(20), mcp.Min(1)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(20), mcp.Min(1)),
 	)
 )
 
@@ -184,7 +180,7 @@ func ListTagsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 		return to.ErrorResult(err)
 	}
 	page := params.GetOptionalInt(args, "page", 1)
-	pageSize := params.GetOptionalInt(args, "perPage", 20)
+	pageSize := params.GetOptionalInt(args, "per_page", 20)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

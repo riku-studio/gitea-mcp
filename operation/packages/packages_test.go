@@ -94,10 +94,10 @@ func TestPackageReadList(t *testing.T) {
 	t.Run("with pagination", func(t *testing.T) {
 		req := mcp.CallToolRequest{}
 		req.Params.Arguments = map[string]any{
-			"method":  "list",
-			"owner":   "test-org",
-			"page":    float64(2),
-			"perPage": float64(10),
+			"method":   "list",
+			"owner":    "test-org",
+			"page":     float64(2),
+			"per_page": float64(10),
 		}
 
 		_, err := packageReadFn(ctx, req)

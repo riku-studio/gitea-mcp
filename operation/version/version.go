@@ -22,7 +22,6 @@ const (
 
 var GetGiteaMCPServerVersionTool = mcp.NewTool(
 	GetGiteaMCPServerVersion,
-	mcp.WithDescription("Get Gitea MCP Server Version"),
 	mcp.WithToolAnnotation(annotation.ReadOnly("Get server version")),
 )
 

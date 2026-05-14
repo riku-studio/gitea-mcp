@@ -24,31 +24,28 @@ const (
 var (
 	CreateBranchTool = mcp.NewTool(
 		CreateBranchToolName,
-		mcp.WithDescription("Create branch"),
 		mcp.WithToolAnnotation(annotation.Write("Create a new branch")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("branch", mcp.Required(), mcp.Description("Name of the branch to create")),
-		mcp.WithString("old_branch", mcp.Required(), mcp.Description("Name of the old branch to create from")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("branch", mcp.Required()),
+		mcp.WithString("old_branch", mcp.Description("source branch (default: repo default)")),
 	)
 
 	DeleteBranchTool = mcp.NewTool(
 		DeleteBranchToolName,
-		mcp.WithDescription("Delete branch"),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a branch")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithString("branch", mcp.Required(), mcp.Description("Name of the branch to delete")),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithString("branch", mcp.Required()),
 	)
 
 	ListBranchesTool = mcp.NewTool(
 		ListBranchesToolName,
-		mcp.WithDescription("List branches"),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository branches")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("repository owner")),
-		mcp.WithString("repo", mcp.Required(), mcp.Description("repository name")),
-		mcp.WithNumber("page", mcp.Description("page number"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("perPage", mcp.Description("results per page (may be capped by the server's MAX_RESPONSE_ITEMS setting, default 50)"), mcp.DefaultNumber(30)),
+		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
+		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
 	)
 )
 

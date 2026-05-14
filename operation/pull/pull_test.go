@@ -80,11 +80,11 @@ func Test_editPullRequestFn(t *testing.T) {
 			req := mcp.CallToolRequest{
 				Params: mcp.CallToolParams{
 					Arguments: map[string]any{
-						"owner": owner,
-						"repo":  repo,
-						"index": ii.val,
-						"title": "WIP: my feature",
-						"state": "open",
+						"owner":       owner,
+						"repo":        repo,
+						"pull_number": ii.val,
+						"title":       "WIP: my feature",
+						"state":       "open",
 					},
 				},
 			}
@@ -195,7 +195,7 @@ func Test_mergePullRequestFn(t *testing.T) {
 					Arguments: map[string]any{
 						"owner":         owner,
 						"repo":          repo,
-						"index":         ii.val,
+						"pull_number":   ii.val,
 						"merge_style":   "squash",
 						"title":         "feat: my squashed commit",
 						"message":       "Squash merge of PR #5",
@@ -308,7 +308,7 @@ func Test_mergePullRequestFn_newParams(t *testing.T) {
 			Arguments: map[string]any{
 				"owner":                     owner,
 				"repo":                      repo,
-				"index":                     float64(index),
+				"pull_number":               float64(index),
 				"merge_style":               "merge",
 				"force_merge":               true,
 				"merge_when_checks_succeed": true,
@@ -616,9 +616,9 @@ func Test_editPullRequestFn_draft(t *testing.T) {
 			}()
 
 			args := map[string]any{
-				"owner": owner,
-				"repo":  repo,
-				"index": float64(index),
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": float64(index),
 			}
 			if tc.title != "" {
 				args["title"] = tc.title
@@ -720,10 +720,10 @@ func Test_getPullRequestDiffFn(t *testing.T) {
 			req := mcp.CallToolRequest{
 				Params: mcp.CallToolParams{
 					Arguments: map[string]any{
-						"owner":  owner,
-						"repo":   repo,
-						"index":  ii.val,
-						"binary": true,
+						"owner":       owner,
+						"repo":        repo,
+						"pull_number": ii.val,
+						"binary":      true,
 					},
 				},
 			}
@@ -805,7 +805,7 @@ func Test_getPullRequestByIndexFn_includesAttachments(t *testing.T) {
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
 	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-		"owner": owner, "repo": repo, "index": float64(index),
+		"owner": owner, "repo": repo, "pull_number": float64(index),
 	}}}
 	res, err := getPullRequestByIndexFn(context.Background(), req)
 	if err != nil {
@@ -853,7 +853,7 @@ func Test_getPullRequestByIndexFn_emptyAssetsLeavesBody(t *testing.T) {
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
 	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-		"owner": owner, "repo": repo, "index": float64(index),
+		"owner": owner, "repo": repo, "pull_number": float64(index),
 	}}}
 	res, err := getPullRequestByIndexFn(context.Background(), req)
 	if err != nil {
@@ -897,7 +897,7 @@ func Test_getPullRequestByIndexFn_assetsFailureNonFatal(t *testing.T) {
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
 	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-		"owner": owner, "repo": repo, "index": float64(index),
+		"owner": owner, "repo": repo, "pull_number": float64(index),
 	}}}
 	res, err := getPullRequestByIndexFn(context.Background(), req)
 	if err != nil {
@@ -954,10 +954,10 @@ func Test_closePullRequestFn(t *testing.T) {
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Arguments: map[string]any{
-				"method": "close",
-				"owner":  owner,
-				"repo":   repo,
-				"index":  float64(index),
+				"method":      "close",
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": float64(index),
 			},
 		},
 	}
@@ -1018,10 +1018,10 @@ func Test_reopenPullRequestFn(t *testing.T) {
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Arguments: map[string]any{
-				"method": "reopen",
-				"owner":  owner,
-				"repo":   repo,
-				"index":  float64(index),
+				"method":      "reopen",
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": float64(index),
 			},
 		},
 	}

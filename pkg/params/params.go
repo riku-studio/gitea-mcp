@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+// Shared parameter description strings used across tools. Extracted to avoid
+// repeating the same boilerplate in every tool schema (saves tokens in the
+// tool list sent to MCP clients).
+const (
+	OwnerDesc      = "repo owner"
+	RepoDesc       = "repo name"
+	PageDesc       = "page"
+	PaginationDesc = "results per page"
+)
+
 // GetString extracts a required string parameter from MCP tool arguments.
 func GetString(args map[string]any, key string) (string, error) {
 	val, ok := args[key].(string)
@@ -42,9 +52,9 @@ func GetStringSlice(args map[string]any, key string) []string {
 	return out
 }
 
-// GetPagination extracts page and perPage parameters, returning them as ints.
+// GetPagination extracts page and per_page parameters, returning them as ints.
 func GetPagination(args map[string]any, defaultPageSize int64) (page, pageSize int) {
-	return int(GetOptionalInt(args, "page", 1)), int(GetOptionalInt(args, "perPage", defaultPageSize))
+	return int(GetOptionalInt(args, "page", 1)), int(GetOptionalInt(args, "per_page", defaultPageSize))
 }
 
 // ToInt64 converts a value to int64, accepting both float64 (JSON number) and
