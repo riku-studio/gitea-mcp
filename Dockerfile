@@ -22,11 +22,14 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Final stage
 FROM gcr.io/distroless/static-debian12:nonroot
 
+ARG VERSION=dev
+
 WORKDIR /app
 COPY --from=builder --chown=nonroot:nonroot /app/gitea-mcp .
 
 USER nonroot:nonroot
 
 LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.source="https://gitea.com/gitea/gitea-mcp"
 
 CMD ["/app/gitea-mcp"]
