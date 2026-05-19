@@ -40,29 +40,6 @@ func TestSlimIssue(t *testing.T) {
 	}
 }
 
-func TestBodyWithAttachments(t *testing.T) {
-	atts := []*gitea_sdk.Attachment{
-		{Name: "shot.png", DownloadURL: "https://example/shot.png"},
-		{Name: "log.txt", DownloadURL: "https://example/log.txt"},
-	}
-	got := bodyWithAttachments("see attached", atts)
-	want := "see attached\n\n[shot.png](https://example/shot.png)\n[log.txt](https://example/log.txt)"
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
-	}
-
-	if got := bodyWithAttachments("only body", nil); got != "only body" {
-		t.Errorf("nil attachments should return body unchanged, got %q", got)
-	}
-	if got := bodyWithAttachments("", atts); got != "[shot.png](https://example/shot.png)\n[log.txt](https://example/log.txt)" {
-		t.Errorf("empty body should drop separator, got %q", got)
-	}
-	skipped := []*gitea_sdk.Attachment{nil, {Name: "noop", DownloadURL: ""}}
-	if got := bodyWithAttachments("body", skipped); got != "body" {
-		t.Errorf("nil/empty-URL attachments should be skipped, got %q", got)
-	}
-}
-
 func TestSlimIssues_ListIsSlimmer(t *testing.T) {
 	i := &gitea_sdk.Issue{
 		Index:  1,

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -14,11 +15,13 @@ func TextResult(v any) (*mcp.CallToolResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshal result err: %v", err)
 	}
-	log.Debugf("Text Result: %s", string(resultBytes))
+	if flag.Debug {
+		log.Debugf("Text Result: %s", string(resultBytes))
+	}
 	return mcp.NewToolResultText(string(resultBytes)), nil
 }
 
 func ErrorResult(err error) (*mcp.CallToolResult, error) {
-	log.Errorf(err.Error())
+	log.Errorf("%s", err.Error())
 	return nil, err
 }

@@ -79,24 +79,6 @@ func SetDefault(logger *zap.Logger) {
 	}
 }
 
-func New() *Logger {
-	return &Logger{
-		defaultLogger: Default(),
-	}
-}
-
-type Logger struct {
-	defaultLogger *zap.Logger
-}
-
-func (l *Logger) Infof(msg string, args ...any) {
-	l.defaultLogger.Sugar().Infof(msg, args...)
-}
-
-func (l *Logger) Errorf(msg string, args ...any) {
-	l.defaultLogger.Sugar().Errorf(msg, args...)
-}
-
 func Debug(msg string, fields ...zap.Field) {
 	Default().Debug(msg, fields...)
 }

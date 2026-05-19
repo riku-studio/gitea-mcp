@@ -1,62 +1,10 @@
 package issue
 
 import (
-	"fmt"
-	"strings"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
-
-func userLogin(u *gitea_sdk.User) string {
-	if u == nil {
-		return ""
-	}
-	return u.UserName
-}
-
-func userLogins(users []*gitea_sdk.User) []string {
-	if len(users) == 0 {
-		return nil
-	}
-	out := make([]string, 0, len(users))
-	for _, u := range users {
-		if u != nil {
-			out = append(out, u.UserName)
-		}
-	}
-	return out
-}
-
-func labelNames(labels []*gitea_sdk.Label) []string {
-	if len(labels) == 0 {
-		return nil
-	}
-	out := make([]string, 0, len(labels))
-	for _, l := range labels {
-		if l != nil {
-			out = append(out, l.Name)
-		}
-	}
-	return out
-}
-
-func bodyWithAttachments(body string, atts []*gitea_sdk.Attachment) string {
-	links := make([]string, 0, len(atts))
-	for _, a := range atts {
-		if a == nil || a.DownloadURL == "" {
-			continue
-		}
-		links = append(links, fmt.Sprintf("[%s](%s)", a.Name, a.DownloadURL))
-	}
-	if len(links) == 0 {
-		return body
-	}
-	joined := strings.Join(links, "\n")
-	if body == "" {
-		return joined
-	}
-	return body + "\n\n" + joined
-}
 
 func slimIssue(i *gitea_sdk.Issue) map[string]any {
 	if i == nil {
@@ -68,15 +16,15 @@ func slimIssue(i *gitea_sdk.Issue) map[string]any {
 		"body":       i.Body,
 		"state":      i.State,
 		"html_url":   i.HTMLURL,
-		"user":       userLogin(i.Poster),
-		"labels":     labelNames(i.Labels),
+		"user":       slim.UserLogin(i.Poster),
+		"labels":     slim.LabelNames(i.Labels),
 		"comments":   i.Comments,
 		"created_at": i.Created,
 		"updated_at": i.Updated,
 		"closed_at":  i.Closed,
 	}
 	if len(i.Assignees) > 0 {
-		m["assignees"] = userLogins(i.Assignees)
+		m["assignees"] = slim.UserLogins(i.Assignees)
 	}
 	if i.Milestone != nil {
 		m["milestone"] = map[string]any{
@@ -107,13 +55,13 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 			"title":      i.Title,
 			"state":      i.State,
 			"html_url":   i.HTMLURL,
-			"user":       userLogin(i.Poster),
+			"user":       slim.UserLogin(i.Poster),
 			"comments":   i.Comments,
 			"created_at": i.Created,
 			"updated_at": i.Updated,
 		}
 		if len(i.Labels) > 0 {
-			m["labels"] = labelNames(i.Labels)
+			m["labels"] = slim.LabelNames(i.Labels)
 		}
 		if i.Ref != "" {
 			m["ref"] = i.Ref
@@ -133,26 +81,9 @@ func slimComment(c *gitea_sdk.Comment) map[string]any {
 	return map[string]any{
 		"id":         c.ID,
 		"body":       c.Body,
-		"user":       userLogin(c.Poster),
+		"user":       slim.UserLogin(c.Poster),
 		"html_url":   c.HTMLURL,
 		"created_at": c.Created,
 		"updated_at": c.Updated,
 	}
-}
-
-func slimLabels(labels []*gitea_sdk.Label) []map[string]any {
-	out := make([]map[string]any, 0, len(labels))
-	for _, l := range labels {
-		if l == nil {
-			continue
-		}
-		out = append(out, map[string]any{
-			"id":          l.ID,
-			"name":        l.Name,
-			"color":       l.Color,
-			"description": l.Description,
-			"exclusive":   l.Exclusive,
-		})
-	}
-	return out
 }

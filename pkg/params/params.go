@@ -16,16 +16,15 @@ const (
 	PaginationDesc = "results per page"
 )
 
-// GetString extracts a required string parameter from MCP tool arguments.
+// GetString extracts a required string parameter. Empty strings are treated as missing.
 func GetString(args map[string]any, key string) (string, error) {
 	val, ok := args[key].(string)
-	if !ok {
+	if !ok || val == "" {
 		return "", fmt.Errorf("%s is required", key)
 	}
 	return val, nil
 }
 
-// GetOptionalString extracts an optional string parameter with a default value.
 func GetOptionalString(args map[string]any, key, defaultVal string) string {
 	if val, ok := args[key].(string); ok {
 		return val
@@ -33,7 +32,6 @@ func GetOptionalString(args map[string]any, key, defaultVal string) string {
 	return defaultVal
 }
 
-// GetStringSlice extracts an optional string slice parameter from MCP tool arguments.
 func GetStringSlice(args map[string]any, key string) []string {
 	val, ok := args[key]
 	if !ok {
@@ -52,13 +50,11 @@ func GetStringSlice(args map[string]any, key string) []string {
 	return out
 }
 
-// GetPagination extracts page and per_page parameters, returning them as ints.
 func GetPagination(args map[string]any, defaultPageSize int64) (page, pageSize int) {
 	return int(GetOptionalInt(args, "page", 1)), int(GetOptionalInt(args, "per_page", defaultPageSize))
 }
 
-// ToInt64 converts a value to int64, accepting both float64 (JSON number) and
-// string representations. Returns false if the value cannot be converted.
+// ToInt64 accepts float64 (JSON number) and string representations.
 func ToInt64(val any) (int64, bool) {
 	switch v := val.(type) {
 	case float64:
@@ -74,10 +70,8 @@ func ToInt64(val any) (int64, bool) {
 	}
 }
 
-// GetIndex extracts a required integer parameter from MCP tool arguments.
-// It accepts both numeric (float64 from JSON) and string representations.
-// This provides better UX for LLM callers that may naturally use strings
-// for identifiers like issue/PR numbers.
+// GetIndex extracts a required integer. Accepts numeric or string forms — LLM callers
+// often pass identifiers like issue/PR numbers as strings.
 func GetIndex(args map[string]any, key string) (int64, error) {
 	val, exists := args[key]
 	if !exists {
@@ -95,7 +89,6 @@ func GetIndex(args map[string]any, key string) (int64, error) {
 	return 0, fmt.Errorf("%s must be a number or numeric string", key)
 }
 
-// GetInt64Slice extracts a required int64 slice parameter from MCP tool arguments.
 func GetInt64Slice(args map[string]any, key string) ([]int64, error) {
 	raw, ok := args[key].([]any)
 	if !ok {
@@ -112,7 +105,7 @@ func GetInt64Slice(args map[string]any, key string) ([]int64, error) {
 	return out, nil
 }
 
-// GetOptionalTime extracts an optional RFC3339 timestamp parameter, returning nil if missing or unparseable.
+// GetOptionalTime parses RFC3339, returning nil if missing or unparseable.
 func GetOptionalTime(args map[string]any, key string) *time.Time {
 	val, ok := args[key].(string)
 	if !ok {
@@ -124,9 +117,6 @@ func GetOptionalTime(args map[string]any, key string) *time.Time {
 	return nil
 }
 
-// GetOptionalInt extracts an optional integer parameter from MCP tool arguments.
-// Returns defaultVal if the key is missing or the value cannot be parsed.
-// Accepts both float64 (JSON number) and string representations.
 func GetOptionalInt(args map[string]any, key string, defaultVal int64) int64 {
 	val, exists := args[key]
 	if !exists {
@@ -136,4 +126,31 @@ func GetOptionalInt(args map[string]any, key string, defaultVal int64) int64 {
 		return i
 	}
 	return defaultVal
+}
+
+// GetOptionalBoolPtr is for SDK fields where nil/false/true are distinct (e.g. "no change" vs "set to false").
+func GetOptionalBoolPtr(args map[string]any, key string) *bool {
+	if v, ok := args[key].(bool); ok {
+		return &v
+	}
+	return nil
+}
+
+// GetOptionalStringPtr returns nil when the key is missing OR the value is an empty string.
+// Use this for create/fork-style fields where "" is meaningless (e.g. fork target name).
+func GetOptionalStringPtr(args map[string]any, key string) *string {
+	if v, ok := args[key].(string); ok && v != "" {
+		return &v
+	}
+	return nil
+}
+
+// GetPresentStringPtr returns &v whenever the key is present as a string, including "".
+// Use this for PATCH-style fields where the SDK distinguishes "no change" (nil) from
+// "set to empty" (&""), e.g. clearing an issue body or label description.
+func GetPresentStringPtr(args map[string]any, key string) *string {
+	if v, ok := args[key].(string); ok {
+		return &v
+	}
+	return nil
 }

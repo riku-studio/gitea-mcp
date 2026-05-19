@@ -12,7 +12,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
@@ -125,14 +124,13 @@ func doJSONWithFallback(ctx context.Context, method string, paths []string, quer
 }
 
 func listRepoActionWorkflowsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionWorkflowsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 	query := url.Values{}
@@ -153,18 +151,17 @@ func listRepoActionWorkflowsFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func getRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getRepoActionWorkflowFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	workflowID, err := params.GetString(req.GetArguments(), "workflow_id")
-	if err != nil || workflowID == "" {
-		return to.ErrorResult(errors.New("workflow_id is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	var result any
@@ -181,22 +178,21 @@ func getRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 }
 
 func dispatchRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called dispatchRepoActionWorkflowFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	workflowID, err := params.GetString(req.GetArguments(), "workflow_id")
-	if err != nil || workflowID == "" {
-		return to.ErrorResult(errors.New("workflow_id is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	ref, err := params.GetString(req.GetArguments(), "ref")
-	if err != nil || ref == "" {
-		return to.ErrorResult(errors.New("ref is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	var inputs map[string]any
@@ -231,14 +227,13 @@ func dispatchRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) 
 }
 
 func listRepoActionRunsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionRunsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 	statusFilter, _ := req.GetArguments()["status"].(string)
@@ -264,14 +259,13 @@ func listRepoActionRunsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func getRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getRepoActionRunFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	runID, err := params.GetIndex(req.GetArguments(), "run_id")
 	if err != nil || runID <= 0 {
@@ -292,14 +286,13 @@ func getRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func cancelRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called cancelRepoActionRunFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	runID, err := params.GetIndex(req.GetArguments(), "run_id")
 	if err != nil || runID <= 0 {
@@ -319,14 +312,13 @@ func cancelRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 }
 
 func rerunRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called rerunRepoActionRunFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	runID, err := params.GetIndex(req.GetArguments(), "run_id")
 	if err != nil || runID <= 0 {
@@ -351,14 +343,13 @@ func rerunRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func listRepoActionJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionJobsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 	statusFilter, _ := req.GetArguments()["status"].(string)
@@ -384,14 +375,13 @@ func listRepoActionJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func listRepoActionRunJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionRunJobsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	runID, err := params.GetIndex(req.GetArguments(), "run_id")
 	if err != nil || runID <= 0 {
@@ -415,8 +405,6 @@ func listRepoActionRunJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	}
 	return to.TextResult(slimActionJobs(result))
 }
-
-// Log functions (merged from logs.go)
 
 func logPaths(owner, repo string, jobID int64) []string {
 	return []string{
@@ -473,7 +461,6 @@ func limitBytes(data []byte, maxBytes int) ([]byte, bool) {
 }
 
 func getRepoActionJobLogPreviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getRepoActionJobLogPreviewFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -508,7 +495,6 @@ func getRepoActionJobLogPreviewFn(ctx context.Context, req mcp.CallToolRequest) 
 }
 
 func downloadRepoActionJobLogFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called downloadRepoActionJobLogFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)

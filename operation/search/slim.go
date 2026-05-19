@@ -1,28 +1,15 @@
 package search
 
 import (
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
+
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
-
-func slimUserDetail(u *gitea_sdk.User) map[string]any {
-	if u == nil {
-		return nil
-	}
-	return map[string]any{
-		"id":         u.ID,
-		"login":      u.UserName,
-		"full_name":  u.FullName,
-		"email":      u.Email,
-		"avatar_url": u.AvatarURL,
-		"html_url":   u.HTMLURL,
-		"is_admin":   u.IsAdmin,
-	}
-}
 
 func slimUserDetails(users []*gitea_sdk.User) []map[string]any {
 	out := make([]map[string]any, 0, len(users))
 	for _, u := range users {
-		out = append(out, slimUserDetail(u))
+		out = append(out, slim.UserDetail(u))
 	}
 	return out
 }
@@ -47,66 +34,6 @@ func slimTeams(teams []*gitea_sdk.Team) []map[string]any {
 	return out
 }
 
-func slimRepo(r *gitea_sdk.Repository) map[string]any {
-	if r == nil {
-		return nil
-	}
-	m := map[string]any{
-		"id":                r.ID,
-		"full_name":         r.FullName,
-		"description":       r.Description,
-		"html_url":          r.HTMLURL,
-		"clone_url":         r.CloneURL,
-		"ssh_url":           r.SSHURL,
-		"default_branch":    r.DefaultBranch,
-		"private":           r.Private,
-		"fork":              r.Fork,
-		"archived":          r.Archived,
-		"language":          r.Language,
-		"stars_count":       r.Stars,
-		"forks_count":       r.Forks,
-		"open_issues_count": r.OpenIssues,
-		"open_pr_counter":   r.OpenPulls,
-		"created_at":        r.Created,
-		"updated_at":        r.Updated,
-	}
-	if r.Owner != nil {
-		m["owner"] = r.Owner.UserName
-	}
-	if len(r.Topics) > 0 {
-		m["topics"] = r.Topics
-	}
-	return m
-}
-
-func slimRepos(repos []*gitea_sdk.Repository) []map[string]any {
-	out := make([]map[string]any, 0, len(repos))
-	for _, r := range repos {
-		out = append(out, slimRepo(r))
-	}
-	return out
-}
-
-func userLogin(u *gitea_sdk.User) string {
-	if u == nil {
-		return ""
-	}
-	return u.UserName
-}
-
-func labelNames(labels []*gitea_sdk.Label) []string {
-	if len(labels) == 0 {
-		return nil
-	}
-	out := make([]string, 0, len(labels))
-	for _, l := range labels {
-		if l != nil {
-			out = append(out, l.Name)
-		}
-	}
-	return out
-}
-
 func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 	out := make([]map[string]any, 0, len(issues))
 	for _, i := range issues {
@@ -118,13 +45,13 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 			"title":      i.Title,
 			"state":      i.State,
 			"html_url":   i.HTMLURL,
-			"user":       userLogin(i.Poster),
+			"user":       slim.UserLogin(i.Poster),
 			"comments":   i.Comments,
 			"created_at": i.Created,
 			"updated_at": i.Updated,
 		}
 		if len(i.Labels) > 0 {
-			m["labels"] = labelNames(i.Labels)
+			m["labels"] = slim.LabelNames(i.Labels)
 		}
 		if i.Repository != nil {
 			m["repository"] = i.Repository.FullName

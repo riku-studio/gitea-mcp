@@ -7,7 +7,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
@@ -97,7 +96,6 @@ func notificationWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 }
 
 func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listNotificationsFn")
 	args := req.GetArguments()
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListNotificationOptions{
@@ -142,7 +140,6 @@ func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 }
 
 func getNotificationFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getNotificationFn")
 	id, err := params.GetIndex(req.GetArguments(), "id")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -159,7 +156,6 @@ func getNotificationFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 }
 
 func markNotificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called markNotificationReadFn")
 	id, err := params.GetIndex(req.GetArguments(), "id")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -179,7 +175,6 @@ func markNotificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 }
 
 func markAllNotificationsReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called markAllNotificationsReadFn")
 	args := req.GetArguments()
 	lastReadAt := time.Now()
 	if t := params.GetOptionalTime(args, "last_read_at"); t != nil {

@@ -46,7 +46,6 @@ func RegisterTool(s *server.MCPServer) {
 	for _, t := range domainTools {
 		s.AddTools(t.Tools()...)
 	}
-	s.DeleteTools("")
 	tool.WarnUnmatchedAllowedTools(domainTools...)
 }
 
@@ -97,7 +96,7 @@ func Run() error {
 	case "http":
 		httpServer := server.NewStreamableHTTPServer(
 			mcpServer,
-			server.WithLogger(log.New()),
+			server.WithLogger(log.Default().Sugar()),
 			server.WithHeartbeatInterval(30*time.Second),
 			server.WithHTTPContextFunc(getContextWithToken),
 		)

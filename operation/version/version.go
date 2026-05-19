@@ -6,7 +6,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -33,7 +32,6 @@ func init() {
 }
 
 func GetGiteaMCPServerVersionFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetGiteaMCPServerVersionFn")
 	version := flag.Version
 	if version == "" {
 		version = "dev"

@@ -9,7 +9,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
@@ -110,7 +109,6 @@ func escapePackageName(name string) string {
 }
 
 func listPackagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listPackagesFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -138,7 +136,6 @@ func listPackagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 }
 
 func listPackageVersionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listPackageVersionsFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -168,7 +165,6 @@ func listPackageVersionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 }
 
 func getPackageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPackageFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -197,7 +193,6 @@ func getPackageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 }
 
 func deletePackageVersionFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deletePackageVersionFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {

@@ -6,8 +6,8 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -108,7 +108,6 @@ func labelWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 }
 
 func listRepoLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoLabelsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -133,11 +132,10 @@ func listRepoLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list %v/%v/labels err: %v", owner, repo, err))
 	}
-	return to.TextResult(slimLabels(labels))
+	return to.TextResult(slim.Labels(labels))
 }
 
 func getRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getRepoLabelFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -159,11 +157,10 @@ func getRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/label/%v err: %v", owner, repo, id, err))
 	}
-	return to.TextResult(slimLabel(label))
+	return to.TextResult(slim.Label(label))
 }
 
 func createRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createRepoLabelFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -199,11 +196,10 @@ func createRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/%v/label err: %v", owner, repo, err))
 	}
-	return to.TextResult(slimLabel(label))
+	return to.TextResult(slim.Label(label))
 }
 
 func editRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editRepoLabelFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -217,18 +213,12 @@ func editRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 		return to.ErrorResult(err)
 	}
 
-	opt := gitea_sdk.EditLabelOption{}
-	if name, ok := req.GetArguments()["name"].(string); ok {
-		opt.Name = new(name)
-	}
-	if color, ok := req.GetArguments()["color"].(string); ok {
-		opt.Color = new(color)
-	}
-	if description, ok := req.GetArguments()["description"].(string); ok {
-		opt.Description = new(description)
-	}
-	if isArchived, ok := req.GetArguments()["is_archived"].(bool); ok {
-		opt.IsArchived = &isArchived
+	args := req.GetArguments()
+	opt := gitea_sdk.EditLabelOption{
+		Name:        params.GetOptionalStringPtr(args, "name"),
+		Color:       params.GetOptionalStringPtr(args, "color"),
+		Description: params.GetPresentStringPtr(args, "description"),
+		IsArchived:  params.GetOptionalBoolPtr(args, "is_archived"),
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -239,11 +229,10 @@ func editRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/%v/label/%v err: %v", owner, repo, id, err))
 	}
-	return to.TextResult(slimLabel(label))
+	return to.TextResult(slim.Label(label))
 }
 
 func deleteRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteRepoLabelFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -269,7 +258,6 @@ func deleteRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 }
 
 func listOrgLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listOrgLabelsFn")
 	org, err := params.GetString(req.GetArguments(), "org")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -290,11 +278,10 @@ func listOrgLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list %v/labels err: %v", org, err))
 	}
-	return to.TextResult(slimLabels(labels))
+	return to.TextResult(slim.Labels(labels))
 }
 
 func createOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createOrgLabelFn")
 	org, err := params.GetString(req.GetArguments(), "org")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -325,11 +312,10 @@ func createOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/labels err: %v", org, err))
 	}
-	return to.TextResult(slimLabel(label))
+	return to.TextResult(slim.Label(label))
 }
 
 func editOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editOrgLabelFn")
 	org, err := params.GetString(req.GetArguments(), "org")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -339,18 +325,12 @@ func editOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 		return to.ErrorResult(err)
 	}
 
-	opt := gitea_sdk.EditOrgLabelOption{}
-	if name, ok := req.GetArguments()["name"].(string); ok {
-		opt.Name = new(name)
-	}
-	if color, ok := req.GetArguments()["color"].(string); ok {
-		opt.Color = new(color)
-	}
-	if description, ok := req.GetArguments()["description"].(string); ok {
-		opt.Description = new(description)
-	}
-	if exclusive, ok := req.GetArguments()["exclusive"].(bool); ok {
-		opt.Exclusive = new(exclusive)
+	args := req.GetArguments()
+	opt := gitea_sdk.EditOrgLabelOption{
+		Name:        params.GetOptionalStringPtr(args, "name"),
+		Color:       params.GetOptionalStringPtr(args, "color"),
+		Description: params.GetPresentStringPtr(args, "description"),
+		Exclusive:   params.GetOptionalBoolPtr(args, "exclusive"),
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -361,11 +341,10 @@ func editOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/labels/%v err: %v", org, id, err))
 	}
-	return to.TextResult(slimLabel(label))
+	return to.TextResult(slim.Label(label))
 }
 
 func deleteOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteOrgLabelFn")
 	org, err := params.GetString(req.GetArguments(), "org")
 	if err != nil {
 		return to.ErrorResult(err)

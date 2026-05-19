@@ -10,7 +10,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
@@ -98,7 +97,6 @@ type ContentLine struct {
 }
 
 func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetFileFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -162,7 +160,6 @@ func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetDirContentFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -189,7 +186,6 @@ func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 }
 
 func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called CreateOrUpdateFileFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -249,7 +245,6 @@ func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func DeleteFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called DeleteFileFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {

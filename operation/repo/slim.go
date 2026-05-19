@@ -1,55 +1,10 @@
 package repo
 
 import (
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
+
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
-
-func userLogin(u *gitea_sdk.User) string {
-	if u == nil {
-		return ""
-	}
-	return u.UserName
-}
-
-func slimRepo(r *gitea_sdk.Repository) map[string]any {
-	if r == nil {
-		return nil
-	}
-	m := map[string]any{
-		"id":                r.ID,
-		"full_name":         r.FullName,
-		"description":       r.Description,
-		"html_url":          r.HTMLURL,
-		"clone_url":         r.CloneURL,
-		"ssh_url":           r.SSHURL,
-		"default_branch":    r.DefaultBranch,
-		"private":           r.Private,
-		"fork":              r.Fork,
-		"archived":          r.Archived,
-		"language":          r.Language,
-		"stars_count":       r.Stars,
-		"forks_count":       r.Forks,
-		"open_issues_count": r.OpenIssues,
-		"open_pr_counter":   r.OpenPulls,
-		"created_at":        r.Created,
-		"updated_at":        r.Updated,
-	}
-	if r.Owner != nil {
-		m["owner"] = r.Owner.UserName
-	}
-	if len(r.Topics) > 0 {
-		m["topics"] = r.Topics
-	}
-	return m
-}
-
-func slimRepos(repos []*gitea_sdk.Repository) []map[string]any {
-	out := make([]map[string]any, 0, len(repos))
-	for _, r := range repos {
-		out = append(out, slimRepo(r))
-	}
-	return out
-}
 
 func slimBranch(b *gitea_sdk.Branch) map[string]any {
 	if b == nil {
@@ -144,7 +99,7 @@ func slimRelease(r *gitea_sdk.Release) map[string]any {
 		"draft":        r.IsDraft,
 		"prerelease":   r.IsPrerelease,
 		"html_url":     r.HTMLURL,
-		"author":       userLogin(r.Publisher),
+		"author":       slim.UserLogin(r.Publisher),
 		"created_at":   r.CreatedAt,
 		"published_at": r.PublishedAt,
 	}

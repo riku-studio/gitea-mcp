@@ -2,7 +2,6 @@ package actions
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -10,7 +9,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
@@ -133,17 +131,14 @@ func configWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	}
 }
 
-// Secret functions
-
 func listRepoActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionSecretsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 
@@ -163,22 +158,21 @@ func listRepoActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 }
 
 func upsertRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called upsertRepoActionSecretFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	data, err := params.GetString(req.GetArguments(), "data")
-	if err != nil || data == "" {
-		return to.ErrorResult(errors.New("data is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	description, _ := req.GetArguments()["description"].(string)
 
@@ -198,18 +192,17 @@ func upsertRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 }
 
 func deleteRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteRepoActionSecretFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -224,10 +217,9 @@ func deleteRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 }
 
 func listOrgActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listOrgActionSecretsFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 
@@ -247,18 +239,17 @@ func listOrgActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 }
 
 func upsertOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called upsertOrgActionSecretFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	data, err := params.GetString(req.GetArguments(), "data")
-	if err != nil || data == "" {
-		return to.ErrorResult(errors.New("data is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	description, _ := req.GetArguments()["description"].(string)
 
@@ -278,14 +269,13 @@ func upsertOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 }
 
 func deleteOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteOrgActionSecretFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	escapedOrg := url.PathEscape(org)
@@ -297,17 +287,14 @@ func deleteOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(map[string]any{"message": "secret deleted"})
 }
 
-// Variable functions
-
 func listRepoActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoActionVariablesFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 
@@ -324,18 +311,17 @@ func listRepoActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func getRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getRepoActionVariableFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -350,22 +336,21 @@ func getRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 }
 
 func createRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createRepoActionVariableFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	value, err := params.GetString(req.GetArguments(), "value")
-	if err != nil || value == "" {
-		return to.ErrorResult(errors.New("value is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -380,22 +365,21 @@ func createRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 }
 
 func updateRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called updateRepoActionVariableFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	value, err := params.GetString(req.GetArguments(), "value")
-	if err != nil || value == "" {
-		return to.ErrorResult(errors.New("value is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -410,18 +394,17 @@ func updateRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 }
 
 func deleteRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteRepoActionVariableFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
-	if err != nil || owner == "" {
-		return to.ErrorResult(errors.New("owner is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	repo, err := params.GetString(req.GetArguments(), "repo")
-	if err != nil || repo == "" {
-		return to.ErrorResult(errors.New("repo is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -436,10 +419,9 @@ func deleteRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 }
 
 func listOrgActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listOrgActionVariablesFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 
@@ -457,14 +439,13 @@ func listOrgActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 }
 
 func getOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getOrgActionVariableFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -479,18 +460,17 @@ func getOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 }
 
 func createOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createOrgActionVariableFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	value, err := params.GetString(req.GetArguments(), "value")
-	if err != nil || value == "" {
-		return to.ErrorResult(errors.New("value is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	description, _ := req.GetArguments()["description"].(string)
 
@@ -510,18 +490,17 @@ func createOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func updateOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called updateOrgActionVariableFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	value, err := params.GetString(req.GetArguments(), "value")
-	if err != nil || value == "" {
-		return to.ErrorResult(errors.New("value is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	description, _ := req.GetArguments()["description"].(string)
 
@@ -540,14 +519,13 @@ func updateOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func deleteOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteOrgActionVariableFn")
 	org, err := params.GetString(req.GetArguments(), "org")
-	if err != nil || org == "" {
-		return to.ErrorResult(errors.New("org is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	name, err := params.GetString(req.GetArguments(), "name")
-	if err != nil || name == "" {
-		return to.ErrorResult(errors.New("name is required"))
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 
 	_, err = gitea.DoJSON(ctx, "DELETE", fmt.Sprintf("orgs/%s/actions/variables/%s", url.PathEscape(org), url.PathEscape(name)), nil, nil, nil)

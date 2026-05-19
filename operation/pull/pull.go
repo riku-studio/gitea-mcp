@@ -10,6 +10,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -261,7 +262,6 @@ func pullRequestReviewWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 }
 
 func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPullRequestByIndexFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -293,12 +293,11 @@ func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	}
 
 	m := slimPullRequest(pr)
-	m["body"] = bodyWithAttachments(pr.Body, assets)
+	m["body"] = slim.BodyWithAttachments(pr.Body, assets)
 	return to.TextResult(m)
 }
 
 func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPullRequestDiffFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -329,7 +328,6 @@ func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func listRepoPullRequestsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListRepoPullRequests")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -387,7 +385,6 @@ func applyDraftPrefix(title string, isDraft bool) string {
 }
 
 func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createPullRequestFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -440,8 +437,9 @@ func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	return to.TextResult(slimPullRequest(pr))
 }
 
-func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createPullRequestReviewerFn")
+type reviewerOp func(client *gitea_sdk.Client, owner, repo string, index int64, opt gitea_sdk.PullReviewRequestOptions) (*gitea_sdk.Response, error)
+
+func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb string, op reviewerOp) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -464,70 +462,31 @@ func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	_, err = client.CreateReviewRequests(owner, repo, index, gitea_sdk.PullReviewRequestOptions{
+	if _, err := op(client, owner, repo, index, gitea_sdk.PullReviewRequestOptions{
 		Reviewers:     reviewers,
 		TeamReviewers: teamReviewers,
-	})
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("create review requests for %v/%v/pr/%v err: %v", owner, repo, index, err))
+	}); err != nil {
+		return to.ErrorResult(fmt.Errorf("%s review requests for %v/%v/pr/%v err: %v", verb, owner, repo, index, err))
 	}
 
-	successMsg := map[string]any{
-		"message":        "Successfully created review requests",
+	return to.TextResult(map[string]any{
+		"message":        fmt.Sprintf("Successfully %sd review requests", verb),
 		"reviewers":      reviewers,
 		"team_reviewers": teamReviewers,
 		"pr_index":       index,
 		"repository":     fmt.Sprintf("%s/%s", owner, repo),
-	}
+	})
+}
 
-	return to.TextResult(successMsg)
+func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return pullRequestReviewerFn(ctx, req, "create", (*gitea_sdk.Client).CreateReviewRequests)
 }
 
 func deletePullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deletePullRequestReviewerFn")
-	args := req.GetArguments()
-	owner, err := params.GetString(args, "owner")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-	repo, err := params.GetString(args, "repo")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-	index, err := params.GetIndex(args, "pull_number")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-
-	reviewers := params.GetStringSlice(args, "reviewers")
-	teamReviewers := params.GetStringSlice(args, "team_reviewers")
-
-	client, err := gitea.ClientFromContext(ctx)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
-	}
-
-	_, err = client.DeleteReviewRequests(owner, repo, index, gitea_sdk.PullReviewRequestOptions{
-		Reviewers:     reviewers,
-		TeamReviewers: teamReviewers,
-	})
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("delete review requests for %v/%v/pr/%v err: %v", owner, repo, index, err))
-	}
-
-	successMsg := map[string]any{
-		"message":        "Successfully deleted review requests",
-		"reviewers":      reviewers,
-		"team_reviewers": teamReviewers,
-		"pr_index":       index,
-		"repository":     fmt.Sprintf("%s/%s", owner, repo),
-	}
-
-	return to.TextResult(successMsg)
+	return pullRequestReviewerFn(ctx, req, "delete", (*gitea_sdk.Client).DeleteReviewRequests)
 }
 
 func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listPullRequestReviewsFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -562,7 +521,6 @@ func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 }
 
 func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPullRequestReviewFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -595,7 +553,6 @@ func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 }
 
 func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listPullRequestReviewCommentsFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -628,7 +585,6 @@ func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolReques
 }
 
 func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createPullRequestReviewFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -693,7 +649,6 @@ func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called submitPullRequestReviewFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -737,7 +692,6 @@ func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deletePullRequestReviewFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -777,7 +731,6 @@ func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called dismissPullRequestReviewFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -822,7 +775,6 @@ func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*
 }
 
 func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called mergePullRequestFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -886,7 +838,6 @@ func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editPullRequestFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -922,9 +873,10 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		}
 		opt.Title = applyDraftPrefix(opt.Title, draft)
 	}
-	if body, ok := args["body"].(string); ok {
-		opt.Body = new(body)
-	}
+	opt.Body = params.GetPresentStringPtr(args, "body")
+	opt.AllowMaintainerEdit = params.GetOptionalBoolPtr(args, "allow_maintainer_edit")
+	opt.RemoveDeadline = params.GetOptionalBoolPtr(args, "remove_deadline")
+	opt.Deadline = params.GetOptionalTime(args, "deadline")
 	if base, ok := args["base"].(string); ok {
 		opt.Base = base
 	}
@@ -940,17 +892,11 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		}
 	}
 	if state, ok := args["state"].(string); ok {
-		opt.State = new(gitea_sdk.StateType(state))
-	}
-	if allowMaintainerEdit, ok := args["allow_maintainer_edit"].(bool); ok {
-		opt.AllowMaintainerEdit = new(allowMaintainerEdit)
+		s := gitea_sdk.StateType(state)
+		opt.State = &s
 	}
 	if labelIDs, err := params.GetInt64Slice(args, "labels"); err == nil {
 		opt.Labels = labelIDs
-	}
-	opt.Deadline = params.GetOptionalTime(args, "deadline")
-	if removeDeadline, ok := args["remove_deadline"].(bool); ok {
-		opt.RemoveDeadline = &removeDeadline
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -967,7 +913,6 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 }
 
 func updatePullRequestBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called updatePullRequestBranchFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -990,7 +935,6 @@ func updatePullRequestBranchFn(ctx context.Context, req mcp.CallToolRequest) (*m
 }
 
 func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPullRequestFilesFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -1019,7 +963,6 @@ func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 }
 
 func getPullRequestStatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getPullRequestStatusFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {

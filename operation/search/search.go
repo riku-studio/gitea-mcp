@@ -7,8 +7,8 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -94,7 +94,6 @@ func init() {
 }
 
 func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called UsersFn")
 	keyword, err := params.GetString(req.GetArguments(), "query")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -119,7 +118,6 @@ func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 }
 
 func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called OrgTeamsFn")
 	org, err := params.GetString(req.GetArguments(), "org")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -150,34 +148,23 @@ func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 }
 
 func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ReposFn")
 	keyword, err := params.GetString(req.GetArguments(), "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	keywordIsTopic, _ := req.GetArguments()["keywordIsTopic"].(bool)
-	keywordInDescription, _ := req.GetArguments()["keywordInDescription"].(bool)
-	ownerID := params.GetOptionalInt(req.GetArguments(), "ownerID", 0)
-	var pIsPrivate *bool
-	isPrivate, ok := req.GetArguments()["isPrivate"].(bool)
-	if ok {
-		pIsPrivate = new(isPrivate)
-	}
-	var pIsArchived *bool
-	isArchived, ok := req.GetArguments()["isArchived"].(bool)
-	if ok {
-		pIsArchived = new(isArchived)
-	}
-	sort, _ := req.GetArguments()["sort"].(string)
-	order, _ := req.GetArguments()["order"].(string)
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	args := req.GetArguments()
+	keywordIsTopic, _ := args["keywordIsTopic"].(bool)
+	keywordInDescription, _ := args["keywordInDescription"].(bool)
+	sort, _ := args["sort"].(string)
+	order, _ := args["order"].(string)
+	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.SearchRepoOptions{
 		Keyword:              keyword,
 		KeywordIsTopic:       keywordIsTopic,
 		KeywordInDescription: keywordInDescription,
-		OwnerID:              ownerID,
-		IsPrivate:            pIsPrivate,
-		IsArchived:           pIsArchived,
+		OwnerID:              params.GetOptionalInt(args, "ownerID", 0),
+		IsPrivate:            params.GetOptionalBoolPtr(args, "isPrivate"),
+		IsArchived:           params.GetOptionalBoolPtr(args, "isArchived"),
 		Sort:                 sort,
 		Order:                order,
 		ListOptions: gitea_sdk.ListOptions{
@@ -193,11 +180,10 @@ func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("search repos error: %v", err))
 	}
-	return to.TextResult(slimRepos(repos))
+	return to.TextResult(slim.Repos(repos))
 }
 
 func IssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called IssuesFn")
 	args := req.GetArguments()
 	query, err := params.GetString(args, "query")
 	if err != nil {

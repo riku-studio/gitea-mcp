@@ -6,7 +6,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
@@ -79,7 +78,6 @@ func init() {
 }
 
 func CreateTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called CreateTagFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -106,14 +104,13 @@ func CreateTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 		Message: message,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create tag error: %v", err)
+		return to.ErrorResult(fmt.Errorf("create tag error: %v", err))
 	}
 
-	return mcp.NewToolResultText("Tag Created"), nil
+	return to.TextResult("Tag Created")
 }
 
 func DeleteTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called DeleteTagFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -134,14 +131,13 @@ func DeleteTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	}
 	_, err = client.DeleteTag(owner, repo, tagName)
 	if err != nil {
-		return nil, fmt.Errorf("delete tag error: %v", err)
+		return to.ErrorResult(fmt.Errorf("delete tag error: %v", err))
 	}
 
 	return to.TextResult("Tag deleted")
 }
 
 func GetTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetTagFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -162,14 +158,13 @@ func GetTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	}
 	tag, _, err := client.GetTag(owner, repo, tagName)
 	if err != nil {
-		return nil, fmt.Errorf("get tag error: %v", err)
+		return to.ErrorResult(fmt.Errorf("get tag error: %v", err))
 	}
 
 	return to.TextResult(slimTag(tag))
 }
 
 func ListTagsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListTagsFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -193,7 +188,7 @@ func ListTagsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list tags error: %v", err)
+		return to.ErrorResult(fmt.Errorf("list tags error: %v", err))
 	}
 
 	return to.TextResult(slimTags(tags))

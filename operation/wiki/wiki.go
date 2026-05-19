@@ -8,7 +8,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
@@ -95,7 +94,6 @@ func wikiWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 }
 
 func listWikiPagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listWikiPagesFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -116,7 +114,6 @@ func listWikiPagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 }
 
 func getWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getWikiPageFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -141,7 +138,6 @@ func getWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 }
 
 func getWikiRevisionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getWikiRevisionsFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -166,7 +162,6 @@ func getWikiRevisionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func createWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createWikiPageFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -206,7 +201,6 @@ func createWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func updateWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called updateWikiPageFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -252,7 +246,6 @@ func updateWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func deleteWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteWikiPageFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
@@ -95,10 +94,7 @@ func writeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	}
 }
 
-// Stopwatch handler functions
-
 func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called startStopwatchFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -123,7 +119,6 @@ func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called stopStopwatchFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -148,7 +143,6 @@ func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 }
 
 func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteStopwatchFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -173,7 +167,6 @@ func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 }
 
 func getMyStopwatchesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getMyStopwatchesFn")
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
@@ -188,10 +181,7 @@ func getMyStopwatchesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(slimStopWatches(stopwatches))
 }
 
-// Tracked time handler functions
-
 func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listTrackedTimesFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -226,7 +216,6 @@ func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called addTrackedTimeFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -258,7 +247,6 @@ func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteTrackedTimeFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -288,7 +276,6 @@ func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 }
 
 func listRepoTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listRepoTimesFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -319,7 +306,6 @@ func listRepoTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 }
 
 func getMyTimesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getMyTimesFn")
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))

@@ -3,7 +3,6 @@ package gitea
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +10,16 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+)
+
+const (
+	httpClientTimeout  = 60 * time.Second
+	errBodySnippetSize = 8192
 )
 
 type HTTPError struct {
@@ -38,16 +43,20 @@ func tokenFromContext(ctx context.Context) string {
 	return flag.Token
 }
 
-func newRESTHTTPClient() *http.Client {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if flag.Insecure {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-requested insecure mode
-	}
-	return &http.Client{
-		Transport:     transport,
-		Timeout:       60 * time.Second,
-		CheckRedirect: checkRedirect,
-	}
+var (
+	restClientOnce sync.Once
+	restClient     *http.Client
+)
+
+func restHTTPClient() *http.Client {
+	restClientOnce.Do(func() {
+		restClient = &http.Client{
+			Transport:     sharedTransport(),
+			Timeout:       httpClientTimeout,
+			CheckRedirect: checkRedirect,
+		}
+	})
+	return restClient
 }
 
 func buildAPIURL(path string, query url.Values) (string, error) {
@@ -96,7 +105,7 @@ func DoJSON(ctx context.Context, method, path string, query url.Values, body, re
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	client := newRESTHTTPClient()
+	client := restHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, fmt.Errorf("do request: %w", err)
@@ -104,7 +113,7 @@ func DoJSON(ctx context.Context, method, path string, query url.Values, body, re
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		bodySnippet, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))
+		bodySnippet, _ := io.ReadAll(io.LimitReader(resp.Body, errBodySnippetSize))
 		return resp.StatusCode, &HTTPError{StatusCode: resp.StatusCode, Body: strings.TrimSpace(string(bodySnippet))}
 	}
 
@@ -151,7 +160,7 @@ func DoBytes(ctx context.Context, method, path string, query url.Values, body an
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	client := newRESTHTTPClient()
+	client := restHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("do request: %w", err)
@@ -165,8 +174,8 @@ func DoBytes(ctx context.Context, method, path string, query url.Values, body an
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodySnippet := respBytes
-		if len(bodySnippet) > 8192 {
-			bodySnippet = bodySnippet[:8192]
+		if len(bodySnippet) > errBodySnippetSize {
+			bodySnippet = bodySnippet[:errBodySnippetSize]
 		}
 		return nil, resp.StatusCode, &HTTPError{StatusCode: resp.StatusCode, Body: strings.TrimSpace(string(bodySnippet))}
 	}

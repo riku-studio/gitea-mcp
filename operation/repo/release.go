@@ -6,7 +6,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
@@ -97,7 +96,6 @@ func init() {
 }
 
 func CreateReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called CreateReleasesFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -136,14 +134,13 @@ func CreateReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 		IsPrerelease: isPreRelease,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("create release error: %v", err)
+		return to.ErrorResult(fmt.Errorf("create release error: %v", err))
 	}
 
-	return mcp.NewToolResultText("Release Created"), nil
+	return to.TextResult("Release Created")
 }
 
 func DeleteReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called DeleteReleaseFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -164,14 +161,13 @@ func DeleteReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	}
 	_, err = client.DeleteRelease(owner, repo, id)
 	if err != nil {
-		return nil, fmt.Errorf("delete release error: %v", err)
+		return to.ErrorResult(fmt.Errorf("delete release error: %v", err))
 	}
 
 	return to.TextResult("Release deleted successfully")
 }
 
 func GetReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetReleaseFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -192,14 +188,13 @@ func GetReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	}
 	release, _, err := client.GetRelease(owner, repo, id)
 	if err != nil {
-		return nil, fmt.Errorf("get release error: %v", err)
+		return to.ErrorResult(fmt.Errorf("get release error: %v", err))
 	}
 
 	return to.TextResult(slimRelease(release))
 }
 
 func GetLatestReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called GetLatestReleaseFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -216,14 +211,13 @@ func GetLatestReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	}
 	release, _, err := client.GetLatestRelease(owner, repo)
 	if err != nil {
-		return nil, fmt.Errorf("get latest release error: %v", err)
+		return to.ErrorResult(fmt.Errorf("get latest release error: %v", err))
 	}
 
 	return to.TextResult(slimRelease(release))
 }
 
 func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListReleasesFn")
 	args := req.GetArguments()
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -233,18 +227,7 @@ func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	var pIsDraft *bool
-	isDraft, ok := args["is_draft"].(bool)
-	if ok {
-		pIsDraft = new(isDraft)
-	}
-	var pIsPreRelease *bool
-	isPreRelease, ok := args["is_pre_release"].(bool)
-	if ok {
-		pIsPreRelease = new(isPreRelease)
-	}
-	page := params.GetOptionalInt(args, "page", 1)
-	pageSize := params.GetOptionalInt(args, "per_page", 20)
+	page, pageSize := params.GetPagination(args, 20)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -252,14 +235,14 @@ func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	}
 	releases, _, err := client.ListReleases(owner, repo, gitea_sdk.ListReleasesOptions{
 		ListOptions: gitea_sdk.ListOptions{
-			Page:     int(page),
-			PageSize: int(pageSize),
+			Page:     page,
+			PageSize: pageSize,
 		},
-		IsDraft:      pIsDraft,
-		IsPreRelease: pIsPreRelease,
+		IsDraft:      params.GetOptionalBoolPtr(args, "is_draft"),
+		IsPreRelease: params.GetOptionalBoolPtr(args, "is_pre_release"),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list releases error: %v", err)
+		return to.ErrorResult(fmt.Errorf("list releases error: %v", err))
 	}
 
 	return to.TextResult(slimReleases(releases))

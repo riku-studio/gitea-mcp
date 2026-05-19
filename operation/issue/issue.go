@@ -7,8 +7,8 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -145,7 +145,6 @@ func issueWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 }
 
 func getIssueByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getIssueByIndexFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -164,12 +163,11 @@ func getIssueByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		return to.ErrorResult(fmt.Errorf("get %v/%v/issue/%v err: %v", owner, repo, index, err))
 	}
 	m := slimIssue(&issue.Issue)
-	m["body"] = bodyWithAttachments(issue.Body, issue.Assets)
+	m["body"] = slim.BodyWithAttachments(issue.Body, issue.Assets)
 	return to.TextResult(m)
 }
 
 func listRepoIssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListIssuesFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -210,7 +208,6 @@ func listRepoIssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func createIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createIssueFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -257,7 +254,6 @@ func createIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 }
 
 func createIssueCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createIssueCommentFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -290,7 +286,6 @@ func createIssueCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 func editIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editIssueFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -304,32 +299,25 @@ func editIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 		return to.ErrorResult(err)
 	}
 
-	opt := gitea_sdk.EditIssueOption{}
-
-	title, ok := req.GetArguments()["title"].(string)
-	if ok {
+	args := req.GetArguments()
+	opt := gitea_sdk.EditIssueOption{
+		Body:           params.GetPresentStringPtr(args, "body"),
+		Ref:            params.GetPresentStringPtr(args, "ref"),
+		Assignees:      params.GetStringSlice(args, "assignees"),
+		Deadline:       params.GetOptionalTime(args, "deadline"),
+		RemoveDeadline: params.GetOptionalBoolPtr(args, "remove_deadline"),
+	}
+	if title, ok := args["title"].(string); ok {
 		opt.Title = title
 	}
-	body, ok := req.GetArguments()["body"].(string)
-	if ok {
-		opt.Body = new(body)
-	}
-	opt.Assignees = params.GetStringSlice(req.GetArguments(), "assignees")
-	if val, exists := req.GetArguments()["milestone"]; exists {
+	if val, exists := args["milestone"]; exists {
 		if milestone, ok := params.ToInt64(val); ok {
-			opt.Milestone = new(milestone)
+			opt.Milestone = &milestone
 		}
 	}
-	state, ok := req.GetArguments()["state"].(string)
-	if ok {
-		opt.State = new(gitea_sdk.StateType(state))
-	}
-	if ref, ok := req.GetArguments()["ref"].(string); ok {
-		opt.Ref = &ref
-	}
-	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "deadline")
-	if removeDeadline, ok := req.GetArguments()["remove_deadline"].(bool); ok {
-		opt.RemoveDeadline = &removeDeadline
+	if state, ok := args["state"].(string); ok {
+		s := gitea_sdk.StateType(state)
+		opt.State = &s
 	}
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -345,7 +333,6 @@ func editIssueFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 }
 
 func editIssueCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editIssueCommentFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -378,7 +365,6 @@ func editIssueCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func getIssueCommentsByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getIssueCommentsByIndexFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -399,14 +385,13 @@ func getIssueCommentsByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	out := make([]map[string]any, 0, len(comments))
 	for i := range comments {
 		m := slimComment(&comments[i].Comment)
-		m["body"] = bodyWithAttachments(comments[i].Body, comments[i].Assets)
+		m["body"] = slim.BodyWithAttachments(comments[i].Body, comments[i].Assets)
 		out = append(out, m)
 	}
 	return to.TextResult(out)
 }
 
 func getIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getIssueLabelsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -428,13 +413,10 @@ func getIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/%v/labels err: %v", owner, repo, index, err))
 	}
-	return to.TextResult(slimLabels(labels))
+	return to.TextResult(slim.Labels(labels))
 }
 
-// Issue label operations (moved from label package)
-
 func addIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called addIssueLabelsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -460,11 +442,10 @@ func addIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("add labels to %v/%v/issue/%v err: %v", owner, repo, index, err))
 	}
-	return to.TextResult(slimLabels(issueLabels))
+	return to.TextResult(slim.Labels(issueLabels))
 }
 
 func replaceIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called replaceIssueLabelsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -490,11 +471,10 @@ func replaceIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("replace labels on %v/%v/issue/%v err: %v", owner, repo, index, err))
 	}
-	return to.TextResult(slimLabels(issueLabels))
+	return to.TextResult(slim.Labels(issueLabels))
 }
 
 func clearIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called clearIssueLabelsFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -520,7 +500,6 @@ func clearIssueLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 }
 
 func removeIssueLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called removeIssueLabelFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)

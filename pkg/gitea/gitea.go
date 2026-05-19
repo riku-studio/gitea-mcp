@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
@@ -13,21 +14,39 @@ import (
 	"code.gitea.io/sdk/gitea"
 )
 
+var (
+	clientCache     sync.Map // token -> *gitea.Client
+	sharedTransOnce sync.Once
+	sharedTrans     *http.Transport
+)
+
+func sharedTransport() *http.Transport {
+	sharedTransOnce.Do(func() {
+		sharedTrans = http.DefaultTransport.(*http.Transport).Clone()
+		if flag.Insecure {
+			sharedTrans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-requested insecure mode
+		}
+	})
+	return sharedTrans
+}
+
+// NewClient returns a cached *gitea.Client keyed by host+token. The SDK's per-client
+// version cache and the shared transport let us reuse keep-alive connections
+// and avoid the SDK's /api/v1/version preflight on every tool call.
 func NewClient(token string) (*gitea.Client, error) {
-	httpClient := &http.Client{
-		Transport:     http.DefaultTransport,
-		CheckRedirect: checkRedirect,
+	key := flag.Host + "\x00" + token
+	if v, ok := clientCache.Load(key); ok {
+		return v.(*gitea.Client), nil
 	}
 
+	httpClient := &http.Client{
+		Transport:     sharedTransport(),
+		CheckRedirect: checkRedirect,
+	}
 	opts := []gitea.ClientOption{
 		gitea.SetToken(token),
+		gitea.SetHTTPClient(httpClient),
 	}
-	if flag.Insecure {
-		httpClient.Transport.(*http.Transport).TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-	opts = append(opts, gitea.SetHTTPClient(httpClient))
 	if flag.Debug {
 		opts = append(opts, gitea.SetDebugMode())
 	}
@@ -35,10 +54,10 @@ func NewClient(token string) (*gitea.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create gitea client err: %w", err)
 	}
-
-	// Set user agent for the client
 	client.SetUserAgent("gitea-mcp-server/" + flag.Version)
-	return client, nil
+
+	actual, _ := clientCache.LoadOrStore(key, client)
+	return actual.(*gitea.Client), nil
 }
 
 // checkRedirect prevents Go from silently changing mutating requests (POST, PATCH, etc.)

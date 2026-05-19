@@ -4,21 +4,6 @@ import (
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
 
-func slimUserDetail(u *gitea_sdk.User) map[string]any {
-	if u == nil {
-		return nil
-	}
-	return map[string]any{
-		"id":         u.ID,
-		"login":      u.UserName,
-		"full_name":  u.FullName,
-		"email":      u.Email,
-		"avatar_url": u.AvatarURL,
-		"html_url":   u.HTMLURL,
-		"is_admin":   u.IsAdmin,
-	}
-}
-
 func slimOrg(o *gitea_sdk.Organization) map[string]any {
 	if o == nil {
 		return nil

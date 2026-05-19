@@ -6,39 +6,6 @@ import (
 	gitea_sdk "code.gitea.io/sdk/gitea"
 )
 
-func TestSlimRepo(t *testing.T) {
-	r := &gitea_sdk.Repository{
-		ID:            1,
-		FullName:      "org/repo",
-		Description:   "A test repo",
-		HTMLURL:       "https://gitea.com/org/repo",
-		CloneURL:      "https://gitea.com/org/repo.git",
-		SSHURL:        "git@gitea.com:org/repo.git",
-		DefaultBranch: "main",
-		Private:       false,
-		Fork:          false,
-		Archived:      false,
-		Language:      "Go",
-		Stars:         10,
-		Forks:         2,
-		Owner:         &gitea_sdk.User{UserName: "org"},
-		Topics:        []string{"mcp", "gitea"},
-	}
-
-	m := slimRepo(r)
-
-	if m["full_name"] != "org/repo" {
-		t.Errorf("expected full_name org/repo, got %v", m["full_name"])
-	}
-	if m["owner"] != "org" {
-		t.Errorf("expected owner org, got %v", m["owner"])
-	}
-	topics := m["topics"].([]string)
-	if len(topics) != 2 {
-		t.Errorf("expected 2 topics, got %d", len(topics))
-	}
-}
-
 func TestSlimTag(t *testing.T) {
 	tag := &gitea_sdk.Tag{
 		Name:    "v1.0.0",

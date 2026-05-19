@@ -6,7 +6,6 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
@@ -99,7 +98,6 @@ func milestoneWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func getMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called getMilestoneFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -125,7 +123,6 @@ func getMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 }
 
 func listMilestonesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called listMilestonesFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -157,7 +154,6 @@ func listMilestonesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called createMilestoneFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -194,7 +190,6 @@ func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 }
 
 func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called editMilestoneFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -208,21 +203,18 @@ func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 		return to.ErrorResult(err)
 	}
 
-	opt := gitea_sdk.EditMilestoneOption{}
-
-	title, ok := req.GetArguments()["title"].(string)
-	if ok {
+	args := req.GetArguments()
+	opt := gitea_sdk.EditMilestoneOption{
+		Description: params.GetPresentStringPtr(args, "description"),
+		Deadline:    params.GetOptionalTime(args, "due_on"),
+	}
+	if title, ok := args["title"].(string); ok {
 		opt.Title = title
 	}
-	description, ok := req.GetArguments()["description"].(string)
-	if ok {
-		opt.Description = new(description)
+	if state, ok := args["state"].(string); ok {
+		s := gitea_sdk.StateType(state)
+		opt.State = &s
 	}
-	state, ok := req.GetArguments()["state"].(string)
-	if ok {
-		opt.State = new(gitea_sdk.StateType(state))
-	}
-	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "due_on")
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -237,7 +229,6 @@ func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 }
 
 func deleteMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called deleteMilestoneFn")
 	owner, err := params.GetString(req.GetArguments(), "owner")
 	if err != nil {
 		return to.ErrorResult(err)

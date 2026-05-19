@@ -73,6 +73,42 @@ func TestGetOptionalInt(t *testing.T) {
 	}
 }
 
+func TestGetOptionalStringPtr(t *testing.T) {
+	if p := GetOptionalStringPtr(map[string]any{}, "k"); p != nil {
+		t.Errorf("missing key: got %v, want nil", p)
+	}
+	if p := GetOptionalStringPtr(map[string]any{"k": ""}, "k"); p != nil {
+		t.Errorf("empty string: got %v, want nil", p)
+	}
+	if p := GetOptionalStringPtr(map[string]any{"k": 42}, "k"); p != nil {
+		t.Errorf("non-string: got %v, want nil", p)
+	}
+	if p := GetOptionalStringPtr(map[string]any{"k": nil}, "k"); p != nil {
+		t.Errorf("nil value (JSON null): got %v, want nil", p)
+	}
+	if p := GetOptionalStringPtr(map[string]any{"k": "x"}, "k"); p == nil || *p != "x" {
+		t.Errorf("non-empty: got %v, want &\"x\"", p)
+	}
+}
+
+func TestGetPresentStringPtr(t *testing.T) {
+	if p := GetPresentStringPtr(map[string]any{}, "k"); p != nil {
+		t.Errorf("missing key: got %v, want nil", p)
+	}
+	if p := GetPresentStringPtr(map[string]any{"k": 42}, "k"); p != nil {
+		t.Errorf("non-string: got %v, want nil", p)
+	}
+	if p := GetPresentStringPtr(map[string]any{"k": nil}, "k"); p != nil {
+		t.Errorf("nil value (JSON null): got %v, want nil", p)
+	}
+	if p := GetPresentStringPtr(map[string]any{"k": ""}, "k"); p == nil || *p != "" {
+		t.Errorf("empty string: got %v, want &\"\"", p)
+	}
+	if p := GetPresentStringPtr(map[string]any{"k": "x"}, "k"); p == nil || *p != "x" {
+		t.Errorf("non-empty: got %v, want &\"x\"", p)
+	}
+}
+
 func TestGetIndex(t *testing.T) {
 	tests := []struct {
 		name      string

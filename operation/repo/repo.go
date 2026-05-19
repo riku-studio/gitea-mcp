@@ -2,13 +2,12 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
-	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
+	"gitea.com/gitea/gitea-mcp/pkg/slim"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
@@ -90,7 +89,6 @@ func init() {
 }
 
 func CreateRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called CreateRepoFn")
 	args := req.GetArguments()
 	name, err := params.GetString(args, "name")
 	if err != nil {
@@ -140,11 +138,10 @@ func CreateRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 			return to.ErrorResult(fmt.Errorf("create repository '%s' err: %v", name, err))
 		}
 	}
-	return to.TextResult(slimRepo(repo))
+	return to.TextResult(slim.Repo(repo))
 }
 
 func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ForkRepoFn")
 	args := req.GetArguments()
 	user, err := params.GetString(args, "user")
 	if err != nil {
@@ -154,19 +151,9 @@ func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	organization, ok := args["organization"].(string)
-	organizationPtr := new(organization)
-	if !ok || organization == "" {
-		organizationPtr = nil
-	}
-	name, ok := args["name"].(string)
-	namePtr := new(name)
-	if !ok || name == "" {
-		namePtr = nil
-	}
 	opt := gitea_sdk.CreateForkOption{
-		Organization: organizationPtr,
-		Name:         namePtr,
+		Organization: params.GetOptionalStringPtr(args, "organization"),
+		Name:         params.GetOptionalStringPtr(args, "name"),
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -180,7 +167,6 @@ func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 }
 
 func ListMyReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListMyReposFn")
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 	opt := gitea_sdk.ListReposOptions{
 		ListOptions: gitea_sdk.ListOptions{
@@ -197,14 +183,13 @@ func ListMyReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 		return to.ErrorResult(fmt.Errorf("list my repositories error: %v", err))
 	}
 
-	return to.TextResult(slimRepos(repos))
+	return to.TextResult(slim.Repos(repos))
 }
 
 func ListOrgReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	log.Debugf("Called ListOrgReposFn")
-	org, ok := req.GetArguments()["org"].(string)
-	if !ok {
-		return to.ErrorResult(errors.New("organization name is required"))
+	org, err := params.GetString(req.GetArguments(), "org")
+	if err != nil {
+		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(req.GetArguments(), 100)
 	opt := gitea_sdk.ListOrgReposOptions{
