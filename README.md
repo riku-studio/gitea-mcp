@@ -15,6 +15,7 @@
   - [🚧 Installation](#-installation)
     - [Usage with Claude Code](#usage-with-claude-code)
     - [Usage with VS Code](#usage-with-vs-code)
+    - [Usage with Mistral Vibe](#usage-with-mistral-vibe)
     - [📥 Download the official binary release](#-download-the-official-binary-release)
     - [🔧 Build from Source](#-build-from-source)
     - [📁 Add to PATH](#-add-to-path)
@@ -83,6 +84,31 @@ Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace
     }
   }
 }
+```
+
+### Usage with Mistral Vibe
+
+Add the following configuration to your Mistral Vibe MCP configuration file (`~/.vibe/config.toml`):
+
+```toml
+[[mcp_servers]]
+name = "gitea"
+transport = "stdio"
+command = "docker"
+args = [
+    "run",
+    "--rm",
+    "-i",
+    "-e",
+    "GITEA_ACCESS_TOKEN",
+    "-e",
+    "GITEA_HOST",
+    "docker.gitea.com/gitea-mcp-server",
+]
+
+[mcp_servers.env]
+GITEA_ACCESS_TOKEN = "TOKEN"
+GITEA_HOST = "https://gitea.com"
 ```
 
 ### 📥 Download the official binary release
