@@ -158,6 +158,9 @@ func Test_mergePullRequestFn(t *testing.T) {
 				case "/api/v1/version":
 					w.Header().Set("Content-Type", "application/json")
 					_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+				case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d", owner, repo, index):
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"head":{"sha":"abc123"}}`))
 				case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
 					w.Header().Set("Content-Type", "application/json")
 					_, _ = w.Write([]byte(`{"private":false}`))

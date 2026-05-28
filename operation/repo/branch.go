@@ -9,7 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -83,7 +83,7 @@ func CreateBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, _, err = client.CreateBranch(owner, repo, gitea_sdk.CreateBranchOption{
+	_, _, err = client.Repositories.CreateBranch(ctx, owner, repo, gitea_sdk.CreateBranchOption{
 		BranchName:    branch,
 		OldBranchName: oldBranch,
 	})
@@ -112,7 +112,7 @@ func DeleteBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, _, err = client.DeleteRepoBranch(owner, repo, branch)
+	_, _, err = client.Repositories.DeleteRepoBranch(ctx, owner, repo, branch)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete branch error: %v", err))
 	}
@@ -141,7 +141,7 @@ func ListBranchesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	branches, _, err := client.ListRepoBranches(owner, repo, opt)
+	branches, _, err := client.Repositories.ListRepoBranches(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list branches error: %v", err))
 	}

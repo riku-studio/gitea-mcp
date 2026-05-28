@@ -9,7 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -125,7 +125,7 @@ func CreateReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, _, err = client.CreateRelease(owner, repo, gitea_sdk.CreateReleaseOption{
+	_, _, err = client.Releases.CreateRelease(ctx, owner, repo, gitea_sdk.CreateReleaseOption{
 		TagName:      tagName,
 		Target:       target,
 		Title:        title,
@@ -159,7 +159,7 @@ func DeleteReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteRelease(owner, repo, id)
+	_, err = client.Releases.DeleteRelease(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete release error: %v", err))
 	}
@@ -186,7 +186,7 @@ func GetReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	release, _, err := client.GetRelease(owner, repo, id)
+	release, _, err := client.Releases.GetRelease(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get release error: %v", err))
 	}
@@ -209,7 +209,7 @@ func GetLatestReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	release, _, err := client.GetLatestRelease(owner, repo)
+	release, _, err := client.Releases.GetLatestRelease(ctx, owner, repo)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get latest release error: %v", err))
 	}
@@ -233,7 +233,7 @@ func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	releases, _, err := client.ListReleases(owner, repo, gitea_sdk.ListReleasesOptions{
+	releases, _, err := client.Releases.ListReleases(ctx, owner, repo, gitea_sdk.ListReleasesOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
 			PageSize: pageSize,

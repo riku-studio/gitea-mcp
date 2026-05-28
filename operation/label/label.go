@@ -11,7 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -128,7 +128,7 @@ func listRepoLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	labels, _, err := client.ListRepoLabels(owner, repo, opt)
+	labels, _, err := client.Repositories.ListRepoLabels(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list %v/%v/labels err: %v", owner, repo, err))
 	}
@@ -153,7 +153,7 @@ func getRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	label, _, err := client.GetRepoLabel(owner, repo, id)
+	label, _, err := client.Repositories.GetRepoLabel(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/label/%v err: %v", owner, repo, id, err))
 	}
@@ -192,7 +192,7 @@ func createRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	label, _, err := client.CreateLabel(owner, repo, opt)
+	label, _, err := client.Repositories.CreateLabel(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/%v/label err: %v", owner, repo, err))
 	}
@@ -225,7 +225,7 @@ func editRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	label, _, err := client.EditLabel(owner, repo, id, opt)
+	label, _, err := client.Repositories.EditLabel(ctx, owner, repo, id, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/%v/label/%v err: %v", owner, repo, id, err))
 	}
@@ -250,7 +250,7 @@ func deleteRepoLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteLabel(owner, repo, id)
+	_, err = client.Repositories.DeleteLabel(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete %v/%v/label/%v err: %v", owner, repo, id, err))
 	}
@@ -274,7 +274,7 @@ func listOrgLabelsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	labels, _, err := client.ListOrgLabels(org, opt)
+	labels, _, err := client.Organizations.ListOrgLabels(ctx, org, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list %v/labels err: %v", org, err))
 	}
@@ -308,7 +308,7 @@ func createOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	label, _, err := client.CreateOrgLabel(org, opt)
+	label, _, err := client.Organizations.CreateOrgLabel(ctx, org, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/labels err: %v", org, err))
 	}
@@ -337,7 +337,7 @@ func editOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	label, _, err := client.EditOrgLabel(org, id, opt)
+	label, _, err := client.Organizations.EditOrgLabel(ctx, org, id, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/labels/%v err: %v", org, id, err))
 	}
@@ -358,7 +358,7 @@ func deleteOrgLabelFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteOrgLabel(org, id)
+	_, err = client.Organizations.DeleteOrgLabel(ctx, org, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete %v/labels/%v err: %v", org, id, err))
 	}

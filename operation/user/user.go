@@ -11,7 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -49,7 +49,7 @@ func GetUserInfoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	user, _, err := client.GetMyUserInfo()
+	user, _, err := client.Users.GetMyUserInfo(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get user info err: %v", err))
 	}
@@ -69,7 +69,7 @@ func GetUserOrgsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	orgs, _, err := client.ListMyOrgs(opt)
+	orgs, _, err := client.Organizations.ListMyOrgs(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get user orgs err: %v", err))
 	}

@@ -11,7 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -111,7 +111,7 @@ func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.StartIssueStopWatch(owner, repo, index)
+	_, err = client.Issues.StartIssueStopWatch(ctx, owner, repo, index)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("start stopwatch on %s/%s#%d err: %v", owner, repo, index, err))
 	}
@@ -135,7 +135,7 @@ func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.StopIssueStopWatch(owner, repo, index)
+	_, err = client.Issues.StopIssueStopWatch(ctx, owner, repo, index)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("stop stopwatch on %s/%s#%d err: %v", owner, repo, index, err))
 	}
@@ -159,7 +159,7 @@ func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteIssueStopwatch(owner, repo, index)
+	_, err = client.Issues.DeleteIssueStopwatch(ctx, owner, repo, index)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete stopwatch on %s/%s#%d err: %v", owner, repo, index, err))
 	}
@@ -171,7 +171,7 @@ func getMyStopwatchesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	stopwatches, _, err := client.ListMyStopwatches(gitea_sdk.ListStopwatchesOptions{})
+	stopwatches, _, err := client.Issues.ListMyStopwatches(ctx, gitea_sdk.ListStopwatchesOptions{})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get stopwatches err: %v", err))
 	}
@@ -200,7 +200,7 @@ func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	times, _, err := client.ListIssueTrackedTimes(owner, repo, index, gitea_sdk.ListTrackedTimesOptions{
+	times, _, err := client.Issues.ListIssueTrackedTimes(ctx, owner, repo, index, gitea_sdk.ListTrackedTimesOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
 			PageSize: pageSize,
@@ -237,7 +237,7 @@ func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	trackedTime, _, err := client.AddTime(owner, repo, index, gitea_sdk.AddTimeOption{
+	trackedTime, _, err := client.Issues.AddTime(ctx, owner, repo, index, gitea_sdk.AddTimeOption{
 		Time: timeSeconds,
 	})
 	if err != nil {
@@ -268,7 +268,7 @@ func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteTime(owner, repo, index, id)
+	_, err = client.Issues.DeleteTime(ctx, owner, repo, index, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete tracked time %d from %s/%s#%d err: %v", id, owner, repo, index, err))
 	}
@@ -290,7 +290,7 @@ func listRepoTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	times, _, err := client.ListRepoTrackedTimes(owner, repo, gitea_sdk.ListTrackedTimesOptions{
+	times, _, err := client.Issues.ListRepoTrackedTimes(ctx, owner, repo, gitea_sdk.ListTrackedTimesOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
 			PageSize: pageSize,
@@ -310,7 +310,7 @@ func getMyTimesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResu
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	times, _, err := client.ListMyTrackedTimes(gitea_sdk.ListTrackedTimesOptions{})
+	times, _, err := client.Issues.ListMyTrackedTimes(ctx, gitea_sdk.ListTrackedTimesOptions{})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get tracked times err: %v", err))
 	}

@@ -10,7 +10,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -114,7 +114,7 @@ func getMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	milestone, _, err := client.GetMilestone(owner, repo, id)
+	milestone, _, err := client.Repositories.GetMilestone(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/milestone/%v err: %v", owner, repo, id, err))
 	}
@@ -146,7 +146,7 @@ func listMilestonesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	milestones, _, err := client.ListRepoMilestones(owner, repo, opt)
+	milestones, _, err := client.Repositories.ListMilestones(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/milestones err: %v", owner, repo, err))
 	}
@@ -181,7 +181,7 @@ func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	milestone, _, err := client.CreateMilestone(owner, repo, opt)
+	milestone, _, err := client.Repositories.CreateMilestone(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/%v/milestone err: %v", owner, repo, err))
 	}
@@ -220,7 +220,7 @@ func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	milestone, _, err := client.EditMilestone(owner, repo, id, opt)
+	milestone, _, err := client.Repositories.EditMilestone(ctx, owner, repo, id, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/%v/milestone/%v err: %v", owner, repo, id, err))
 	}
@@ -245,7 +245,7 @@ func deleteMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteMilestone(owner, repo, id)
+	_, err = client.Repositories.DeleteMilestone(ctx, owner, repo, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete %v/%v/milestone/%v err: %v", owner, repo, id, err))
 	}

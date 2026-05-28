@@ -12,7 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -147,7 +147,7 @@ func listRepoActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	secrets, _, err := client.ListRepoActionSecret(owner, repo, gitea_sdk.ListRepoActionSecretOption{
+	secrets, _, err := client.Actions.ListRepoSecrets(ctx, owner, repo, gitea_sdk.ListRepoActionsSecretOption{
 		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
 	})
 	if err != nil {
@@ -180,8 +180,7 @@ func upsertRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.CreateRepoActionSecret(owner, repo, gitea_sdk.CreateSecretOption{
-		Name:        name,
+	resp, err := client.Actions.CreateRepoSecret(ctx, owner, repo, name, gitea_sdk.CreateOrUpdateSecretOption{
 		Data:        data,
 		Description: description,
 	})
@@ -209,7 +208,7 @@ func deleteRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.DeleteRepoActionSecret(owner, repo, name)
+	resp, err := client.Actions.DeleteRepoSecret(ctx, owner, repo, name)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete repo action secret err: %v", err))
 	}
@@ -228,7 +227,7 @@ func listOrgActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	secrets, _, err := client.ListOrgActionSecret(org, gitea_sdk.ListOrgActionSecretOption{
+	secrets, _, err := client.Actions.ListOrgSecrets(ctx, org, gitea_sdk.ListOrgActionsSecretOption{
 		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
 	})
 	if err != nil {
@@ -257,8 +256,7 @@ func upsertOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.CreateOrgActionSecret(org, gitea_sdk.CreateSecretOption{
-		Name:        name,
+	resp, err := client.Actions.CreateOrgSecret(ctx, org, name, gitea_sdk.CreateOrUpdateSecretOption{
 		Data:        data,
 		Description: description,
 	})
@@ -328,7 +326,7 @@ func getRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	variable, _, err := client.GetRepoActionVariable(owner, repo, name)
+	variable, _, err := client.Actions.GetRepoVariable(ctx, owner, repo, name)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get repo action variable err: %v", err))
 	}
@@ -357,7 +355,7 @@ func createRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.CreateRepoActionVariable(owner, repo, name, value)
+	resp, err := client.Actions.CreateRepoVariable(ctx, owner, repo, name, value)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create repo action variable err: %v", err))
 	}
@@ -386,7 +384,7 @@ func updateRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.UpdateRepoActionVariable(owner, repo, name, value)
+	resp, err := client.Actions.UpdateRepoVariable(ctx, owner, repo, name, value)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("update repo action variable err: %v", err))
 	}
@@ -411,7 +409,7 @@ func deleteRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.DeleteRepoActionVariable(owner, repo, name)
+	resp, err := client.Actions.DeleteRepoVariable(ctx, owner, repo, name)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete repo action variable err: %v", err))
 	}
@@ -429,7 +427,7 @@ func listOrgActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	variables, _, err := client.ListOrgActionVariable(org, gitea_sdk.ListOrgActionVariableOption{
+	variables, _, err := client.Actions.ListOrgVariables(ctx, org, gitea_sdk.ListOrgActionsVariableOption{
 		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
 	})
 	if err != nil {
@@ -452,7 +450,7 @@ func getOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	variable, _, err := client.GetOrgActionVariable(org, name)
+	variable, _, err := client.Actions.GetOrgVariable(ctx, org, name)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get org action variable err: %v", err))
 	}
@@ -478,8 +476,7 @@ func createOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.CreateOrgActionVariable(org, gitea_sdk.CreateOrgActionVariableOption{
-		Name:        name,
+	resp, err := client.Actions.CreateOrgVariable(ctx, org, name, gitea_sdk.CreateActionsVariableOption{
 		Value:       value,
 		Description: description,
 	})
@@ -508,7 +505,8 @@ func updateOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	resp, err := client.UpdateOrgActionVariable(org, name, gitea_sdk.UpdateOrgActionVariableOption{
+	resp, err := client.Actions.UpdateOrgVariable(ctx, org, name, gitea_sdk.UpdateActionsVariableOption{
+		Name:        name,
 		Value:       value,
 		Description: description,
 	})

@@ -3,7 +3,7 @@ package issue
 import (
 	"gitea.com/gitea/gitea-mcp/pkg/slim"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimIssue(i *gitea_sdk.Issue) map[string]any {

@@ -11,7 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -128,12 +128,12 @@ func CreateRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	if organization != "" {
-		repo, _, err = client.CreateOrgRepo(organization, opt)
+		repo, _, err = client.Repositories.CreateOrgRepo(ctx, organization, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("create organization repository '%s' in '%s' err: %v", name, organization, err))
 		}
 	} else {
-		repo, _, err = client.CreateRepo(opt)
+		repo, _, err = client.Repositories.CreateRepo(ctx, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("create repository '%s' err: %v", name, err))
 		}
@@ -159,7 +159,7 @@ func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, _, err = client.CreateFork(user, repo, opt)
+	_, _, err = client.Repositories.CreateFork(ctx, user, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("fork repository error: %v", err))
 	}
@@ -178,7 +178,7 @@ func ListMyReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	repos, _, err := client.ListMyRepos(opt)
+	repos, _, err := client.Repositories.ListMyRepos(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list my repositories error: %v", err))
 	}
@@ -202,7 +202,7 @@ func ListOrgReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	repos, _, err := client.ListOrgRepos(org, opt)
+	repos, _, err := client.Repositories.ListOrgRepos(ctx, org, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list organization '%s' repositories error: %v", org, err))
 	}

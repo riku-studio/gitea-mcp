@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func TestSlimPullRequest(t *testing.T) {

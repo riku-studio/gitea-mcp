@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func UserLogin(u *gitea_sdk.User) string {

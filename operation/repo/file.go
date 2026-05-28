@@ -13,7 +13,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -115,7 +115,7 @@ func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	content, _, err := client.GetContents(owner, repo, ref, filePath)
+	content, _, err := client.Repositories.GetContents(ctx, owner, repo, ref, filePath)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get file err: %v", err))
 	}
@@ -178,7 +178,7 @@ func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	content, _, err := client.ListContents(owner, repo, ref, filePath)
+	content, _, err := client.Repositories.ListContents(ctx, owner, repo, ref, filePath)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get dir content err: %v", err))
 	}
@@ -219,7 +219,7 @@ func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 				BranchName: branchName,
 			},
 		}
-		_, _, err = client.UpdateFile(owner, repo, filePath, opt)
+		_, _, err = client.Repositories.UpdateFile(ctx, owner, repo, filePath, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("update file err: %v", err))
 		}
@@ -237,7 +237,7 @@ func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if newBranch, ok := args["new_branch_name"].(string); ok && newBranch != "" {
 		opt.NewBranchName = newBranch
 	}
-	_, _, err = client.CreateFile(owner, repo, filePath, opt)
+	_, _, err = client.Repositories.CreateFile(ctx, owner, repo, filePath, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create file err: %v", err))
 	}
@@ -275,7 +275,7 @@ func DeleteFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteFile(owner, repo, filePath, opt)
+	_, err = client.Repositories.DeleteFile(ctx, owner, repo, filePath, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete file err: %v", err))
 	}

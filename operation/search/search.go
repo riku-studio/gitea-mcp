@@ -12,7 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -110,7 +110,7 @@ func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	users, _, err := client.SearchUsers(opt)
+	users, _, err := client.Users.SearchUsers(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("search users err: %v", err))
 	}
@@ -140,7 +140,7 @@ func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	teams, _, err := client.SearchOrgTeams(org, &opt)
+	teams, _, err := client.Organizations.SearchOrgTeams(ctx, org, &opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("search organization teams error: %v", err))
 	}
@@ -176,7 +176,7 @@ func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	repos, _, err := client.SearchRepos(opt)
+	repos, _, err := client.Repositories.SearchRepos(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("search repos error: %v", err))
 	}
@@ -214,7 +214,7 @@ func IssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	issues, _, err := client.ListIssues(opt)
+	issues, _, err := client.Issues.ListIssues(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("search issues err: %v", err))
 	}

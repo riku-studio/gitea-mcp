@@ -3,7 +3,7 @@ package repo
 import (
 	"gitea.com/gitea/gitea-mcp/pkg/slim"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimBranch(b *gitea_sdk.Branch) map[string]any {

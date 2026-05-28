@@ -3,7 +3,7 @@ package pull
 import (
 	"gitea.com/gitea/gitea-mcp/pkg/slim"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func repoRef(r *gitea_sdk.Repository) map[string]any {

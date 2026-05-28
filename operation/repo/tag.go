@@ -9,7 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -98,7 +98,7 @@ func CreateTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, _, err = client.CreateTag(owner, repo, gitea_sdk.CreateTagOption{
+	_, _, err = client.Repositories.CreateTag(ctx, owner, repo, gitea_sdk.CreateTagOption{
 		TagName: tagName,
 		Target:  target,
 		Message: message,
@@ -129,7 +129,7 @@ func DeleteTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	_, err = client.DeleteTag(owner, repo, tagName)
+	_, err = client.Repositories.DeleteTag(ctx, owner, repo, tagName)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete tag error: %v", err))
 	}
@@ -156,7 +156,7 @@ func GetTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	tag, _, err := client.GetTag(owner, repo, tagName)
+	tag, _, err := client.Repositories.GetTag(ctx, owner, repo, tagName)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get tag error: %v", err))
 	}
@@ -181,7 +181,7 @@ func ListTagsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	tags, _, err := client.ListRepoTags(owner, repo, gitea_sdk.ListRepoTagsOptions{
+	tags, _, err := client.Repositories.ListRepoTags(ctx, owner, repo, gitea_sdk.ListRepoTagsOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     int(page),
 			PageSize: int(pageSize),

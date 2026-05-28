@@ -1,7 +1,7 @@
 package user
 
 import (
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimOrg(o *gitea_sdk.Organization) map[string]any {

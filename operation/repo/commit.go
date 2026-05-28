@@ -9,7 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -76,7 +76,7 @@ func ListRepoCommitsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	commits, _, err := client.ListRepoCommits(owner, repo, opt)
+	commits, _, err := client.Repositories.ListRepoCommits(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list repo commits err: %v", err))
 	}
@@ -101,7 +101,7 @@ func GetCommitFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	commit, _, err := client.GetSingleCommit(owner, repo, sha)
+	commit, _, err := client.Repositories.GetSingleCommit(ctx, owner, repo, sha)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get commit %v err: %v", sha, err))
 	}

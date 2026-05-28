@@ -11,7 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -105,10 +105,10 @@ func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 		},
 	}
 	if status, ok := args["status"].(string); ok {
-		opt.Status = []gitea_sdk.NotifyStatus{gitea_sdk.NotifyStatus(status)}
+		opt.Status = []gitea_sdk.NotificationStatus{gitea_sdk.NotificationStatus(status)}
 	}
 	if subjectType, ok := args["subject_type"].(string); ok {
-		opt.SubjectTypes = []gitea_sdk.NotifySubjectType{gitea_sdk.NotifySubjectType(subjectType)}
+		opt.SubjectTypes = []gitea_sdk.NotificationSubjectType{gitea_sdk.NotificationSubjectType(subjectType)}
 	}
 	if t := params.GetOptionalTime(args, "since"); t != nil {
 		opt.Since = *t
@@ -125,14 +125,14 @@ func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	owner := params.GetOptionalString(args, "owner", "")
 	repo := params.GetOptionalString(args, "repo", "")
 	if owner != "" && repo != "" {
-		threads, _, err := client.ListRepoNotifications(owner, repo, opt)
+		threads, _, err := client.Notifications.ListByRepo(ctx, owner, repo, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("list %v/%v/notifications err: %v", owner, repo, err))
 		}
 		return to.TextResult(slimThreads(threads))
 	}
 
-	threads, _, err := client.ListNotifications(opt)
+	threads, _, err := client.Notifications.List(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list notifications err: %v", err))
 	}
@@ -148,7 +148,7 @@ func getNotificationFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	thread, _, err := client.GetNotification(id)
+	thread, _, err := client.Notifications.GetByID(ctx, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get notification/%v err: %v", id, err))
 	}
@@ -164,7 +164,7 @@ func markNotificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	thread, _, err := client.ReadNotification(id)
+	thread, _, err := client.Notifications.MarkReadByID(ctx, id)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("mark notification/%v read err: %v", id, err))
 	}
@@ -192,7 +192,7 @@ func markAllNotificationsReadFn(ctx context.Context, req mcp.CallToolRequest) (*
 	owner := params.GetOptionalString(args, "owner", "")
 	repo := params.GetOptionalString(args, "repo", "")
 	if owner != "" && repo != "" {
-		threads, _, err := client.ReadRepoNotifications(owner, repo, opt)
+		threads, _, err := client.Notifications.MarkReadByRepo(ctx, owner, repo, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("mark %v/%v/notifications read err: %v", owner, repo, err))
 		}
@@ -202,7 +202,7 @@ func markAllNotificationsReadFn(ctx context.Context, req mcp.CallToolRequest) (*
 		return to.TextResult("All repository notifications marked as read")
 	}
 
-	threads, _, err := client.ReadNotifications(opt)
+	threads, _, err := client.Notifications.MarkRead(ctx, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("mark all notifications read err: %v", err))
 	}

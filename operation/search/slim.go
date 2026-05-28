@@ -3,7 +3,7 @@ package search
 import (
 	"gitea.com/gitea/gitea-mcp/pkg/slim"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimUserDetails(users []*gitea_sdk.User) []map[string]any {

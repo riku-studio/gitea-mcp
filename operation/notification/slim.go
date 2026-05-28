@@ -1,7 +1,7 @@
 package notification
 
 import (
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimThread(t *gitea_sdk.NotificationThread) map[string]any {

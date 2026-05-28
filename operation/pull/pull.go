@@ -14,7 +14,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -202,7 +202,7 @@ func closePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	}
 
 	state := gitea_sdk.StateClosed
-	pr, _, err := client.EditPullRequest(owner, repo, index, gitea_sdk.EditPullRequestOption{
+	pr, _, err := client.PullRequests.EditPullRequest(ctx, owner, repo, index, gitea_sdk.EditPullRequestOption{
 		State: &state,
 	})
 	if err != nil {
@@ -232,7 +232,7 @@ func reopenPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	}
 
 	state := gitea_sdk.StateOpen
-	pr, _, err := client.EditPullRequest(owner, repo, index, gitea_sdk.EditPullRequestOption{
+	pr, _, err := client.PullRequests.EditPullRequest(ctx, owner, repo, index, gitea_sdk.EditPullRequestOption{
 		State: &state,
 	})
 	if err != nil {
@@ -279,7 +279,7 @@ func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	pr, _, err := client.GetPullRequest(owner, repo, index)
+	pr, _, err := client.PullRequests.GetPullRequest(ctx, owner, repo, index)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
@@ -317,7 +317,7 @@ func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	diffBytes, _, err := client.GetPullRequestDiff(owner, repo, index, gitea_sdk.PullRequestDiffOptions{
+	diffBytes, _, err := client.PullRequests.GetPullRequestDiff(ctx, owner, repo, index, gitea_sdk.PullRequestDiffOptions{
 		Binary: binary,
 	})
 	if err != nil {
@@ -354,7 +354,7 @@ func listRepoPullRequestsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	pullRequests, _, err := client.ListRepoPullRequests(owner, repo, opt)
+	pullRequests, _, err := client.PullRequests.ListRepoPullRequests(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list %v/%v/pull_requests err: %v", owner, repo, err))
 	}
@@ -429,7 +429,7 @@ func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 		opt.Labels = labelIDs
 	}
 	opt.Deadline = params.GetOptionalTime(args, "deadline")
-	pr, _, err := client.CreatePullRequest(owner, repo, opt)
+	pr, _, err := client.PullRequests.CreatePullRequest(ctx, owner, repo, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create %v/%v/pull_request err: %v", owner, repo, err))
 	}
@@ -437,7 +437,7 @@ func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	return to.TextResult(slimPullRequest(pr))
 }
 
-type reviewerOp func(client *gitea_sdk.Client, owner, repo string, index int64, opt gitea_sdk.PullReviewRequestOptions) (*gitea_sdk.Response, error)
+type reviewerOp func(client *gitea_sdk.PullRequestsService, ctx context.Context, owner, repo string, index int64, opt gitea_sdk.PullReviewRequestOptions) (*gitea_sdk.Response, error)
 
 func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb string, op reviewerOp) (*mcp.CallToolResult, error) {
 	args := req.GetArguments()
@@ -462,7 +462,7 @@ func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb st
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	if _, err := op(client, owner, repo, index, gitea_sdk.PullReviewRequestOptions{
+	if _, err := op(client.PullRequests, ctx, owner, repo, index, gitea_sdk.PullReviewRequestOptions{
 		Reviewers:     reviewers,
 		TeamReviewers: teamReviewers,
 	}); err != nil {
@@ -479,11 +479,11 @@ func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb st
 }
 
 func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return pullRequestReviewerFn(ctx, req, "create", (*gitea_sdk.Client).CreateReviewRequests)
+	return pullRequestReviewerFn(ctx, req, "create", (*gitea_sdk.PullRequestsService).CreateReviewRequests)
 }
 
 func deletePullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return pullRequestReviewerFn(ctx, req, "delete", (*gitea_sdk.Client).DeleteReviewRequests)
+	return pullRequestReviewerFn(ctx, req, "delete", (*gitea_sdk.PullRequestsService).DeleteReviewRequests)
 }
 
 func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -507,7 +507,7 @@ func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	reviews, _, err := client.ListPullReviews(owner, repo, index, gitea_sdk.ListPullReviewsOptions{
+	reviews, _, err := client.PullRequests.ListPullReviews(ctx, owner, repo, index, gitea_sdk.ListPullReviewsOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
 			PageSize: pageSize,
@@ -544,7 +544,7 @@ func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	review, _, err := client.GetPullReview(owner, repo, index, reviewID)
+	review, _, err := client.PullRequests.GetPullReview(ctx, owner, repo, index, reviewID)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get review %v for %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
 	}
@@ -576,7 +576,7 @@ func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolReques
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	comments, _, err := client.ListPullReviewComments(owner, repo, index, reviewID)
+	comments, _, err := client.PullRequests.ListPullReviewComments(ctx, owner, repo, index, reviewID)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list review comments for review %v on %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
 	}
@@ -640,7 +640,7 @@ func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	review, _, err := client.CreatePullReview(owner, repo, index, opt)
+	review, _, err := client.PullRequests.CreatePullReview(ctx, owner, repo, index, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create review for %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
@@ -683,7 +683,7 @@ func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	review, _, err := client.SubmitPullReview(owner, repo, index, reviewID, opt)
+	review, _, err := client.PullRequests.SubmitPullReview(ctx, owner, repo, index, reviewID, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("submit review %v for %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
 	}
@@ -715,7 +715,7 @@ func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	_, err = client.DeletePullReview(owner, repo, index, reviewID)
+	_, err = client.PullRequests.DeletePullReview(ctx, owner, repo, index, reviewID)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("delete review %v for %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
 	}
@@ -759,7 +759,7 @@ func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	_, err = client.DismissPullReview(owner, repo, index, reviewID, opt)
+	_, err = client.PullRequests.DismissPullReview(ctx, owner, repo, index, reviewID, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("dismiss review %v for %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
 	}
@@ -802,18 +802,19 @@ func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	forceMerge, _ := args["force_merge"].(bool)
 	mergeWhenChecksSucceed, _ := args["merge_when_checks_succeed"].(bool)
 	headCommitID, _ := args["head_commit_id"].(string)
+	deleteBranchAfterMerge := &deleteBranch
 
 	opt := gitea_sdk.MergePullRequestOption{
 		Style:                  gitea_sdk.MergeStyle(mergeStyle),
 		Title:                  title,
 		Message:                message,
-		DeleteBranchAfterMerge: deleteBranch,
+		DeleteBranchAfterMerge: deleteBranchAfterMerge,
 		ForceMerge:             forceMerge,
 		MergeWhenChecksSucceed: mergeWhenChecksSucceed,
 		HeadCommitId:           headCommitID,
 	}
 
-	merged, resp, err := client.MergePullRequest(owner, repo, index, opt)
+	merged, resp, err := client.PullRequests.MergePullRequest(ctx, owner, repo, index, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("merge %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
@@ -865,7 +866,7 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 			if err != nil {
 				return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 			}
-			pr, _, err := client.GetPullRequest(owner, repo, index)
+			pr, _, err := client.PullRequests.GetPullRequest(ctx, owner, repo, index)
 			if err != nil {
 				return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
 			}
@@ -904,7 +905,7 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	pr, _, err := client.EditPullRequest(owner, repo, index, opt)
+	pr, _, err := client.PullRequests.EditPullRequest(ctx, owner, repo, index, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("edit %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
@@ -953,7 +954,7 @@ func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	files, _, err := client.ListPullRequestFiles(owner, repo, index, gitea_sdk.ListPullRequestFilesOptions{
+	files, _, err := client.PullRequests.ListPullRequestFiles(ctx, owner, repo, index, gitea_sdk.ListPullRequestFilesOptions{
 		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
 	})
 	if err != nil {
@@ -980,7 +981,7 @@ func getPullRequestStatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	pr, _, err := client.GetPullRequest(owner, repo, index)
+	pr, _, err := client.PullRequests.GetPullRequest(ctx, owner, repo, index)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
 	}
@@ -988,7 +989,7 @@ func getPullRequestStatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		return to.ErrorResult(fmt.Errorf("pr %v/%v/%v has no head SHA", owner, repo, index))
 	}
 
-	status, _, err := client.GetCombinedStatus(owner, repo, pr.Head.Sha)
+	status, _, err := client.Repositories.GetCombinedStatus(ctx, owner, repo, pr.Head.Sha)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v status err: %v", owner, repo, index, err))
 	}

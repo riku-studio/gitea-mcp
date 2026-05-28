@@ -1,7 +1,7 @@
 package timetracking
 
 import (
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimStopWatch(s *gitea_sdk.StopWatch) map[string]any {

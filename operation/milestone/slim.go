@@ -1,7 +1,7 @@
 package milestone
 
 import (
-	gitea_sdk "code.gitea.io/sdk/gitea"
+	gitea_sdk "gitea.dev/sdk"
 )
 
 func slimMilestone(m *gitea_sdk.Milestone) map[string]any {
