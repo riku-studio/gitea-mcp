@@ -34,6 +34,23 @@ Model Context Protocol (MCP) is a protocol that allows for the integration of va
 
 ## 🚧 Installation
 
+### Usage with OpenCode (opencode.ai)
+
+Add a snippet like the following in the "mcp" top-level object (add one if you don't have any):
+
+```json
+    "gitea-mcp": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "gitea-mcp",
+        "-t", "stdio",
+        "-H", "https://git.your-domain.org",
+        "-T", "<your personal access token>"
+      ]
+    }
+```
+
 ### Usage with Claude Code
 
 This method uses `go run` and requires [Go](https://go.dev) to be installed.
