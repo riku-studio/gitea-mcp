@@ -44,7 +44,9 @@ var (
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
 		mcp.WithString("state", mcp.DefaultString("all")),
+		mcp.WithString("type", mcp.Description("issues or pulls"), mcp.Enum("issues", "pulls")),
 		mcp.WithArray("labels", mcp.Description("label name filter"), mcp.Items(map[string]any{"type": "string"})),
+		mcp.WithArray("milestones", mcp.Description("milestone name or ID filter"), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("since", mcp.Description("updated after ISO 8601")),
 		mcp.WithString("before", mcp.Description("updated before ISO 8601")),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
@@ -181,14 +183,22 @@ func listRepoIssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 		state = "all"
 	}
 	labels := params.GetStringSlice(req.GetArguments(), "labels")
+	milestones := params.GetStringSlice(req.GetArguments(), "milestones")
 	page, pageSize := params.GetPagination(req.GetArguments(), 30)
 	opt := gitea_sdk.ListIssueOption{
-		State:  gitea_sdk.StateType(state),
-		Labels: labels,
+		State:      gitea_sdk.StateType(state),
+		Labels:     labels,
+		Milestones: milestones,
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
 			PageSize: pageSize,
 		},
+	}
+	switch req.GetArguments()["type"] {
+	case "issues":
+		opt.Type = gitea_sdk.IssueTypeIssue
+	case "pulls":
+		opt.Type = gitea_sdk.IssueTypePull
 	}
 	if t := params.GetOptionalTime(req.GetArguments(), "since"); t != nil {
 		opt.Since = *t

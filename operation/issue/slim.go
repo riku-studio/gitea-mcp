@@ -63,6 +63,12 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 		if len(i.Labels) > 0 {
 			m["labels"] = slim.LabelNames(i.Labels)
 		}
+		if i.Milestone != nil {
+			m["milestone"] = map[string]any{
+				"id":    i.Milestone.ID,
+				"title": i.Milestone.Title,
+			}
+		}
 		if i.Ref != "" {
 			m["ref"] = i.Ref
 		}

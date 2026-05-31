@@ -63,10 +63,12 @@ func Test_listRepoIssuesFn_filters(t *testing.T) {
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Arguments: map[string]any{
-				"owner":  owner,
-				"repo":   repo,
-				"labels": []any{"bug", "enhancement"},
-				"since":  "2026-01-01T00:00:00Z",
+				"owner":      owner,
+				"repo":       repo,
+				"type":       "issues",
+				"labels":     []any{"bug", "enhancement"},
+				"milestones": []any{"v1.0", "2"},
+				"since":      "2026-01-01T00:00:00Z",
 			},
 		},
 	}
@@ -84,6 +86,59 @@ func Test_listRepoIssuesFn_filters(t *testing.T) {
 	}
 	if !strings.Contains(gotQuery, "since=2026-01-01") {
 		t.Fatalf("expected since query param, got %s", gotQuery)
+	}
+	if !strings.Contains(gotQuery, "milestones=v1.0%2C2") {
+		t.Fatalf("expected milestones query param, got %s", gotQuery)
+	}
+	if !strings.Contains(gotQuery, "type=issues") {
+		t.Fatalf("expected type query param, got %s", gotQuery)
+	}
+}
+
+func Test_listRepoIssuesFn_includesMilestone(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+	)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/version":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"private":false}`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/issues", owner, repo):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[
+				{"number": 1, "title": "with milestone", "state": "closed", "milestone": {"id": 5, "title": "v1.0"}},
+				{"number": 2, "title": "without milestone", "state": "open"}
+			]`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
+	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
+	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+
+	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+		"owner": owner, "repo": repo,
+	}}}
+	res, err := listRepoIssuesFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("listRepoIssuesFn() error = %v", err)
+	}
+	if res.IsError {
+		t.Fatalf("unexpected error result: %v", res.Content)
+	}
+	body := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(body, `"milestone"`) || !strings.Contains(body, `"v1.0"`) {
+		t.Fatalf("expected milestone in list output, got: %s", body)
 	}
 }
 
