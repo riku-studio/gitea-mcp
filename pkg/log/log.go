@@ -1,6 +1,7 @@
 package log
 
 import (
+	"log/slog"
 	"os"
 	"sync"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -77,6 +79,13 @@ func SetDefault(logger *zap.Logger) {
 	if logger != nil {
 		defaultLogger = logger
 	}
+}
+
+// Slog returns a *slog.Logger that writes through the default zap logger,
+// so structured logging from dependencies (e.g. the MCP HTTP transport) shares
+// the same destination and formatting as the rest of the server.
+func Slog() *slog.Logger {
+	return slog.New(zapslog.NewHandler(Default().Core()))
 }
 
 func Debug(msg string, fields ...zap.Field) {

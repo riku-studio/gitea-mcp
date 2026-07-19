@@ -96,7 +96,7 @@ func Run() error {
 	case "http":
 		httpServer := server.NewStreamableHTTPServer(
 			mcpServer,
-			server.WithLogger(log.Default().Sugar()),
+			server.WithStreamableHTTPLogger(log.Slog()),
 			server.WithHeartbeatInterval(30*time.Second),
 			server.WithHTTPContextFunc(getContextWithToken),
 		)
