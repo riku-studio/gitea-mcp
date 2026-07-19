@@ -28,6 +28,7 @@ const (
 var (
 	CreateRepoTool = mcp.NewTool(
 		CreateRepoToolName,
+		mcp.WithDescription("Create a new Git repository, optionally under an organization (defaults to the authenticated user's account), with options for visibility, template, license, .gitignore, and initial README."),
 		mcp.WithToolAnnotation(annotation.Write("Create a new repository")),
 		mcp.WithString("name", mcp.Required()),
 		mcp.WithString("description"),
@@ -46,6 +47,7 @@ var (
 
 	ForkRepoTool = mcp.NewTool(
 		ForkRepoToolName,
+		mcp.WithDescription("Fork an existing repository into the authenticated user's account or a target organization, optionally under a new name."),
 		mcp.WithToolAnnotation(annotation.Write("Fork a repository")),
 		mcp.WithString("user", mcp.Required(), mcp.Description("owner of source repo")),
 		mcp.WithString("repo", mcp.Required()),
@@ -55,6 +57,7 @@ var (
 
 	ListMyReposTool = mcp.NewTool(
 		ListMyReposToolName,
+		mcp.WithDescription("List repositories owned by the authenticated user."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List my repositories")),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
 		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
@@ -62,6 +65,7 @@ var (
 
 	ListOrgReposTool = mcp.NewTool(
 		ListOrgReposToolName,
+		mcp.WithDescription("List repositories belonging to an organization."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List organization repositories")),
 		mcp.WithString("org", mcp.Required()),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),

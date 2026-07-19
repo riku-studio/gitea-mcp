@@ -40,6 +40,7 @@ const (
 var (
 	ListRepoIssuesTool = mcp.NewTool(
 		ListRepoIssuesToolName,
+		mcp.WithDescription("List issues in a repository (or pull requests, via the 'type' filter), filterable by state, labels, milestones, and update time range."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository issues")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

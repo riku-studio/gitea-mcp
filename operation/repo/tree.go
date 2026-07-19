@@ -20,6 +20,7 @@ const (
 
 var GetRepoTreeTool = mcp.NewTool(
 	GetRepoTreeToolName,
+	mcp.WithDescription("Get the file tree of a repository at a given ref (SHA, branch, or tag), optionally recursively."),
 	mcp.WithToolAnnotation(annotation.ReadOnly("Get repository file tree")),
 	mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 	mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

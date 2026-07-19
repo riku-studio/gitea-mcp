@@ -39,6 +39,7 @@ var (
 
 	GetDirContentTool = mcp.NewTool(
 		GetDirToolName,
+		mcp.WithDescription("List the entries (files and subdirectories) in a repository directory at a given ref (branch, tag, or commit SHA)."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get directory contents")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -62,6 +63,7 @@ var (
 
 	DeleteFileTool = mcp.NewTool(
 		DeleteFileToolName,
+		mcp.WithDescription("Delete a file from a repository by committing the removal to a branch. Requires the file's current SHA and a commit message."),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a file")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

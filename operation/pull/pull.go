@@ -31,6 +31,7 @@ const (
 var (
 	ListRepoPullRequestsTool = mcp.NewTool(
 		ListRepoPullRequestsToolName,
+		mcp.WithDescription("List pull requests in a repository, filterable by state and milestone, with configurable sort order (e.g. recently updated, most commented)."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List pull requests")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

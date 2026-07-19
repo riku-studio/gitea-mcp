@@ -22,6 +22,7 @@ const (
 var (
 	ListRepoCommitsTool = mcp.NewTool(
 		ListRepoCommitsToolName,
+		mcp.WithDescription("List commits in a repository, optionally starting from a specific branch or SHA and filtered to commits touching a given file path."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository commits")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -33,6 +34,7 @@ var (
 
 	GetCommitTool = mcp.NewTool(
 		GetCommitToolName,
+		mcp.WithDescription("Get details for a single commit in a repository by its SHA."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get commit details")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

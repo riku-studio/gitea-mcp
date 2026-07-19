@@ -2,7 +2,35 @@ package operation
 
 import (
 	"testing"
+
+	"gitea.com/gitea/gitea-mcp/pkg/flag"
 )
+
+// TestAllToolsHaveDescriptions ensures every registered tool sets a non-empty
+// Tool.Description. mcp-go only serializes the "description" field of a tool
+// when it is non-empty, so an omitted description makes strict MCP clients
+// (e.g. mcp-probe) reject the tools/list response with "missing field
+// `description`".
+func TestAllToolsHaveDescriptions(t *testing.T) {
+	origRO, origAllow := flag.ReadOnly, flag.AllowedTools
+	t.Cleanup(func() {
+		flag.ReadOnly, flag.AllowedTools = origRO, origAllow
+	})
+	flag.ReadOnly = false
+	flag.AllowedTools = nil
+
+	var missing []string
+	for _, d := range domainTools {
+		for _, st := range d.Tools() {
+			if st.Tool.Description == "" {
+				missing = append(missing, st.Tool.Name)
+			}
+		}
+	}
+	if len(missing) > 0 {
+		t.Errorf("tools missing a description: %v", missing)
+	}
+}
 
 func TestParseAuthToken(t *testing.T) {
 	tests := []struct {

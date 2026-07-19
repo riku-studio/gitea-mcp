@@ -24,6 +24,7 @@ const (
 var (
 	CreateTagTool = mcp.NewTool(
 		CreateTagToolName,
+		mcp.WithDescription("Create a new Git tag in a repository at a target commit, branch, or existing tag, with an optional annotation message."),
 		mcp.WithToolAnnotation(annotation.Write("Create a tag")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -34,6 +35,7 @@ var (
 
 	DeleteTagTool = mcp.NewTool(
 		DeleteTagToolName,
+		mcp.WithDescription("Permanently delete a tag from a repository. This action is destructive and cannot be undone."),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a tag")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -42,6 +44,7 @@ var (
 
 	GetTagTool = mcp.NewTool(
 		GetTagToolName,
+		mcp.WithDescription("Get details for a single tag in a repository by name."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get tag details")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -50,6 +53,7 @@ var (
 
 	ListTagsTool = mcp.NewTool(
 		ListTagsToolName,
+		mcp.WithDescription("List all tags in a repository, paginated."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List tags")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

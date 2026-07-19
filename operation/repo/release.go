@@ -25,6 +25,7 @@ const (
 var (
 	CreateReleaseTool = mcp.NewTool(
 		CreateReleaseToolName,
+		mcp.WithDescription("Create a new release in a repository from a tag, optionally marking it as a draft or pre-release."),
 		mcp.WithToolAnnotation(annotation.Write("Create a release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -38,6 +39,7 @@ var (
 
 	DeleteReleaseTool = mcp.NewTool(
 		DeleteReleaseToolName,
+		mcp.WithDescription("Delete a release from a repository by its numeric ID. This action is destructive and cannot be undone."),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -55,6 +57,7 @@ var (
 
 	GetLatestReleaseTool = mcp.NewTool(
 		GetLatestReleaseToolName,
+		mcp.WithDescription("Get the most recent published (non-draft) release in a repository."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Get latest release")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -62,6 +65,7 @@ var (
 
 	ListReleasesTool = mcp.NewTool(
 		ListReleasesToolName,
+		mcp.WithDescription("List releases in a repository, optionally filtered to drafts or pre-releases."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List releases")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

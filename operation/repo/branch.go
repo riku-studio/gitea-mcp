@@ -23,6 +23,7 @@ const (
 var (
 	CreateBranchTool = mcp.NewTool(
 		CreateBranchToolName,
+		mcp.WithDescription("Create a new branch in a repository, optionally from a specific source branch (defaults to the repository's default branch)."),
 		mcp.WithToolAnnotation(annotation.Write("Create a new branch")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -32,6 +33,7 @@ var (
 
 	DeleteBranchTool = mcp.NewTool(
 		DeleteBranchToolName,
+		mcp.WithDescription("Permanently delete a branch from a repository. This action is destructive and cannot be undone."),
 		mcp.WithToolAnnotation(annotation.Destructive("Delete a branch")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
@@ -40,6 +42,7 @@ var (
 
 	ListBranchesTool = mcp.NewTool(
 		ListBranchesToolName,
+		mcp.WithDescription("List all branches in a repository, paginated."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("List repository branches")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),

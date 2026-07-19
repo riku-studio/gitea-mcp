@@ -29,6 +29,7 @@ const (
 var (
 	SearchUsersTool = mcp.NewTool(
 		SearchUsersToolName,
+		mcp.WithDescription("Search for Gitea users by username or full name."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search users")),
 		mcp.WithString("query", mcp.Required()),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
@@ -37,6 +38,7 @@ var (
 
 	SearOrgTeamsTool = mcp.NewTool(
 		SearchOrgTeamsToolName,
+		mcp.WithDescription("Search for teams within an organization by name, optionally including each team's description in the results."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search organization teams")),
 		mcp.WithString("org", mcp.Required()),
 		mcp.WithString("query", mcp.Required()),
@@ -47,6 +49,7 @@ var (
 
 	SearchReposTool = mcp.NewTool(
 		SearchReposToolName,
+		mcp.WithDescription("Search for repositories by keyword, with filters for topic/description matching, owner, visibility, archived status, and sort order."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Search repositories")),
 		mcp.WithString("query", mcp.Required()),
 		mcp.WithBoolean("keywordIsTopic"),
