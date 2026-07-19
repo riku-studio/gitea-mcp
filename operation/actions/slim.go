@@ -90,3 +90,19 @@ func slimActionWorkflow(raw any) any {
 func slimActionWorkflows(raw any) any {
 	return slimPaginated(raw, slimWorkflow)
 }
+
+func slimArtifact(m map[string]any) map[string]any {
+	return pick(m, "id", "name", "size_in_bytes", "expired",
+		"created_at", "updated_at", "expires_at")
+}
+
+func slimActionArtifact(raw any) any {
+	if m, ok := raw.(map[string]any); ok {
+		return slimArtifact(m)
+	}
+	return raw
+}
+
+func slimActionArtifacts(raw any) any {
+	return slimPaginated(raw, slimArtifact)
+}

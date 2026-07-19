@@ -27,18 +27,20 @@ const (
 var (
 	ActionsRunReadTool = mcp.NewTool(
 		ActionsRunReadToolName,
-		mcp.WithDescription("Read Actions workflows, runs, jobs, and logs."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions workflow, run, and job data")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job_log_preview", "download_job_log")),
+		mcp.WithDescription("Read Actions workflows, runs, jobs, logs, and artifacts."),
+		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions workflow, run, job, and artifact data")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job_log_preview", "download_job_log", "list_artifacts", "list_run_artifacts", "get_artifact", "download_artifact")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
 		mcp.WithString("workflow_id", mcp.Description("ID or filename (for 'get_workflow')")),
-		mcp.WithNumber("run_id", mcp.Description("for 'get_run'/'list_run_jobs'")),
+		mcp.WithNumber("run_id", mcp.Description("for 'get_run'/'list_run_jobs'/'list_run_artifacts'")),
 		mcp.WithNumber("job_id", mcp.Description("for log methods")),
+		mcp.WithNumber("artifact_id", mcp.Description("for 'get_artifact'/'download_artifact'")),
+		mcp.WithString("artifact_name", mcp.Description("name filter for 'list_artifacts'/'list_run_artifacts'")),
 		mcp.WithString("status", mcp.Description("filter for 'list_runs'/'list_jobs'")),
 		mcp.WithNumber("tail_lines", mcp.Description("log tail lines"), mcp.DefaultNumber(200), mcp.Min(1)),
 		mcp.WithNumber("max_bytes", mcp.Description("max log bytes"), mcp.DefaultNumber(65536), mcp.Min(1024)),
-		mcp.WithString("output_path", mcp.Description("for 'download_job_log'")),
+		mcp.WithString("output_path", mcp.Description("for 'download_job_log'/'download_artifact'")),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
 		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
 	)
@@ -84,6 +86,14 @@ func runReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResul
 		return getRepoActionJobLogPreviewFn(ctx, req)
 	case "download_job_log":
 		return downloadRepoActionJobLogFn(ctx, req)
+	case "list_artifacts":
+		return listRepoActionArtifactsFn(ctx, req)
+	case "list_run_artifacts":
+		return listRepoActionRunArtifactsFn(ctx, req)
+	case "get_artifact":
+		return getRepoActionArtifactFn(ctx, req)
+	case "download_artifact":
+		return downloadRepoActionArtifactFn(ctx, req)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}

@@ -302,6 +302,10 @@ The Gitea MCP Server supports the following tools:
 |     list_repo_action_run_jobs     |   Actions    |               List Actions jobs for a run                |
 |  get_repo_action_job_log_preview  |   Actions    |           Get a job log preview (tail/limited)           |
 |   download_repo_action_job_log    |   Actions    |               Download a job log to a file               |
+|     list_repo_action_artifacts     |   Actions    |          List repository Actions artifacts               |
+|   list_repo_action_run_artifacts   |   Actions    |            List Actions artifacts for a run              |
+|      get_repo_action_artifact      |   Actions    |            Get a repository Actions artifact             |
+|   download_repo_action_artifact    |   Actions    |         Download an Actions artifact zip to a file       |
 |   get_gitea_mcp_server_version    |    Server    |         Get the version of the Gitea MCP Server          |
 |          list_wiki_pages          |     Wiki     |           List all wiki pages in a repository            |
 |           get_wiki_page           |     Wiki     |           Get a wiki page content and metadata           |
