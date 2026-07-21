@@ -29,12 +29,12 @@ var (
 		ActionsRunReadToolName,
 		mcp.WithDescription("Read Actions workflows, runs, jobs, logs, and artifacts."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions workflow, run, job, and artifact data")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job_log_preview", "download_job_log", "list_artifacts", "list_run_artifacts", "get_artifact", "download_artifact")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job", "get_job_log_preview", "download_job_log", "list_artifacts", "list_run_artifacts", "get_artifact", "download_artifact")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
 		mcp.WithString("workflow_id", mcp.Description("ID or filename (for 'get_workflow')")),
 		mcp.WithNumber("run_id", mcp.Description("for 'get_run'/'list_run_jobs'/'list_run_artifacts'")),
-		mcp.WithNumber("job_id", mcp.Description("for log methods")),
+		mcp.WithNumber("job_id", mcp.Description("for 'get_job'/log methods")),
 		mcp.WithNumber("artifact_id", mcp.Description("for 'get_artifact'/'download_artifact'")),
 		mcp.WithString("artifact_name", mcp.Description("name filter for 'list_artifacts'/'list_run_artifacts'")),
 		mcp.WithString("status", mcp.Description("filter for 'list_runs'/'list_jobs'")),
@@ -82,6 +82,8 @@ func runReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResul
 		return listRepoActionJobsFn(ctx, req)
 	case "list_run_jobs":
 		return listRepoActionRunJobsFn(ctx, req)
+	case "get_job":
+		return getRepoActionJobFn(ctx, req)
 	case "get_job_log_preview":
 		return getRepoActionJobLogPreviewFn(ctx, req)
 	case "download_job_log":
@@ -414,6 +416,37 @@ func listRepoActionRunJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return to.ErrorResult(fmt.Errorf("list action run jobs err: %v", err))
 	}
 	return to.TextResult(slimActionJobs(result))
+}
+
+func getRepoActionJobFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(req.GetArguments(), "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(req.GetArguments(), "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	jobID, err := params.GetIndex(req.GetArguments(), "job_id")
+	if err != nil || jobID <= 0 {
+		return to.ErrorResult(errors.New("job_id is required"))
+	}
+
+	var result any
+	err = doJSONWithFallback(ctx, "GET",
+		[]string{
+			fmt.Sprintf("repos/%s/%s/actions/jobs/%d", url.PathEscape(owner), url.PathEscape(repo), jobID),
+		},
+		nil, nil, &result,
+	)
+	if err != nil {
+		var httpErr *gitea.HTTPError
+		if errors.As(err, &httpErr) && (httpErr.StatusCode == http.StatusNotFound || httpErr.StatusCode == http.StatusMethodNotAllowed) {
+			return to.ErrorResult(fmt.Errorf("get action job not supported on this Gitea version (endpoint returned %d, requires Gitea 1.26+). Check https://docs.gitea.com/api/1.26/ for available Actions endpoints", httpErr.StatusCode))
+		}
+		return to.ErrorResult(fmt.Errorf("get action job err: %v", err))
+	}
+	return to.TextResult(slimActionJob(result))
 }
 
 func logPaths(owner, repo string, jobID int64) []string {

@@ -300,6 +300,7 @@ The Gitea MCP Server supports the following tools:
 |       rerun_repo_action_run       |   Actions    |              Rerun a repository Actions run              |
 |       list_repo_action_jobs       |   Actions    |               List repository Actions jobs               |
 |     list_repo_action_run_jobs     |   Actions    |               List Actions jobs for a run                |
+|       get_repo_action_job         |   Actions    |            Get a single Actions job's detail             |
 |  get_repo_action_job_log_preview  |   Actions    |           Get a job log preview (tail/limited)           |
 |   download_repo_action_job_log    |   Actions    |               Download a job log to a file               |
 |     list_repo_action_artifacts     |   Actions    |          List repository Actions artifacts               |

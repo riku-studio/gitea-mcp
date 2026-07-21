@@ -76,6 +76,13 @@ func slimActionRuns(raw any) any {
 	return slimPaginated(raw, slimRun)
 }
 
+func slimActionJob(raw any) any {
+	if m, ok := raw.(map[string]any); ok {
+		return slimJob(m)
+	}
+	return raw
+}
+
 func slimActionJobs(raw any) any {
 	return slimPaginated(raw, slimJob)
 }
