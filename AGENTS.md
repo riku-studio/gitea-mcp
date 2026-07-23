@@ -1,8 +1,12 @@
 - Use `make help` to find available development targets
 - Run `make fmt` to format `.go` files, and run `make lint-go` to lint them
 - Run `make tidy` after any `go.mod` changes
+- Run single go tests with `go test -run '^TestName$' ./modulepath/`
 - Ensure no trailing whitespace in edited files
-- Use Conventional Commits format for commit messages and PR titles (e.g. `type(scope): subject`)
+- Use Conventional Commits for commit messages and PR titles, e.g. `type(scope): subject`; `!` before the colon if breaking. Use `test` type for test-only changes.
 - Never force-push, amend, or squash unless asked. Use new commits and normal push for pull request updates
+- Preserve existing code comments, do not remove or rewrite comments that are still relevant
+- Keep comments short, prefer same-line, explain why, never narrate code
+- Register new tools with `Tool.RegisterRead` or `Tool.RegisterWrite`, and add them to the tool tables in `README.md`, `README.zh-cn.md` and `README.zh-tw.md`
 - Include authorship attribution in issue and pull request comments
 - Add `Co-Authored-By` lines to all commits, indicating name and model used

@@ -2,40 +2,27 @@
 
 [English](README.md) | [简体中文](README.zh-cn.md)
 
-**Gitea MCP 伺服器** 是一個整合插件，旨在將 Gitea 與 Model Context Protocol (MCP) 系統連接起來。這允許通過 MCP 兼容的聊天界面無縫執行命令和管理倉庫。
+**Gitea MCP 伺服器** 將 [Gitea](https://about.gitea.com) 實例接入 [Model Context Protocol](https://modelcontextprotocol.io) 客戶端，讓倉庫、問題、拉取請求等都能在相容 MCP 的聊天介面中瀏覽與管理。
 
 [![在 VS Code 中使用 Docker 安裝](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=gitea&inputs=[{%22id%22:%22gitea_token%22,%22type%22:%22promptString%22,%22description%22:%22Gitea%20Personal%20Access%20Token%22,%22password%22:true}]&config={%22command%22:%22docker%22,%22args%22:[%22run%22,%22-i%22,%22--rm%22,%22-e%22,%22GITEA_ACCESS_TOKEN%22,%22docker.gitea.com/gitea-mcp-server%22],%22env%22:{%22GITEA_ACCESS_TOKEN%22:%22${input:gitea_token}%22}}) [![在 VS Code Insiders 中使用 Docker 安裝](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=gitea&inputs=[{%22id%22:%22gitea_token%22,%22type%22:%22promptString%22,%22description%22:%22Gitea%20Personal%20Access%20Token%22,%22password%22:true}]&config={%22command%22:%22docker%22,%22args%22:[%22run%22,%22-i%22,%22--rm%22,%22-e%22,%22GITEA_ACCESS_TOKEN%22,%22docker.gitea.com/gitea-mcp-server%22],%22env%22:{%22GITEA_ACCESS_TOKEN%22:%22${input:gitea_token}%22}}&quality=insiders)
 
-## 目錄
+## 安裝
 
-- [Gitea MCP 伺服器](#gitea-mcp-伺服器)
-  - [目錄](#目錄)
-  - [什麼是 Gitea？](#什麼是-gitea)
-  - [什麼是 MCP？](#什麼是-mcp)
-  - [🚧 安裝](#-安裝)
-    - [在 Claude Code 中使用](#在-claude-code-中使用)
-    - [在 VS Code 中使用](#在-vs-code-中使用)
-    - [📥 下載官方二進位版本](#-下載官方二進位版本)
-    - [🔧 從原始碼建置](#-從原始碼建置)
-    - [📁 加入 PATH](#-加入-path)
-  - [🚀 使用](#-使用)
-  - [✅ 可用工具](#-可用工具)
-  - [🐛 調試](#-調試)
-  - [🛠 疑難排解](#-疑難排解)
+可從 [發布頁面](https://gitea.com/gitea/gitea-mcp/releases) 下載二進位檔並放入 `PATH`，或使用 `docker.gitea.com/gitea-mcp-server` 映像檔，也可用 `make` 與 Go 1.26 以上從原始碼建置到 `$GOPATH/bin`：
 
-## 什麼是 Gitea？
+```bash
+git clone https://gitea.com/gitea/gitea-mcp.git
+cd gitea-mcp
+make install
+```
 
-Gitea 是一個由社群管理的輕量級程式碼託管解決方案，使用 Go 語言編寫，採用 MIT 授權。Gitea 提供 Git 託管，包括倉庫瀏覽、議題追蹤、拉取請求等功能。
+## 設定
 
-## 什麼是 MCP？
+Gitea 主機與存取令牌可透過命令列參數或環境變數提供，命令列參數優先。執行 `gitea-mcp --help` 可查看完整的參數與環境變數列表。日誌寫入 `$HOME/.gitea-mcp/gitea-mcp.log`，加上 `-d` 可啟用除錯日誌。
 
-Model Context Protocol (MCP) 是一種協議，允許透過聊天介面整合各種工具與系統。它能夠無縫執行命令並管理倉庫、使用者及其他資源。
+### Claude Code
 
-## 🚧 安裝
-
-### 在 Claude Code 中使用
-
-此方式使用 `go run`，需要安裝 [Go](https://go.dev)。
+透過 `go run` 執行伺服器，需要安裝 [Go](https://go.dev)：
 
 ```bash
 claude mcp add --transport stdio --scope user gitea \
@@ -44,15 +31,9 @@ claude mcp add --transport stdio --scope user gitea \
   -- go run gitea.com/gitea/gitea-mcp@latest -t stdio
 ```
 
-### 在 VS Code 中使用
+### VS Code
 
-欲快速安裝，請使用本 README 頂部的安裝按鈕。
-
-如需手動安裝，請將下列 JSON 區塊加入 VS Code 的使用者設定 (JSON) 檔案。可按 `Ctrl + Shift + P` 並輸入 `Preferences: Open User Settings (JSON)`。
-
-也可加入至工作區的 `.vscode/mcp.json` 檔案，方便與他人共享設定。
-
-> `.vscode/mcp.json` 檔案不需 `mcp` 鍵。
+可使用本 README 頂部的安裝按鈕，或將下面的內容加入使用者設定 (JSON)，按 `Ctrl + Shift + P` 並輸入 `Preferences: Open User Settings (JSON)` 即可開啟。也可放在工作區的 `.vscode/mcp.json` 中，此時不需要 `mcp` 鍵。
 
 ```json
 {
@@ -68,14 +49,7 @@ claude mcp add --transport stdio --scope user gitea \
     "servers": {
       "gitea-mcp": {
         "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "-e",
-          "GITEA_ACCESS_TOKEN",
-          "docker.gitea.com/gitea-mcp-server"
-        ],
+        "args": ["run", "-i", "--rm", "-e", "GITEA_ACCESS_TOKEN", "docker.gitea.com/gitea-mcp-server"],
         "env": {
           "GITEA_ACCESS_TOKEN": "${input:gitea_token}"
         }
@@ -85,59 +59,50 @@ claude mcp add --transport stdio --scope user gitea \
 }
 ```
 
-### 📥 下載官方二進位版本
+### OpenCode
 
-可至 [官方 Gitea MCP 二進位版本](https://gitea.com/gitea/gitea-mcp/releases) 下載。
+將下面的內容加入 [OpenCode](https://opencode.ai) 設定的頂層 `mcp` 物件：
 
-### 🔧 從原始碼建置
-
-可用 Git 下載原始碼：
-
-```bash
-git clone https://gitea.com/gitea/gitea-mcp.git
+```json
+    "gitea-mcp": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "gitea-mcp",
+        "-t", "stdio",
+        "-H", "https://gitea.com",
+        "-T", "<your personal access token>"
+      ]
+    }
 ```
 
-建置前請先安裝：
+### Mistral Vibe
 
-- make
-- Golang（建議 Go 1.24 以上）
+將下面的內容加入 `~/.vibe/config.toml`：
 
-然後執行：
+```toml
+[[mcp_servers]]
+name = "gitea"
+transport = "stdio"
+command = "docker"
+args = ["run", "--rm", "-i", "-e", "GITEA_ACCESS_TOKEN", "-e", "GITEA_HOST", "docker.gitea.com/gitea-mcp-server"]
 
-```bash
-make install
+[mcp_servers.env]
+GITEA_ACCESS_TOKEN = "TOKEN"
+GITEA_HOST = "https://gitea.com"
 ```
 
-### 📁 加入 PATH
+### 其他客戶端
 
-安裝後，將 gitea-mcp 執行檔複製到系統 PATH 目錄，例如：
-
-```bash
-cp gitea-mcp /usr/local/bin/
-```
-
-## 🚀 使用
-
-此範例適用於 Cursor，也可在 VSCode 使用插件。  
-欲設定 Gitea MCP 伺服器，請將下列內容加入 MCP 設定檔：
-
-- **stdio 模式**
+Cursor 等客戶端可使用 stdio 命令：
 
 ```json
 {
   "mcpServers": {
     "gitea": {
       "command": "gitea-mcp",
-      "args": [
-        "-t",
-        "stdio",
-        "--host",
-        "https://gitea.com"
-        // "--token", "<your personal access token>"
-      ],
+      "args": ["-t", "stdio", "--host", "https://gitea.com"],
       "env": {
-        // "GITEA_HOST": "https://gitea.com",
-        // "GITEA_INSECURE": "true",
         "GITEA_ACCESS_TOKEN": "<your personal access token>"
       }
     }
@@ -145,7 +110,7 @@ cp gitea-mcp /usr/local/bin/
 }
 ```
 
-- **http 模式**
+或使用 http 端點，對應以 `gitea-mcp -t http --port 8080` 啟動的伺服器：
 
 ```json
 {
@@ -160,100 +125,66 @@ cp gitea-mcp /usr/local/bin/
 }
 ```
 
-**預設日誌路徑**: `$HOME/.gitea-mcp/gitea-mcp.log`
+設定完成後，可在聊天框輸入 `列出我所有的倉庫` 試試。
 
-> [!注意]
-> 可用命令列參數或環境變數提供 Gitea 主機與存取令牌。
-> 命令列參數優先。
+## 可用工具
 
-> [!注意]
-> 許多工具支援 `page` 和 `perPage` 分頁參數。最大有效頁面大小由 Gitea 伺服器的 `[api].MAX_RESPONSE_ITEMS` 設定決定（預設值：**50**）。請求超過此限制的 `perPage` 值將被伺服器靜默截斷。
+| 工具                         | 範圍     | 存取 | 描述                                                                 |
+| :--------------------------- | :------- | :--- | :------------------------------------------------------------------- |
+| get_gitea_mcp_server_version | 版本     | 讀取 | 取得 Gitea MCP 伺服器版本                                            |
+| get_me                       | 用戶     | 讀取 | 取得目前已認證用戶                                                   |
+| get_user_orgs                | 用戶     | 讀取 | 列出目前用戶的組織                                                   |
+| search_users                 | 搜尋     | 讀取 | 搜尋用戶                                                             |
+| search_org_teams             | 搜尋     | 讀取 | 搜尋組織中的團隊                                                     |
+| search_repos                 | 搜尋     | 讀取 | 搜尋倉庫                                                             |
+| search_issues                | 搜尋     | 讀取 | 跨倉庫搜尋問題和拉取請求                                             |
+| notification_read            | 通知     | 讀取 | 讀取通知：列出（可限定倉庫）或依 ID 取得會話                         |
+| notification_write           | 通知     | 寫入 | 將某條或全部通知標記為已讀                                           |
+| label_read                   | 標籤     | 讀取 | 讀取倉庫或組織標籤                                                   |
+| label_write                  | 標籤     | 寫入 | 寫入標籤（倉庫或組織）：創建、編輯、刪除                             |
+| milestone_read               | 里程碑   | 讀取 | 讀取里程碑：取得單個或列出                                           |
+| milestone_write              | 里程碑   | 寫入 | 寫入里程碑：創建、更新、刪除                                         |
+| wiki_read                    | Wiki     | 讀取 | 讀取 Wiki：列出頁面、取得內容、修訂歷史                              |
+| wiki_write                   | Wiki     | 寫入 | 寫入 Wiki 頁面：創建、更新、刪除                                     |
+| timetracking_read            | 時間追蹤 | 讀取 | 讀取時間追蹤：問題/倉庫耗時、活動計時器、我的追蹤記錄                |
+| timetracking_write           | 時間追蹤 | 寫入 | 寫入時間追蹤：計時器和記錄項目                                       |
+| package_read                 | 軟體套件 | 讀取 | 讀取軟體套件註冊表：列出套件、列出版本或取得某個版本                 |
+| package_write                | 軟體套件 | 寫入 | 刪除軟體套件版本（不可復原）                                         |
+| list_issues                  | 問題     | 讀取 | 列出倉庫問題                                                         |
+| issue_read                   | 問題     | 讀取 | 讀取問題：詳情、評論或標籤                                           |
+| issue_write                  | 問題     | 寫入 | 寫入問題：創建、更新、管理評論和標籤                                 |
+| list_pull_requests           | 拉取請求 | 讀取 | 列出倉庫拉取請求                                                     |
+| pull_request_read            | 拉取請求 | 讀取 | 讀取拉取請求：詳情、差異、變更檔案、頭部提交狀態、審查               |
+| pull_request_write           | 拉取請求 | 寫入 | 寫入拉取請求：創建、更新、關閉、重新開啟、合併、更新分支、管理審查者 |
+| pull_request_review_write    | 拉取請求 | 寫入 | 寫入 PR 審查：創建、提交、刪除、駁回                                 |
+| actions_config_read          | Actions  | 讀取 | 讀取 Actions 密鑰和變數                                              |
+| actions_config_write         | Actions  | 寫入 | 寫入 Actions 密鑰和變數：更新插入、創建、更新、刪除                  |
+| actions_run_read             | Actions  | 讀取 | 讀取 Actions 工作流程、執行、作業、日誌和產物                        |
+| actions_run_write            | Actions  | 寫入 | 寫入 Actions 執行：觸發、取消、重新執行                              |
+| create_repo                  | 倉庫     | 寫入 | 創建新倉庫                                                           |
+| fork_repo                    | 倉庫     | 寫入 | 復刻倉庫                                                             |
+| list_my_repos                | 倉庫     | 讀取 | 列出目前用戶擁有的倉庫                                               |
+| list_org_repos               | 倉庫     | 讀取 | 列出組織中的倉庫                                                     |
+| get_repository_tree          | 倉庫     | 讀取 | 取得倉庫檔案樹                                                       |
+| get_file_contents            | 文件     | 讀取 | 取得檔案內容與中繼資料                                               |
+| get_dir_contents             | 文件     | 讀取 | 取得目錄中的項目                                                     |
+| create_or_update_file        | 文件     | 寫入 | 創建或更新檔案（提供 sha 以更新現有檔案）                            |
+| delete_file                  | 文件     | 寫入 | 刪除檔案                                                             |
+| create_branch                | 分支     | 寫入 | 創建新分支                                                           |
+| delete_branch                | 分支     | 寫入 | 刪除分支                                                             |
+| list_branches                | 分支     | 讀取 | 列出倉庫分支                                                         |
+| create_tag                   | Git 標籤 | 寫入 | 創建標籤                                                             |
+| delete_tag                   | Git 標籤 | 寫入 | 刪除標籤                                                             |
+| get_tag                      | Git 標籤 | 讀取 | 取得標籤詳情                                                         |
+| list_tags                    | Git 標籤 | 讀取 | 列出倉庫標籤                                                         |
+| list_commits                 | 提交     | 讀取 | 列出倉庫提交                                                         |
+| get_commit                   | 提交     | 讀取 | 取得提交詳情                                                         |
+| create_release               | 版本發布 | 寫入 | 創建版本發布                                                         |
+| delete_release               | 版本發布 | 寫入 | 刪除版本發布                                                         |
+| get_release                  | 版本發布 | 讀取 | 依 ID 取得版本發布                                                   |
+| get_latest_release           | 版本發布 | 讀取 | 取得最新版本發布                                                     |
+| list_releases                | 版本發布 | 讀取 | 列出倉庫版本發布                                                     |
 
-一切設定完成後，可在 MCP 聊天框輸入：
+> **說明：** 部分工具是聚合的、基於操作的工具，單個工具透過 `method` 參數暴露多個操作。當伺服器以唯讀模式執行時（`-r` / `GITEA_READONLY`），存取為「寫入」的工具會被隱藏；可透過 `-O` / `--tools`（`GITEA_TOOLS`）過濾對外暴露的工具集合。
 
-```text
-列出我所有的倉庫
-```
-
-## ✅ 可用工具
-
-Gitea MCP 伺服器支援以下工具：
-
-|               工具                |   範圍   |             描述             |
-| :-------------------------------: | :------: | :--------------------------: |
-|         get_my_user_info          |   用戶   |      取得已認證用戶資訊      |
-|           get_user_orgs           |   用戶   |    取得已認證用戶所屬組織    |
-|            create_repo            |   倉庫   |          創建新倉庫          |
-|             fork_repo             |   倉庫   |           復刻倉庫           |
-|           list_my_repos           |   倉庫   |       列出用戶所有倉庫       |
-|           create_branch           |   分支   |          創建新分支          |
-|           delete_branch           |   分支   |           刪除分支           |
-|           list_branches           |   分支   |         列出所有分支         |
-|          create_release           | 版本發布 |        創建新版本發布        |
-|          delete_release           | 版本發布 |         刪除版本發布         |
-|            get_release            | 版本發布 |         取得版本發布         |
-|        get_latest_release         | 版本發布 |       取得最新版本發布       |
-|           list_releases           | 版本發布 |       列出所有版本發布       |
-|            create_tag             |   標籤   |          創建新標籤          |
-|            delete_tag             |   標籤   |           刪除標籤           |
-|              get_tag              |   標籤   |           取得標籤           |
-|             list_tags             |   標籤   |         列出所有標籤         |
-|         list_repo_commits         |   提交   |         列出所有提交         |
-|         get_file_content          |   文件   |    取得文件內容與中繼資料    |
-|          get_dir_content          |   文件   |       取得目錄內容列表       |
-|            create_file            |   文件   |          創建新文件          |
-|            update_file            |   文件   |         更新現有文件         |
-|            delete_file            |   文件   |           刪除文件           |
-|        get_issue_by_index         |   問題   |        依索引取得問題        |
-|         list_repo_issues          |   問題   |         列出所有問題         |
-|           create_issue            |   問題   |          創建新問題          |
-|       create_issue_comment        |   問題   |       在問題上創建評論       |
-|            edit_issue             |   問題   |           編輯問題           |
-|        edit_issue_comment         |   問題   |         編輯問題評論         |
-|    get_issue_comments_by_index    |   問題   |      依索引取得問題評論      |
-|     get_pull_request_by_index     | 拉取請求 |      依索引取得拉取請求      |
-|      list_repo_pull_requests      | 拉取請求 |       列出所有拉取請求       |
-|        create_pull_request        | 拉取請求 |        創建新拉取請求        |
-|   create_pull_request_reviewer    | 拉取請求 |     為拉取請求添加審查者     |
-|   delete_pull_request_reviewer    | 拉取請求 |     移除拉取請求的審查者     |
-|     list_pull_request_reviews     | 拉取請求 |    列出拉取請求的所有審查    |
-|      get_pull_request_review      | 拉取請求 |      依 ID 取得特定審查      |
-| list_pull_request_review_comments | 拉取請求 |      列出審查的行內評論      |
-|    create_pull_request_review     | 拉取請求 |   創建審查（可含行內評論）   |
-|    submit_pull_request_review     | 拉取請求 |       提交待處理的審查       |
-|    delete_pull_request_review     | 拉取請求 |           刪除審查           |
-|    dismiss_pull_request_review    | 拉取請求 |     駁回審查（可附訊息）     |
-|        merge_pull_request         | 拉取請求 |        合併拉取請求        |
-|           search_users            |   用戶   |           搜尋用戶           |
-|         search_org_teams          |   組織   |         搜尋組織團隊         |
-|          list_org_labels          |   組織   |         列出組織標籤         |
-|         create_org_label          |   組織   |         創建組織標籤         |
-|          edit_org_label           |   組織   |         編輯組織標籤         |
-|         delete_org_label          |   組織   |         刪除組織標籤         |
-|           search_repos            |   倉庫   |           搜尋倉庫           |
-|   get_gitea_mcp_server_version    |  伺服器  |  取得 Gitea MCP 伺服器版本   |
-|          list_wiki_pages          |   Wiki   |      列出所有 Wiki 頁面      |
-|           get_wiki_page           |   Wiki   | 取得 Wiki 頁面內容與中繼資料 |
-|        get_wiki_revisions         |   Wiki   |      取得 Wiki 修訂歷史      |
-|         create_wiki_page          |   Wiki   |       創建新 Wiki 頁面       |
-|         update_wiki_page          |   Wiki   |      更新現有 Wiki 頁面      |
-|         delete_wiki_page          |   Wiki   |        刪除 Wiki 頁面        |
-
-## 🐛 調試
-
-啟用調試模式時，請在 http 模式執行 Gitea MCP 伺服器時加上 `-d` 旗標：
-
-```sh
-./gitea-mcp -t http [--port 8080] --token <your personal access token> -d
-```
-
-## 🛠 疑難排解
-
-如遇問題，可參考以下步驟：
-
-1. **檢查 PATH**：確保 `gitea-mcp` 執行檔已在系統 PATH 目錄中。
-2. **驗證依賴**：確認已安裝 `make` 與 `Golang` 等必要依賴。
-3. **檢查設定**：仔細檢查 MCP 設定檔是否有錯誤或遺漏。
-4. **查看日誌**：檢查日誌訊息或警告以獲取更多資訊。
-
-享受透過聊天探索與管理您的 Gitea 倉庫！
+許多工具支援 `page` 和 `per_page` 分頁參數。最大有效頁面大小由 Gitea 伺服器的 `[api].MAX_RESPONSE_ITEMS` 設定決定（預設 **50**），超出的值會被靜默截斷。

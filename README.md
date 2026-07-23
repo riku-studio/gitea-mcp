@@ -2,58 +2,27 @@
 
 [繁體中文](README.zh-tw.md) | [简体中文](README.zh-cn.md)
 
-**Gitea MCP Server** is an integration plugin designed to connect Gitea with Model Context Protocol (MCP) systems. This allows for seamless command execution and repository management through an MCP-compatible chat interface.
+**Gitea MCP Server** connects a [Gitea](https://about.gitea.com) instance to [Model Context Protocol](https://modelcontextprotocol.io) clients, so repositories, issues, pull requests and more can be browsed and managed from an MCP-compatible chat interface.
 
 [![Install with Docker in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=gitea&inputs=[{%22id%22:%22gitea_token%22,%22type%22:%22promptString%22,%22description%22:%22Gitea%20Personal%20Access%20Token%22,%22password%22:true}]&config={%22command%22:%22docker%22,%22args%22:[%22run%22,%22-i%22,%22--rm%22,%22-e%22,%22GITEA_ACCESS_TOKEN%22,%22docker.gitea.com/gitea-mcp-server%22],%22env%22:{%22GITEA_ACCESS_TOKEN%22:%22${input:gitea_token}%22}}) [![Install with Docker in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=gitea&inputs=[{%22id%22:%22gitea_token%22,%22type%22:%22promptString%22,%22description%22:%22Gitea%20Personal%20Access%20Token%22,%22password%22:true}]&config={%22command%22:%22docker%22,%22args%22:[%22run%22,%22-i%22,%22--rm%22,%22-e%22,%22GITEA_ACCESS_TOKEN%22,%22docker.gitea.com/gitea-mcp-server%22],%22env%22:{%22GITEA_ACCESS_TOKEN%22:%22${input:gitea_token}%22}}&quality=insiders)
 
-## Table of Contents
+## Installation
 
-- [Gitea MCP Server](#gitea-mcp-server)
-  - [Table of Contents](#table-of-contents)
-  - [What is Gitea?](#what-is-gitea)
-  - [What is MCP?](#what-is-mcp)
-  - [🚧 Installation](#-installation)
-    - [Usage with Claude Code](#usage-with-claude-code)
-    - [Usage with VS Code](#usage-with-vs-code)
-    - [Usage with Mistral Vibe](#usage-with-mistral-vibe)
-    - [📥 Download the official binary release](#-download-the-official-binary-release)
-    - [🔧 Build from Source](#-build-from-source)
-    - [📁 Add to PATH](#-add-to-path)
-  - [🚀 Usage](#-usage)
-  - [✅ Available Tools](#-available-tools)
-  - [🐛 Debugging](#-debugging)
-  - [🛠 Troubleshooting](#-troubleshooting)
+Download a binary from the [releases page](https://gitea.com/gitea/gitea-mcp/releases) and put it in your `PATH`, use the `docker.gitea.com/gitea-mcp-server` image, or build from source into `$GOPATH/bin` with `make` and Go 1.26 or later:
 
-## What is Gitea?
-
-Gitea is a community-managed lightweight code hosting solution written in Go. It is published under the MIT license. Gitea provides Git hosting including a repository viewer, issue tracking, pull requests, and more.
-
-## What is MCP?
-
-Model Context Protocol (MCP) is a protocol that allows for the integration of various tools and systems through a chat interface. It enables seamless command execution and management of repositories, users, and other resources.
-
-## 🚧 Installation
-
-### Usage with OpenCode (opencode.ai)
-
-Add a snippet like the following in the "mcp" top-level object (add one if you don't have any):
-
-```json
-    "gitea-mcp": {
-      "enabled": true,
-      "type": "local",
-      "command": [
-        "gitea-mcp",
-        "-t", "stdio",
-        "-H", "https://git.your-domain.org",
-        "-T", "<your personal access token>"
-      ]
-    }
+```bash
+git clone https://gitea.com/gitea/gitea-mcp.git
+cd gitea-mcp
+make install
 ```
 
-### Usage with Claude Code
+## Configuration
 
-This method uses `go run` and requires [Go](https://go.dev) to be installed.
+Pass the Gitea host and access token as command-line flags or environment variables, flags take precedence. Run `gitea-mcp --help` for the full list of flags and environment variables. Logs are written to `$HOME/.gitea-mcp/gitea-mcp.log`, add `-d` for debug logging.
+
+### Claude Code
+
+Runs the server through `go run` and requires [Go](https://go.dev):
 
 ```bash
 claude mcp add --transport stdio --scope user gitea \
@@ -62,15 +31,9 @@ claude mcp add --transport stdio --scope user gitea \
   -- go run gitea.com/gitea/gitea-mcp@latest -t stdio
 ```
 
-### Usage with VS Code
+### VS Code
 
-For quick installation, use one of the one-click install buttons at the top of this README.
-
-For manual installation, add the following JSON block to your User Settings (JSON) file in VS Code. You can do this by pressing `Ctrl + Shift + P` and typing `Preferences: Open User Settings (JSON)`.
-
-Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace. This will allow you to share the configuration with others.
-
-> Note that the `mcp` key is not needed in the `.vscode/mcp.json` file.
+Use the install buttons at the top of this README, or add the block below to your User Settings (JSON), reachable via `Ctrl + Shift + P` and `Preferences: Open User Settings (JSON)`. It also works in a workspace `.vscode/mcp.json`, where the `mcp` key is omitted.
 
 ```json
 {
@@ -86,14 +49,7 @@ Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace
     "servers": {
       "gitea-mcp": {
         "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "-e",
-          "GITEA_ACCESS_TOKEN",
-          "docker.gitea.com/gitea-mcp-server"
-        ],
+        "args": ["run", "-i", "--rm", "-e", "GITEA_ACCESS_TOKEN", "docker.gitea.com/gitea-mcp-server"],
         "env": {
           "GITEA_ACCESS_TOKEN": "${input:gitea_token}"
         }
@@ -103,84 +59,50 @@ Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace
 }
 ```
 
-### Usage with Mistral Vibe
+### OpenCode
 
-Add the following configuration to your Mistral Vibe MCP configuration file (`~/.vibe/config.toml`):
+Add the following to the top-level `mcp` object of your [OpenCode](https://opencode.ai) config:
+
+```json
+    "gitea-mcp": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "gitea-mcp",
+        "-t", "stdio",
+        "-H", "https://gitea.com",
+        "-T", "<your personal access token>"
+      ]
+    }
+```
+
+### Mistral Vibe
+
+Add the following to `~/.vibe/config.toml`:
 
 ```toml
 [[mcp_servers]]
 name = "gitea"
 transport = "stdio"
 command = "docker"
-args = [
-    "run",
-    "--rm",
-    "-i",
-    "-e",
-    "GITEA_ACCESS_TOKEN",
-    "-e",
-    "GITEA_HOST",
-    "docker.gitea.com/gitea-mcp-server",
-]
+args = ["run", "--rm", "-i", "-e", "GITEA_ACCESS_TOKEN", "-e", "GITEA_HOST", "docker.gitea.com/gitea-mcp-server"]
 
 [mcp_servers.env]
 GITEA_ACCESS_TOKEN = "TOKEN"
 GITEA_HOST = "https://gitea.com"
 ```
 
-### 📥 Download the official binary release
+### Other clients
 
-You can download the official release from [official Gitea MCP binary releases](https://gitea.com/gitea/gitea-mcp/releases).
-
-### 🔧 Build from Source
-
-You can download the source code by cloning the repository using Git:
-
-```bash
-git clone https://gitea.com/gitea/gitea-mcp.git
-```
-
-Before building, make sure you have the following installed:
-
-- make
-- Golang (Go 1.24 or later recommended)
-
-Then run:
-
-```bash
-make install
-```
-
-### 📁 Add to PATH
-
-After installing, copy the binary gitea-mcp to a directory included in your system's PATH. For example:
-
-```bash
-cp gitea-mcp /usr/local/bin/
-```
-
-## 🚀 Usage
-
-This example is for Cursor, you can also use plugins in VSCode.
-To configure the MCP server for Gitea, add the following to your MCP configuration file:
-
-- **stdio mode**
+Clients such as Cursor take either a stdio command:
 
 ```json
 {
   "mcpServers": {
     "gitea": {
       "command": "gitea-mcp",
-      "args": [
-        "-t",
-        "stdio",
-        "--host",
-        "https://gitea.com"
-        // "--token", "<your personal access token>"
-      ],
+      "args": ["-t", "stdio", "--host", "https://gitea.com"],
       "env": {
-        // "GITEA_HOST": "https://gitea.com",
-        // "GITEA_INSECURE": "true",
         "GITEA_ACCESS_TOKEN": "<your personal access token>"
       }
     }
@@ -188,7 +110,7 @@ To configure the MCP server for Gitea, add the following to your MCP configurati
 }
 ```
 
-- **http mode**
+or an http endpoint, for a server started with `gitea-mcp -t http --port 8080`:
 
 ```json
 {
@@ -203,133 +125,66 @@ To configure the MCP server for Gitea, add the following to your MCP configurati
 }
 ```
 
-**Default log path**: `$HOME/.gitea-mcp/gitea-mcp.log`
+Once configured, try `list all my repositories` in the chat box.
 
-> [!NOTE]
-> You can provide your Gitea host and access token either as command-line arguments or environment variables.
-> Command-line arguments have the highest priority
+## Available Tools
 
-> [!NOTE]
-> Many tools support `page` and `perPage` parameters for pagination. The maximum effective page size is determined by the Gitea server's `[api].MAX_RESPONSE_ITEMS` setting (default: **50**). Requesting a `perPage` value higher than this limit will be silently capped by the server.
+| Tool                         | Scope        | Access | Description                                                                                |
+| :--------------------------- | :----------- | :----- | :----------------------------------------------------------------------------------------- |
+| get_gitea_mcp_server_version | Version      | Read   | Get the Gitea MCP server version                                                           |
+| get_me                       | User         | Read   | Get the current authenticated user                                                         |
+| get_user_orgs                | User         | Read   | List the current user's organizations                                                      |
+| search_users                 | Search       | Read   | Search for users                                                                           |
+| search_org_teams             | Search       | Read   | Search teams within an organization                                                        |
+| search_repos                 | Search       | Read   | Search for repositories                                                                    |
+| search_issues                | Search       | Read   | Search issues and pull requests across repositories                                        |
+| notification_read            | Notification | Read   | Read notifications: list (optionally scoped to a repo) or get a thread by ID               |
+| notification_write           | Notification | Write  | Mark a notification or all notifications as read                                           |
+| label_read                   | Label        | Read   | Read repository or organization labels                                                     |
+| label_write                  | Label        | Write  | Write labels (repo or org): create, edit, delete                                           |
+| milestone_read               | Milestone    | Read   | Read milestones: get one or list                                                           |
+| milestone_write              | Milestone    | Write  | Write milestones: create, update, delete                                                   |
+| wiki_read                    | Wiki         | Read   | Read wiki: list pages, get content, revision history                                       |
+| wiki_write                   | Wiki         | Write  | Write wiki pages: create, update, delete                                                   |
+| timetracking_read            | Timetracking | Read   | Read time tracking: issue/repo times, active stopwatches, your tracked times               |
+| timetracking_write           | Timetracking | Write  | Write time tracking: stopwatches and entries                                               |
+| package_read                 | Packages     | Read   | Read package registry: list packages, list versions, or get a version                      |
+| package_write                | Packages     | Write  | Delete a package version (irreversible)                                                    |
+| list_issues                  | Issue        | Read   | List repository issues                                                                     |
+| issue_read                   | Issue        | Read   | Read issue: details, comments, or labels                                                   |
+| issue_write                  | Issue        | Write  | Write issues: create, update, manage comments and labels                                   |
+| list_pull_requests           | Pull Request | Read   | List repository pull requests                                                              |
+| pull_request_read            | Pull Request | Read   | Read pull request: details, diff, changed files, head commit status, reviews               |
+| pull_request_write           | Pull Request | Write  | Write pull requests: create, update, close, reopen, merge, update branch, manage reviewers |
+| pull_request_review_write    | Pull Request | Write  | Write PR reviews: create, submit, delete, dismiss                                          |
+| actions_config_read          | Actions      | Read   | Read Actions secrets and variables                                                         |
+| actions_config_write         | Actions      | Write  | Write Actions secrets and variables: upsert, create, update, delete                        |
+| actions_run_read             | Actions      | Read   | Read Actions workflows, runs, jobs, logs, and artifacts                                    |
+| actions_run_write            | Actions      | Write  | Write Actions runs: dispatch, cancel, rerun                                                |
+| create_repo                  | Repository   | Write  | Create a new repository                                                                    |
+| fork_repo                    | Repository   | Write  | Fork a repository                                                                          |
+| list_my_repos                | Repository   | Read   | List repositories owned by the current user                                                |
+| list_org_repos               | Repository   | Read   | List repositories in an organization                                                       |
+| get_repository_tree          | Repository   | Read   | Get the repository file tree                                                               |
+| get_file_contents            | File         | Read   | Get file content and metadata                                                              |
+| get_dir_contents             | File         | Read   | Get the entries in a directory                                                             |
+| create_or_update_file        | File         | Write  | Create or update a file (provide sha to update an existing file)                           |
+| delete_file                  | File         | Write  | Delete a file                                                                              |
+| create_branch                | Branch       | Write  | Create a new branch                                                                        |
+| delete_branch                | Branch       | Write  | Delete a branch                                                                            |
+| list_branches                | Branch       | Read   | List repository branches                                                                   |
+| create_tag                   | Tag          | Write  | Create a tag                                                                               |
+| delete_tag                   | Tag          | Write  | Delete a tag                                                                               |
+| get_tag                      | Tag          | Read   | Get tag details                                                                            |
+| list_tags                    | Tag          | Read   | List repository tags                                                                       |
+| list_commits                 | Commit       | Read   | List repository commits                                                                    |
+| get_commit                   | Commit       | Read   | Get commit details                                                                         |
+| create_release               | Release      | Write  | Create a release                                                                           |
+| delete_release               | Release      | Write  | Delete a release                                                                           |
+| get_release                  | Release      | Read   | Get a release by ID                                                                        |
+| get_latest_release           | Release      | Read   | Get the latest release                                                                     |
+| list_releases                | Release      | Read   | List repository releases                                                                   |
 
-Once everything is set up, try typing the following in your MCP-compatible chatbox:
+> **Note:** Several tools are consolidated, action-based tools, a single tool exposes multiple operations through a `method` parameter. Tools with `Write` access are hidden when the server runs in read-only mode (`-r` / `GITEA_READONLY`), and the exposed tool set can be filtered with `-O` / `--tools` (`GITEA_TOOLS`).
 
-```text
-list all my repositories
-```
-
-## ✅ Available Tools
-
-The Gitea MCP Server supports the following tools:
-
-|               Tool                |    Scope     |                       Description                        |
-| :-------------------------------: | :----------: | :------------------------------------------------------: |
-|         get_my_user_info          |     User     |      Get the information of the authenticated user       |
-|           get_user_orgs           |     User     | Get organizations associated with the authenticated user |
-|            create_repo            |  Repository  |                 Create a new repository                  |
-|             fork_repo             |  Repository  |                    Fork a repository                     |
-|           list_my_repos           |  Repository  |  List all repositories owned by the authenticated user   |
-|           create_branch           |    Branch    |                   Create a new branch                    |
-|           delete_branch           |    Branch    |                     Delete a branch                      |
-|           list_branches           |    Branch    |            List all branches in a repository             |
-|          create_release           |   Release    |           Create a new release in a repository           |
-|          delete_release           |   Release    |            Delete a release from a repository            |
-|            get_release            |   Release    |                      Get a release                       |
-|        get_latest_release         |   Release    |          Get the latest release in a repository          |
-|           list_releases           |   Release    |            List all releases in a repository             |
-|            create_tag             |     Tag      |                     Create a new tag                     |
-|            delete_tag             |     Tag      |                       Delete a tag                       |
-|              get_tag              |     Tag      |                        Get a tag                         |
-|             list_tags             |     Tag      |              List all tags in a repository               |
-|         list_repo_commits         |    Commit    |             List all commits in a repository             |
-|         get_file_content          |     File     |          Get the content and metadata of a file          |
-|          get_dir_content          |     File     |           Get a list of entries in a directory           |
-|            create_file            |     File     |                    Create a new file                     |
-|            update_file            |     File     |                 Update an existing file                  |
-|            delete_file            |     File     |                      Delete a file                       |
-|        get_issue_by_index         |    Issue     |                Get an issue by its index                 |
-|         list_repo_issues          |    Issue     |             List all issues in a repository              |
-|           create_issue            |    Issue     |                    Create a new issue                    |
-|       create_issue_comment        |    Issue     |               Create a comment on an issue               |
-|            edit_issue             |    Issue     |                       Edit a issue                       |
-|        edit_issue_comment         |    Issue     |                Edit a comment on an issue                |
-|    get_issue_comments_by_index    |    Issue     |          Get comments of an issue by its index           |
-|     get_pull_request_by_index     | Pull Request |             Get a pull request by its index              |
-|       get_pull_request_diff       | Pull Request |                 Get a pull request diff                  |
-|      list_repo_pull_requests      | Pull Request |          List all pull requests in a repository          |
-|        create_pull_request        | Pull Request |                Create a new pull request                 |
-|   create_pull_request_reviewer    | Pull Request |             Add reviewers to a pull request              |
-|   delete_pull_request_reviewer    | Pull Request |           Remove reviewers from a pull request           |
-|     list_pull_request_reviews     | Pull Request |           List all reviews for a pull request            |
-|      get_pull_request_review      | Pull Request |               Get a specific review by ID                |
-| list_pull_request_review_comments | Pull Request |            List inline comments for a review             |
-|    create_pull_request_review     | Pull Request |      Create a review with optional inline comments       |
-|    submit_pull_request_review     | Pull Request |                 Submit a pending review                  |
-|    delete_pull_request_review     | Pull Request |                     Delete a review                      |
-|    dismiss_pull_request_review    | Pull Request |          Dismiss a review with optional message          |
-|        merge_pull_request         | Pull Request |                  Merge a pull request                    |
-|           search_users            |     User     |                     Search for users                     |
-|         search_org_teams          | Organization |           Search for teams in an organization            |
-|          list_org_labels          | Organization |        List labels defined at organization level         |
-|         create_org_label          | Organization |            Create a label in an organization             |
-|          edit_org_label           | Organization |             Edit a label in an organization              |
-|         delete_org_label          | Organization |            Delete a label in an organization             |
-|           search_repos            |  Repository  |                 Search for repositories                  |
-|     list_repo_action_secrets      |   Actions    |     List repository Actions secrets (metadata only)      |
-|     upsert_repo_action_secret     |   Actions    |    Create/update (upsert) a repository Actions secret    |
-|     delete_repo_action_secret     |   Actions    |            Delete a repository Actions secret            |
-|      list_org_action_secrets      |   Actions    |    List organization Actions secrets (metadata only)     |
-|     upsert_org_action_secret      |   Actions    |  Create/update (upsert) an organization Actions secret   |
-|     delete_org_action_secret      |   Actions    |          Delete an organization Actions secret           |
-|    list_repo_action_variables     |   Actions    |            List repository Actions variables             |
-|     get_repo_action_variable      |   Actions    |            Get a repository Actions variable             |
-|    create_repo_action_variable    |   Actions    |           Create a repository Actions variable           |
-|    update_repo_action_variable    |   Actions    |           Update a repository Actions variable           |
-|    delete_repo_action_variable    |   Actions    |           Delete a repository Actions variable           |
-|     list_org_action_variables     |   Actions    |           List organization Actions variables            |
-|      get_org_action_variable      |   Actions    |           Get an organization Actions variable           |
-|    create_org_action_variable     |   Actions    |         Create an organization Actions variable          |
-|    update_org_action_variable     |   Actions    |         Update an organization Actions variable          |
-|    delete_org_action_variable     |   Actions    |         Delete an organization Actions variable          |
-|    list_repo_action_workflows     |   Actions    |            List repository Actions workflows             |
-|     get_repo_action_workflow      |   Actions    |            Get a repository Actions workflow             |
-|   dispatch_repo_action_workflow   |   Actions    |     Trigger (dispatch) a repository Actions workflow     |
-|       list_repo_action_runs       |   Actions    |               List repository Actions runs               |
-|        get_repo_action_run        |   Actions    |               Get a repository Actions run               |
-|      cancel_repo_action_run       |   Actions    |             Cancel a repository Actions run              |
-|       rerun_repo_action_run       |   Actions    |              Rerun a repository Actions run              |
-|       list_repo_action_jobs       |   Actions    |               List repository Actions jobs               |
-|     list_repo_action_run_jobs     |   Actions    |               List Actions jobs for a run                |
-|       get_repo_action_job         |   Actions    |            Get a single Actions job's detail             |
-|  get_repo_action_job_log_preview  |   Actions    |           Get a job log preview (tail/limited)           |
-|   download_repo_action_job_log    |   Actions    |               Download a job log to a file               |
-|     list_repo_action_artifacts     |   Actions    |          List repository Actions artifacts               |
-|   list_repo_action_run_artifacts   |   Actions    |            List Actions artifacts for a run              |
-|      get_repo_action_artifact      |   Actions    |            Get a repository Actions artifact             |
-|   download_repo_action_artifact    |   Actions    |         Download an Actions artifact zip to a file       |
-|   get_gitea_mcp_server_version    |    Server    |         Get the version of the Gitea MCP Server          |
-|          list_wiki_pages          |     Wiki     |           List all wiki pages in a repository            |
-|           get_wiki_page           |     Wiki     |           Get a wiki page content and metadata           |
-|        get_wiki_revisions         |     Wiki     |           Get revisions history of a wiki page           |
-|         create_wiki_page          |     Wiki     |                  Create a new wiki page                  |
-|         update_wiki_page          |     Wiki     |               Update an existing wiki page               |
-|         delete_wiki_page          |     Wiki     |                    Delete a wiki page                    |
-
-## 🐛 Debugging
-
-To enable debug mode, add the `-d` flag when running the Gitea MCP Server with http mode:
-
-```sh
-./gitea-mcp -t http [--port 8080] --token <your personal access token> -d
-```
-
-## 🛠 Troubleshooting
-
-If you encounter any issues, here are some common troubleshooting steps:
-
-1. **Check your PATH**: Ensure that the `gitea-mcp` binary is in a directory included in your system's PATH.
-2. **Verify dependencies**: Make sure you have all the required dependencies installed, such as `make` and `Golang`.
-3. **Review configuration**: Double-check your MCP configuration file for any errors or missing information.
-4. **Consult logs**: Check the logs for any error messages or warnings that can provide more information about the issue.
-
-Enjoy exploring and managing your Gitea repositories via chat!
+Many tools accept `page` and `per_page` for pagination. The maximum effective page size is the Gitea server's `[api].MAX_RESPONSE_ITEMS` setting (default **50**), larger values are silently capped.

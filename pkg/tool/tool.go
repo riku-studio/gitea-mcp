@@ -30,6 +30,18 @@ func (t *Tool) RegisterRead(s server.ServerTool) {
 	t.read = append(t.read, s)
 }
 
+// ReadTools returns the read-only tools registered on this domain, ignoring
+// the read-only and allowlist flags that Tools applies.
+func (t *Tool) ReadTools() []server.ServerTool {
+	return t.read
+}
+
+// WriteTools returns the write tools registered on this domain, ignoring the
+// read-only and allowlist flags that Tools applies.
+func (t *Tool) WriteTools() []server.ServerTool {
+	return t.write
+}
+
 func (t *Tool) Tools() []server.ServerTool {
 	all := make([]server.ServerTool, 0, len(t.write)+len(t.read))
 	if !flag.ReadOnly {

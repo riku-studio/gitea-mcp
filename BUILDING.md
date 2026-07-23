@@ -4,7 +4,7 @@ This project includes PowerShell and batch scripts to build the gitea-mcp applic
 
 ## Prerequisites
 
-- Go 1.24 or later
+- Go 1.26 or later
 - Git (for version information)
 - PowerShell 5.1 or later (included with Windows 10/11)
 
