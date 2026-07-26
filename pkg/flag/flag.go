@@ -7,6 +7,8 @@ var (
 	Version string
 	Mode    string
 
+	MaxInlineAttachmentBytes int
+
 	Insecure     bool
 	ReadOnly     bool
 	Debug        bool

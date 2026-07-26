@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -14,39 +16,56 @@ import (
 )
 
 var (
-	host    string
-	port    int
-	token   string
-	tools   string
-	version bool
+	host                            string
+	port                            int
+	token                           string
+	tools                           string
+	version                         bool
+	maxInlineAttachmentBytes        int
+	maxInlineAttachmentBytesFlagSet bool
+	osExit                          = os.Exit
 )
 
 func init() {
-	flag.StringVar(&flagPkg.Mode, "t", "stdio", "")
-	flag.StringVar(&flagPkg.Mode, "transport", "stdio", "")
-	flag.StringVar(&host, "H", os.Getenv("GITEA_HOST"), "")
-	flag.StringVar(&host, "host", os.Getenv("GITEA_HOST"), "")
-	flag.IntVar(&port, "p", 8080, "")
-	flag.IntVar(&port, "port", 8080, "")
-	flag.StringVar(&token, "T", "", "")
-	flag.StringVar(&token, "token", "", "")
-	flag.BoolVar(&flagPkg.ReadOnly, "r", false, "")
-	flag.BoolVar(&flagPkg.ReadOnly, "read-only", false, "")
-	defaultTools := os.Getenv("GITEA_TOOLS")
-	flag.StringVar(&tools, "O", defaultTools, "")
-	flag.StringVar(&tools, "tools", defaultTools, "")
-	flag.BoolVar(&flagPkg.Debug, "d", false, "")
-	flag.BoolVar(&flagPkg.Debug, "debug", false, "")
-	flag.BoolVar(&flagPkg.Insecure, "k", false, "")
-	flag.BoolVar(&flagPkg.Insecure, "insecure", false, "")
-	flag.BoolVar(&version, "v", false, "")
-	flag.BoolVar(&version, "version", false, "")
+	initFlagSet(flag.CommandLine, os.Args[1:], os.Getenv, os.ReadFile, os.Stderr)
+}
 
-	flag.Usage = func() {
-		w := tabwriter.NewWriter(os.Stderr, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(os.Stderr, "Usage: gitea-mcp [options]")
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, "Options:")
+func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, readFile func(string) ([]byte, error), stderr io.Writer) {
+	fs.StringVar(&flagPkg.Mode, "t", "stdio", "")
+	fs.StringVar(&flagPkg.Mode, "transport", "stdio", "")
+	fs.StringVar(&host, "H", getenv("GITEA_HOST"), "")
+	fs.StringVar(&host, "host", getenv("GITEA_HOST"), "")
+	fs.IntVar(&port, "p", 8080, "")
+	fs.IntVar(&port, "port", 8080, "")
+	fs.StringVar(&token, "T", "", "")
+	fs.StringVar(&token, "token", "", "")
+	fs.BoolVar(&flagPkg.ReadOnly, "r", false, "")
+	fs.BoolVar(&flagPkg.ReadOnly, "read-only", false, "")
+	defaultTools := getenv("GITEA_TOOLS")
+	fs.StringVar(&tools, "O", defaultTools, "")
+	fs.StringVar(&tools, "tools", defaultTools, "")
+	fs.BoolVar(&flagPkg.Debug, "d", false, "")
+	fs.BoolVar(&flagPkg.Debug, "debug", false, "")
+	fs.BoolVar(&flagPkg.Insecure, "k", false, "")
+	fs.BoolVar(&flagPkg.Insecure, "insecure", false, "")
+	fs.BoolVar(&version, "v", false, "")
+	fs.BoolVar(&version, "version", false, "")
+	maxInlineAttachmentBytes = 5 * 1024 * 1024
+	fs.Func("max-inline-attachment-bytes", "", func(val string) error {
+		parsed, err := strconv.Atoi(val)
+		if err != nil || parsed < 0 {
+			return fmt.Errorf("invalid value %q", val)
+		}
+		maxInlineAttachmentBytes = parsed
+		maxInlineAttachmentBytesFlagSet = true
+		return nil
+	})
+
+	fs.Usage = func() {
+		w := tabwriter.NewWriter(stderr, 0, 0, 3, ' ', 0)
+		fmt.Fprintln(stderr, "Usage: gitea-mcp [options]")
+		fmt.Fprintln(stderr)
+		fmt.Fprintln(stderr, "Options:")
 		fmt.Fprintf(w, "  -t, -transport <type>\tTransport type: stdio or http (default: stdio)\n")
 		fmt.Fprintf(w, "  -H, -host <url>\tGitea host URL (default: https://gitea.com)\n")
 		fmt.Fprintf(w, "  -p, -port <number>\tHTTP server port (default: 8080)\n")
@@ -55,6 +74,7 @@ func init() {
 		fmt.Fprintf(w, "  -O, -tools <names>\tComma-separated list of tool names to expose\n")
 		fmt.Fprintf(w, "  -d, -debug\tEnable debug mode\n")
 		fmt.Fprintf(w, "  -k, -insecure\tIgnore TLS certificate errors\n")
+		fmt.Fprintf(w, "  -max-inline-attachment-bytes <bytes>\tInline image attachments up to this size (default: 5242880)\n")
 		fmt.Fprintf(w, "  -v, -version\tPrint version and exit\n")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Environment variables:")
@@ -63,13 +83,14 @@ func init() {
 		fmt.Fprintf(w, "  GITEA_DEBUG\tSet to 'true' for debug mode\n")
 		fmt.Fprintf(w, "  GITEA_HOST\tOverride Gitea host URL\n")
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
+		fmt.Fprintf(w, "  GITEA_MAX_INLINE_ATTACHMENT_BYTES\tOverride inline image attachment size limit in bytes\n")
 		fmt.Fprintf(w, "  GITEA_READONLY\tSet to 'true' for read-only mode\n")
 		fmt.Fprintf(w, "  GITEA_TOOLS\tComma-separated list of tool names to expose\n")
 		fmt.Fprintf(w, "  MCP_MODE\tOverride transport mode\n")
-		w.Flush()
+		_ = w.Flush()
 	}
 
-	flag.Parse()
+	_ = fs.Parse(args)
 
 	flagPkg.Host = host
 	if flagPkg.Host == "" {
@@ -77,27 +98,27 @@ func init() {
 	}
 
 	flagPkg.Port = port
+	flagPkg.MaxInlineAttachmentBytes = maxInlineAttachmentBytes
 
 	flagPkg.Token = token
 	if flagPkg.Token == "" {
-		flagPkg.Token = os.Getenv("GITEA_ACCESS_TOKEN")
+		flagPkg.Token = getenv("GITEA_ACCESS_TOKEN")
 	}
 	if flagPkg.Token == "" {
-		if tokenFile := os.Getenv("GITEA_ACCESS_TOKEN_FILE"); tokenFile != "" {
-			data, err := os.ReadFile(tokenFile)
+		if tokenFile := getenv("GITEA_ACCESS_TOKEN_FILE"); tokenFile != "" {
+			data, err := readFile(tokenFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error reading GITEA_ACCESS_TOKEN_FILE: %v\n", err)
-				os.Exit(1)
+				fmt.Fprintf(stderr, "error reading GITEA_ACCESS_TOKEN_FILE: %v\n", err)
+				osExit(1)
 			}
 			flagPkg.Token = strings.TrimRight(string(data), "\r\n")
 		}
 	}
 
-	if os.Getenv("MCP_MODE") != "" {
-		flagPkg.Mode = os.Getenv("MCP_MODE")
+	if getenv("MCP_MODE") != "" {
+		flagPkg.Mode = getenv("MCP_MODE")
 	}
-
-	if os.Getenv("GITEA_READONLY") == "true" {
+	if getenv("GITEA_READONLY") == "true" {
 		flagPkg.ReadOnly = true
 	}
 
@@ -110,14 +131,21 @@ func init() {
 	if len(allowed) > 0 {
 		flagPkg.AllowedTools = allowed
 	}
-
-	if os.Getenv("GITEA_DEBUG") == "true" {
+	if getenv("GITEA_DEBUG") == "true" {
 		flagPkg.Debug = true
 	}
-
-	// Set insecure mode based on environment variable
-	if os.Getenv("GITEA_INSECURE") == "true" {
+	if getenv("GITEA_INSECURE") == "true" {
 		flagPkg.Insecure = true
+	}
+	if !maxInlineAttachmentBytesFlagSet {
+		if val := getenv("GITEA_MAX_INLINE_ATTACHMENT_BYTES"); val != "" {
+			parsed, err := strconv.Atoi(val)
+			if err != nil || parsed < 0 {
+				fmt.Fprintf(stderr, "invalid GITEA_MAX_INLINE_ATTACHMENT_BYTES: %q\n", val)
+				osExit(1)
+			}
+			flagPkg.MaxInlineAttachmentBytes = parsed
+		}
 	}
 }
 
@@ -126,12 +154,14 @@ func Execute() {
 		fmt.Fprintln(os.Stdout, flagPkg.Version)
 		return
 	}
-	defer log.Default().Sync() //nolint:errcheck // best-effort flush
 	if err := operation.Run(); err != nil {
 		if err == context.Canceled {
 			log.Info("Server shutdown due to context cancellation")
+			_ = log.Default().Sync() // best-effort flush
 			return
 		}
-		log.Fatalf("Run Gitea MCP Server Error: %v", err) //nolint:gocritic // intentional exit after defer
+		_ = log.Default().Sync() // best-effort flush
+		log.Fatalf("Run Gitea MCP Server Error: %v", err)
 	}
+	_ = log.Default().Sync() // best-effort flush
 }

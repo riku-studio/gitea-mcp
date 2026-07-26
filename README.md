@@ -151,6 +151,7 @@ Once configured, try `list all my repositories` in the chat box.
 | package_read                 | Packages     | Read   | Read package registry: list packages, list versions, or get a version                      |
 | package_write                | Packages     | Write  | Delete a package version (irreversible)                                                    |
 | list_issues                  | Issue        | Read   | List repository issues                                                                     |
+| attachment_read              | Issue        | Read   | Read issue/comment attachments: list metadata, get metadata, or download content           |
 | issue_read                   | Issue        | Read   | Read issue: details, comments, or labels                                                   |
 | issue_write                  | Issue        | Write  | Write issues: create, update, manage comments and labels                                   |
 | list_pull_requests           | Pull Request | Read   | List repository pull requests                                                              |

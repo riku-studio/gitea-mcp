@@ -151,6 +151,7 @@ Cursor 等客户端可使用 stdio 命令：
 | package_read                 | 软件包   | 读取 | 读取软件包注册表：列出软件包、列出版本或获取某个版本                 |
 | package_write                | 软件包   | 写入 | 删除软件包版本（不可恢复）                                           |
 | list_issues                  | 问题     | 读取 | 列出仓库问题                                                         |
+| attachment_read              | 问题     | 读取 | 读取问题/评论附件：列出元数据、获取元数据或下载内容                 |
 | issue_read                   | 问题     | 读取 | 读取问题：详情、评论或标签                                           |
 | issue_write                  | 问题     | 写入 | 写入问题：创建、更新、管理评论和标签                                 |
 | list_pull_requests           | 拉取请求 | 读取 | 列出仓库拉取请求                                                     |
