@@ -8,11 +8,15 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// TagTool holds the tag-related tools (scope "tag").
+var TagTool = tool.New("tag")
 
 const (
 	CreateTagToolName = "create_tag"
@@ -63,19 +67,19 @@ var (
 )
 
 func init() {
-	Tool.RegisterWrite(server.ServerTool{
+	TagTool.RegisterWrite(server.ServerTool{
 		Tool:    CreateTagTool,
 		Handler: CreateTagFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	TagTool.RegisterWrite(server.ServerTool{
 		Tool:    DeleteTagTool,
 		Handler: DeleteTagFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	TagTool.RegisterRead(server.ServerTool{
 		Tool:    GetTagTool,
 		Handler: GetTagFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	TagTool.RegisterRead(server.ServerTool{
 		Tool:    ListTagsTool,
 		Handler: ListTagsFn,
 	})

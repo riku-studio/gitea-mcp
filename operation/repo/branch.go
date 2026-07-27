@@ -8,11 +8,15 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// BranchTool holds the branch-related tools (scope "branch").
+var BranchTool = tool.New("branch")
 
 const (
 	CreateBranchToolName = "create_branch"
@@ -52,15 +56,15 @@ var (
 )
 
 func init() {
-	Tool.RegisterWrite(server.ServerTool{
+	BranchTool.RegisterWrite(server.ServerTool{
 		Tool:    CreateBranchTool,
 		Handler: CreateBranchFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	BranchTool.RegisterWrite(server.ServerTool{
 		Tool:    DeleteBranchTool,
 		Handler: DeleteBranchFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	BranchTool.RegisterRead(server.ServerTool{
 		Tool:    ListBranchesTool,
 		Handler: ListBranchesFn,
 	})

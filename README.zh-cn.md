@@ -129,63 +129,70 @@ Cursor 等客户端可使用 stdio 命令：
 
 ## 可用工具
 
-| 工具                         | 范围     | 访问 | 描述                                                                 |
-| :--------------------------- | :------- | :--- | :------------------------------------------------------------------- |
-| get_gitea_mcp_server_version | 版本     | 读取 | 获取 Gitea MCP 服务器版本                                            |
-| get_me                       | 用户     | 读取 | 获取当前已认证用户                                                   |
-| get_user_orgs                | 用户     | 读取 | 列出当前用户的组织                                                   |
-| search_users                 | 搜索     | 读取 | 搜索用户                                                             |
-| search_org_teams             | 搜索     | 读取 | 搜索组织中的团队                                                     |
-| search_repos                 | 搜索     | 读取 | 搜索仓库                                                             |
-| search_issues                | 搜索     | 读取 | 跨仓库搜索问题和拉取请求                                             |
-| notification_read            | 通知     | 读取 | 读取通知：列出（可限定仓库）或按 ID 获取会话                         |
-| notification_write           | 通知     | 写入 | 将某条或全部通知标记为已读                                           |
-| label_read                   | 标签     | 读取 | 读取仓库或组织标签                                                   |
-| label_write                  | 标签     | 写入 | 写入标签（仓库或组织）：创建、编辑、删除                             |
-| milestone_read               | 里程碑   | 读取 | 读取里程碑：获取单个或列出                                           |
-| milestone_write              | 里程碑   | 写入 | 写入里程碑：创建、更新、删除                                         |
-| wiki_read                    | Wiki     | 读取 | 读取 Wiki：列出页面、获取内容、修订历史                              |
-| wiki_write                   | Wiki     | 写入 | 写入 Wiki 页面：创建、更新、删除                                     |
-| timetracking_read            | 时间跟踪 | 读取 | 读取时间跟踪：问题/仓库耗时、活动计时器、我的跟踪记录                |
-| timetracking_write           | 时间跟踪 | 写入 | 写入时间跟踪：计时器和记录条目                                       |
-| package_read                 | 软件包   | 读取 | 读取软件包注册表：列出软件包、列出版本或获取某个版本                 |
-| package_write                | 软件包   | 写入 | 删除软件包版本（不可恢复）                                           |
-| list_issues                  | 问题     | 读取 | 列出仓库问题                                                         |
-| attachment_read              | 问题     | 读取 | 读取问题/评论附件：列出元数据、获取元数据或下载内容                 |
-| issue_read                   | 问题     | 读取 | 读取问题：详情、评论或标签                                           |
-| issue_write                  | 问题     | 写入 | 写入问题：创建、更新、管理评论和标签                                 |
-| list_pull_requests           | 拉取请求 | 读取 | 列出仓库拉取请求                                                     |
-| pull_request_read            | 拉取请求 | 读取 | 读取拉取请求：详情、差异、变更文件、头部提交状态、审查               |
-| pull_request_write           | 拉取请求 | 写入 | 写入拉取请求：创建、更新、关闭、重新打开、合并、更新分支、管理审查者 |
-| pull_request_review_write    | 拉取请求 | 写入 | 写入 PR 审查：创建、提交、删除、驳回                                 |
-| actions_config_read          | Actions  | 读取 | 读取 Actions 密钥和变量                                              |
-| actions_config_write         | Actions  | 写入 | 写入 Actions 密钥和变量：更新插入、创建、更新、删除                  |
-| actions_run_read             | Actions  | 读取 | 读取 Actions 工作流、运行、作业、日志和构件                          |
-| actions_run_write            | Actions  | 写入 | 写入 Actions 运行：触发、取消、重新运行                              |
-| create_repo                  | 仓库     | 写入 | 创建新仓库                                                           |
-| fork_repo                    | 仓库     | 写入 | 复刻仓库                                                             |
-| list_my_repos                | 仓库     | 读取 | 列出当前用户拥有的仓库                                               |
-| list_org_repos               | 仓库     | 读取 | 列出组织中的仓库                                                     |
-| get_repository_tree          | 仓库     | 读取 | 获取仓库文件树                                                       |
-| get_file_contents            | 文件     | 读取 | 获取文件内容和元数据                                                 |
-| get_dir_contents             | 文件     | 读取 | 获取目录中的条目                                                     |
-| create_or_update_file        | 文件     | 写入 | 创建或更新文件（提供 sha 以更新现有文件）                            |
-| delete_file                  | 文件     | 写入 | 删除文件                                                             |
-| create_branch                | 分支     | 写入 | 创建新分支                                                           |
-| delete_branch                | 分支     | 写入 | 删除分支                                                             |
-| list_branches                | 分支     | 读取 | 列出仓库分支                                                         |
-| create_tag                   | Git 标签 | 写入 | 创建标签                                                             |
-| delete_tag                   | Git 标签 | 写入 | 删除标签                                                             |
-| get_tag                      | Git 标签 | 读取 | 获取标签详情                                                         |
-| list_tags                    | Git 标签 | 读取 | 列出仓库标签                                                         |
-| list_commits                 | 提交     | 读取 | 列出仓库提交                                                         |
-| get_commit                   | 提交     | 读取 | 获取提交详情                                                         |
-| create_release               | 版本发布 | 写入 | 创建版本发布                                                         |
-| delete_release               | 版本发布 | 写入 | 删除版本发布                                                         |
-| get_release                  | 版本发布 | 读取 | 按 ID 获取版本发布                                                   |
-| get_latest_release           | 版本发布 | 读取 | 获取最新版本发布                                                     |
-| list_releases                | 版本发布 | 读取 | 列出仓库版本发布                                                     |
+| 工具                           | 范围           | 访问 | 描述                                 |
+| :--------------------------- | :----------- | :- | :--------------------------------- |
+| get_gitea_mcp_server_version | version      | 读取 | 获取 Gitea MCP 服务器版本                 |
+| get_me                       | user         | 读取 | 获取当前已认证用户                          |
+| get_user_orgs                | user         | 读取 | 列出当前用户的组织                          |
+| search_users                 | search       | 读取 | 搜索用户                               |
+| search_org_teams             | search       | 读取 | 搜索组织中的团队                           |
+| search_repos                 | search       | 读取 | 搜索仓库                               |
+| search_issues                | search       | 读取 | 跨仓库搜索问题和拉取请求                       |
+| notification_read            | notification | 读取 | 读取通知：列出（可限定仓库）或按 ID 获取会话           |
+| notification_write           | notification | 写入 | 将某条或全部通知标记为已读                      |
+| label_read                   | label        | 读取 | 读取仓库或组织标签                          |
+| label_write                  | label        | 写入 | 写入标签（仓库或组织）：创建、编辑、删除               |
+| milestone_read               | milestone    | 读取 | 读取里程碑：获取单个或列出                      |
+| milestone_write              | milestone    | 写入 | 写入里程碑：创建、更新、删除                     |
+| wiki_read                    | wiki         | 读取 | 读取 Wiki：列出页面、获取内容、修订历史             |
+| wiki_write                   | wiki         | 写入 | 写入 Wiki 页面：创建、更新、删除                |
+| timetracking_read            | timetracking | 读取 | 读取时间跟踪：问题/仓库耗时、活动计时器、我的跟踪记录        |
+| timetracking_write           | timetracking | 写入 | 写入时间跟踪：计时器和记录条目                    |
+| package_read                 | packages     | 读取 | 读取软件包注册表：列出软件包、列出版本或获取某个版本         |
+| package_write                | packages     | 写入 | 删除软件包版本（不可恢复）                      |
+| list_issues                  | issue        | 读取 | 列出仓库问题                             |
+| attachment_read              | issue        | 读取 | 读取问题/评论附件：列出元数据、获取元数据或下载内容         |
+| issue_read                   | issue        | 读取 | 读取问题：详情、评论或标签                      |
+| issue_write                  | issue        | 写入 | 写入问题：创建、更新、管理评论和标签                 |
+| list_pull_requests           | pull_request | 读取 | 列出仓库拉取请求                           |
+| pull_request_read            | pull_request | 读取 | 读取拉取请求：详情、差异、变更文件、头部提交状态、审查        |
+| pull_request_write           | pull_request | 写入 | 写入拉取请求：创建、更新、关闭、重新打开、合并、更新分支、管理审查者 |
+| pull_request_review_write    | pull_request | 写入 | 写入 PR 审查：创建、提交、删除、驳回               |
+| actions_config_read          | actions      | 读取 | 读取 Actions 密钥和变量                   |
+| actions_config_write         | actions      | 写入 | 写入 Actions 密钥和变量：更新插入、创建、更新、删除     |
+| actions_run_read             | actions      | 读取 | 读取 Actions 工作流、运行、作业、日志和构件         |
+| actions_run_write            | actions      | 写入 | 写入 Actions 运行：触发、取消、重新运行           |
+| create_repo                  | repository   | 写入 | 创建新仓库                              |
+| fork_repo                    | repository   | 写入 | 复刻仓库                               |
+| list_my_repos                | repository   | 读取 | 列出当前用户拥有的仓库                        |
+| list_org_repos               | repository   | 读取 | 列出组织中的仓库                           |
+| get_repository_tree          | repository   | 读取 | 获取仓库文件树                            |
+| get_file_contents            | file         | 读取 | 获取文件内容和元数据                         |
+| get_dir_contents             | file         | 读取 | 获取目录中的条目                           |
+| create_or_update_file        | file         | 写入 | 创建或更新文件（提供 sha 以更新现有文件）            |
+| delete_file                  | file         | 写入 | 删除文件                               |
+| create_branch                | branch       | 写入 | 创建新分支                              |
+| delete_branch                | branch       | 写入 | 删除分支                               |
+| list_branches                | branch       | 读取 | 列出仓库分支                             |
+| create_tag                   | tag          | 写入 | 创建标签                               |
+| delete_tag                   | tag          | 写入 | 删除标签                               |
+| get_tag                      | tag          | 读取 | 获取标签详情                             |
+| list_tags                    | tag          | 读取 | 列出仓库标签                             |
+| list_commits                 | commit       | 读取 | 列出仓库提交                             |
+| get_commit                   | commit       | 读取 | 获取提交详情                             |
+| create_release               | release      | 写入 | 创建版本发布                             |
+| delete_release               | release      | 写入 | 删除版本发布                             |
+| get_release                  | release      | 读取 | 按 ID 获取版本发布                        |
+| get_latest_release           | release      | 读取 | 获取最新版本发布                           |
+| list_releases                | release      | 读取 | 列出仓库版本发布                           |
 
-> **说明：** 部分工具是聚合的、基于操作的工具，单个工具通过 `method` 参数暴露多个操作。当服务器以只读模式运行时（`-r` / `GITEA_READONLY`），访问为「写入」的工具会被隐藏；可通过 `-O` / `--tools`（`GITEA_TOOLS`）过滤对外暴露的工具集合。
+> **说明：** 部分工具是聚合的、基于操作的工具，单个工具通过 `method` 参数暴露多个操作。当服务器以只读模式运行时（`-r` / `GITEA_READONLY`），访问为「写入」的工具会被隐藏；可通过 `-S` / `--scope`（`GITEA_SCOPES`）按范围过滤，或通过 `-O` / `--tools`（`GITEA_TOOLS`）按工具名称过滤对外暴露的工具集合。
+
+未设置任一参数时，会加载所有工具；仅设置 `--scope` 时，会加载这些范围内的所有工具；仅设置 `--tools` 时，只会加载指定名称的工具；两者都设置时，会加载所选范围的工具与指定工具名称的并集。范围名称即上表「范围」列中的值，未知的范围名称仅会在启动时产生警告并被忽略。
+
+```bash
+gitea-mcp -S issue,pull_request
+gitea-mcp --scope repository,branch --tools get_me
+```
 
 许多工具支持 `page` 和 `per_page` 分页参数。最大有效页面大小由 Gitea 服务器的 `[api].MAX_RESPONSE_ITEMS` 设置决定（默认 **50**），超出的值会被静默截断。

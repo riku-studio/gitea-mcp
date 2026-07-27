@@ -8,11 +8,15 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// ReleaseTool holds the release-related tools (scope "release").
+var ReleaseTool = tool.New("release")
 
 const (
 	CreateReleaseToolName    = "create_release"
@@ -77,23 +81,23 @@ var (
 )
 
 func init() {
-	Tool.RegisterWrite(server.ServerTool{
+	ReleaseTool.RegisterWrite(server.ServerTool{
 		Tool:    CreateReleaseTool,
 		Handler: CreateReleaseFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	ReleaseTool.RegisterWrite(server.ServerTool{
 		Tool:    DeleteReleaseTool,
 		Handler: DeleteReleaseFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(server.ServerTool{
 		Tool:    GetReleaseTool,
 		Handler: GetReleaseFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(server.ServerTool{
 		Tool:    GetLatestReleaseTool,
 		Handler: GetLatestReleaseFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(server.ServerTool{
 		Tool:    ListReleasesTool,
 		Handler: ListReleasesFn,
 	})

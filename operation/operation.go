@@ -39,6 +39,7 @@ var (
 		user.Tool, actions.Tool, repo.Tool, notification.Tool, issue.Tool,
 		label.Tool, milestone.Tool, packages.Tool, pull.Tool, search.Tool,
 		version.Tool, wiki.Tool, timetracking.Tool,
+		repo.FileTool, repo.BranchTool, repo.TagTool, repo.CommitTool, repo.ReleaseTool,
 	}
 )
 
@@ -47,6 +48,7 @@ func RegisterTool(s *server.MCPServer) {
 		s.AddTools(t.Tools()...)
 	}
 	tool.WarnUnmatchedAllowedTools(domainTools...)
+	tool.WarnUnmatchedAllowedScopes(domainTools...)
 }
 
 // parseAuthToken extracts the token from an Authorization header.

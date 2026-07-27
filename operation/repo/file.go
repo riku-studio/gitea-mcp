@@ -12,11 +12,15 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// FileTool holds the file-related tools (scope "file").
+var FileTool = tool.New("file")
 
 const (
 	GetFileToolName            = "get_file_contents"
@@ -75,19 +79,19 @@ var (
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	FileTool.RegisterRead(server.ServerTool{
 		Tool:    GetFileContentTool,
 		Handler: GetFileContentFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	FileTool.RegisterRead(server.ServerTool{
 		Tool:    GetDirContentTool,
 		Handler: GetDirContentFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	FileTool.RegisterWrite(server.ServerTool{
 		Tool:    CreateOrUpdateFileTool,
 		Handler: CreateOrUpdateFileFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	FileTool.RegisterWrite(server.ServerTool{
 		Tool:    DeleteFileTool,
 		Handler: DeleteFileFn,
 	})

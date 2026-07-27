@@ -32,6 +32,26 @@ func TestAllToolsHaveDescriptions(t *testing.T) {
 	}
 }
 
+// TestDomainToolsScopesAreUniqueAndNonEmpty ensures every entry registered in
+// domainTools has a canonical, non-empty scope name and that no two domains
+// share the same scope (each domain.Tools() call is filtered by exactly one
+// scope name via flag.AllowedScopes).
+func TestDomainToolsScopesAreUniqueAndNonEmpty(t *testing.T) {
+	seen := map[string]struct{}{}
+	for _, d := range domainTools {
+		scope := d.Scope()
+		if scope == "" {
+			t.Errorf("domainTools contains a domain with an empty scope")
+			continue
+		}
+		if _, ok := seen[scope]; ok {
+			t.Errorf("domainTools contains a duplicate scope %q", scope)
+			continue
+		}
+		seen[scope] = struct{}{}
+	}
+}
+
 func TestParseAuthToken(t *testing.T) {
 	tests := []struct {
 		name      string

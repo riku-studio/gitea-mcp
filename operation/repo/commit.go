@@ -8,11 +8,15 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// CommitTool holds the commit-related tools (scope "commit").
+var CommitTool = tool.New("commit")
 
 const (
 	ListRepoCommitsToolName = "list_commits"
@@ -43,11 +47,11 @@ var (
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	CommitTool.RegisterRead(server.ServerTool{
 		Tool:    ListRepoCommitsTool,
 		Handler: ListRepoCommitsFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	CommitTool.RegisterRead(server.ServerTool{
 		Tool:    GetCommitTool,
 		Handler: GetCommitFn,
 	})

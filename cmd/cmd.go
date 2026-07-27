@@ -20,15 +20,12 @@ var (
 	port                            int
 	token                           string
 	tools                           string
+	scopes                          string
 	version                         bool
 	maxInlineAttachmentBytes        int
 	maxInlineAttachmentBytesFlagSet bool
 	osExit                          = os.Exit
 )
-
-func init() {
-	initFlagSet(flag.CommandLine, os.Args[1:], os.Getenv, os.ReadFile, os.Stderr)
-}
 
 func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, readFile func(string) ([]byte, error), stderr io.Writer) {
 	fs.StringVar(&flagPkg.Mode, "t", "stdio", "")
@@ -44,6 +41,9 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	defaultTools := getenv("GITEA_TOOLS")
 	fs.StringVar(&tools, "O", defaultTools, "")
 	fs.StringVar(&tools, "tools", defaultTools, "")
+	defaultScopes := getenv("GITEA_SCOPES")
+	fs.StringVar(&scopes, "S", defaultScopes, "")
+	fs.StringVar(&scopes, "scope", defaultScopes, "")
 	fs.BoolVar(&flagPkg.Debug, "d", false, "")
 	fs.BoolVar(&flagPkg.Debug, "debug", false, "")
 	fs.BoolVar(&flagPkg.Insecure, "k", false, "")
@@ -72,6 +72,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  -T, -token <token>\tPersonal access token\n")
 		fmt.Fprintf(w, "  -r, -read-only\tExpose only read-only tools\n")
 		fmt.Fprintf(w, "  -O, -tools <names>\tComma-separated list of tool names to expose\n")
+		fmt.Fprintf(w, "  -S, -scope <names>\tComma-separated list of tool scopes to expose\n")
 		fmt.Fprintf(w, "  -d, -debug\tEnable debug mode\n")
 		fmt.Fprintf(w, "  -k, -insecure\tIgnore TLS certificate errors\n")
 		fmt.Fprintf(w, "  -max-inline-attachment-bytes <bytes>\tInline image attachments up to this size (default: 5242880)\n")
@@ -85,6 +86,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
 		fmt.Fprintf(w, "  GITEA_MAX_INLINE_ATTACHMENT_BYTES\tOverride inline image attachment size limit in bytes\n")
 		fmt.Fprintf(w, "  GITEA_READONLY\tSet to 'true' for read-only mode\n")
+		fmt.Fprintf(w, "  GITEA_SCOPES\tComma-separated list of tool scopes to expose\n")
 		fmt.Fprintf(w, "  GITEA_TOOLS\tComma-separated list of tool names to expose\n")
 		fmt.Fprintf(w, "  MCP_MODE\tOverride transport mode\n")
 		_ = w.Flush()
@@ -131,6 +133,16 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	if len(allowed) > 0 {
 		flagPkg.AllowedTools = allowed
 	}
+
+	allowedScopes := map[string]struct{}{}
+	for s := range strings.SplitSeq(scopes, ",") {
+		if s = normalizeScope(s); s != "" {
+			allowedScopes[s] = struct{}{}
+		}
+	}
+	if len(allowedScopes) > 0 {
+		flagPkg.AllowedScopes = allowedScopes
+	}
 	if getenv("GITEA_DEBUG") == "true" {
 		flagPkg.Debug = true
 	}
@@ -149,7 +161,19 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	}
 }
 
+// normalizeScope trims whitespace, lowercases, and converts internal spaces
+// and hyphens to underscores, so "Pull Request", "pull-request", and
+// "PULL_REQUEST" all normalize to "pull_request".
+func normalizeScope(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "_")
+	s = strings.ReplaceAll(s, "-", "_")
+	return s
+}
+
 func Execute() {
+	initFlagSet(flag.CommandLine, os.Args[1:], os.Getenv, os.ReadFile, os.Stderr)
 	if version {
 		fmt.Fprintln(os.Stdout, flagPkg.Version)
 		return

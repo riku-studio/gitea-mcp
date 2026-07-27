@@ -17,7 +17,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("search")
 
 const (
 	SearchUsersToolName    = "search_users"

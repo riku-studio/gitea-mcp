@@ -21,7 +21,7 @@ const (
 	GetUserOrgsToolName   = "get_user_orgs"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("user")
 
 var (
 	GetMyUserInfoTool = mcp.NewTool(

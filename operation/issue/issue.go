@@ -29,7 +29,7 @@ type commentWithAssets struct {
 	Assets []*gitea_sdk.Attachment `json:"assets"`
 }
 
-var Tool = tool.New()
+var Tool = tool.New("issue")
 
 const (
 	ListRepoIssuesToolName = "list_issues"

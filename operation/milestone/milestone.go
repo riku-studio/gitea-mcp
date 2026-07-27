@@ -15,7 +15,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("milestone")
 
 const (
 	MilestoneReadToolName  = "milestone_read"

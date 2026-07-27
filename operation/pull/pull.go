@@ -19,7 +19,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("pull_request")
 
 const (
 	ListRepoPullRequestsToolName   = "list_pull_requests"

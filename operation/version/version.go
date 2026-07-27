@@ -13,7 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("version")
 
 const (
 	GetGiteaMCPServerVersion = "get_gitea_mcp_server_version"

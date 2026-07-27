@@ -131,61 +131,68 @@ Once configured, try `list all my repositories` in the chat box.
 
 | Tool                         | Scope        | Access | Description                                                                                |
 | :--------------------------- | :----------- | :----- | :----------------------------------------------------------------------------------------- |
-| get_gitea_mcp_server_version | Version      | Read   | Get the Gitea MCP server version                                                           |
-| get_me                       | User         | Read   | Get the current authenticated user                                                         |
-| get_user_orgs                | User         | Read   | List the current user's organizations                                                      |
-| search_users                 | Search       | Read   | Search for users                                                                           |
-| search_org_teams             | Search       | Read   | Search teams within an organization                                                        |
-| search_repos                 | Search       | Read   | Search for repositories                                                                    |
-| search_issues                | Search       | Read   | Search issues and pull requests across repositories                                        |
-| notification_read            | Notification | Read   | Read notifications: list (optionally scoped to a repo) or get a thread by ID               |
-| notification_write           | Notification | Write  | Mark a notification or all notifications as read                                           |
-| label_read                   | Label        | Read   | Read repository or organization labels                                                     |
-| label_write                  | Label        | Write  | Write labels (repo or org): create, edit, delete                                           |
-| milestone_read               | Milestone    | Read   | Read milestones: get one or list                                                           |
-| milestone_write              | Milestone    | Write  | Write milestones: create, update, delete                                                   |
-| wiki_read                    | Wiki         | Read   | Read wiki: list pages, get content, revision history                                       |
-| wiki_write                   | Wiki         | Write  | Write wiki pages: create, update, delete                                                   |
-| timetracking_read            | Timetracking | Read   | Read time tracking: issue/repo times, active stopwatches, your tracked times               |
-| timetracking_write           | Timetracking | Write  | Write time tracking: stopwatches and entries                                               |
-| package_read                 | Packages     | Read   | Read package registry: list packages, list versions, or get a version                      |
-| package_write                | Packages     | Write  | Delete a package version (irreversible)                                                    |
-| list_issues                  | Issue        | Read   | List repository issues                                                                     |
-| attachment_read              | Issue        | Read   | Read issue/comment attachments: list metadata, get metadata, or download content           |
-| issue_read                   | Issue        | Read   | Read issue: details, comments, or labels                                                   |
-| issue_write                  | Issue        | Write  | Write issues: create, update, manage comments and labels                                   |
-| list_pull_requests           | Pull Request | Read   | List repository pull requests                                                              |
-| pull_request_read            | Pull Request | Read   | Read pull request: details, diff, changed files, head commit status, reviews               |
-| pull_request_write           | Pull Request | Write  | Write pull requests: create, update, close, reopen, merge, update branch, manage reviewers |
-| pull_request_review_write    | Pull Request | Write  | Write PR reviews: create, submit, delete, dismiss                                          |
-| actions_config_read          | Actions      | Read   | Read Actions secrets and variables                                                         |
-| actions_config_write         | Actions      | Write  | Write Actions secrets and variables: upsert, create, update, delete                        |
-| actions_run_read             | Actions      | Read   | Read Actions workflows, runs, jobs, logs, and artifacts                                    |
-| actions_run_write            | Actions      | Write  | Write Actions runs: dispatch, cancel, rerun                                                |
-| create_repo                  | Repository   | Write  | Create a new repository                                                                    |
-| fork_repo                    | Repository   | Write  | Fork a repository                                                                          |
-| list_my_repos                | Repository   | Read   | List repositories owned by the current user                                                |
-| list_org_repos               | Repository   | Read   | List repositories in an organization                                                       |
-| get_repository_tree          | Repository   | Read   | Get the repository file tree                                                               |
-| get_file_contents            | File         | Read   | Get file content and metadata                                                              |
-| get_dir_contents             | File         | Read   | Get the entries in a directory                                                             |
-| create_or_update_file        | File         | Write  | Create or update a file (provide sha to update an existing file)                           |
-| delete_file                  | File         | Write  | Delete a file                                                                              |
-| create_branch                | Branch       | Write  | Create a new branch                                                                        |
-| delete_branch                | Branch       | Write  | Delete a branch                                                                            |
-| list_branches                | Branch       | Read   | List repository branches                                                                   |
-| create_tag                   | Tag          | Write  | Create a tag                                                                               |
-| delete_tag                   | Tag          | Write  | Delete a tag                                                                               |
-| get_tag                      | Tag          | Read   | Get tag details                                                                            |
-| list_tags                    | Tag          | Read   | List repository tags                                                                       |
-| list_commits                 | Commit       | Read   | List repository commits                                                                    |
-| get_commit                   | Commit       | Read   | Get commit details                                                                         |
-| create_release               | Release      | Write  | Create a release                                                                           |
-| delete_release               | Release      | Write  | Delete a release                                                                           |
-| get_release                  | Release      | Read   | Get a release by ID                                                                        |
-| get_latest_release           | Release      | Read   | Get the latest release                                                                     |
-| list_releases                | Release      | Read   | List repository releases                                                                   |
+| get_gitea_mcp_server_version | version      | Read   | Get the Gitea MCP server version                                                           |
+| get_me                       | user         | Read   | Get the current authenticated user                                                         |
+| get_user_orgs                | user         | Read   | List the current user's organizations                                                      |
+| search_users                 | search       | Read   | Search for users                                                                           |
+| search_org_teams             | search       | Read   | Search teams within an organization                                                        |
+| search_repos                 | search       | Read   | Search for repositories                                                                    |
+| search_issues                | search       | Read   | Search issues and pull requests across repositories                                        |
+| notification_read            | notification | Read   | Read notifications: list (optionally scoped to a repo) or get a thread by ID               |
+| notification_write           | notification | Write  | Mark a notification or all notifications as read                                           |
+| label_read                   | label        | Read   | Read repository or organization labels                                                     |
+| label_write                  | label        | Write  | Write labels (repo or org): create, edit, delete                                           |
+| milestone_read               | milestone    | Read   | Read milestones: get one or list                                                           |
+| milestone_write              | milestone    | Write  | Write milestones: create, update, delete                                                   |
+| wiki_read                    | wiki         | Read   | Read wiki: list pages, get content, revision history                                       |
+| wiki_write                   | wiki         | Write  | Write wiki pages: create, update, delete                                                   |
+| timetracking_read            | timetracking | Read   | Read time tracking: issue/repo times, active stopwatches, your tracked times               |
+| timetracking_write           | timetracking | Write  | Write time tracking: stopwatches and entries                                               |
+| package_read                 | packages     | Read   | Read package registry: list packages, list versions, or get a version                      |
+| package_write                | packages     | Write  | Delete a package version (irreversible)                                                    |
+| list_issues                  | issue        | Read   | List repository issues                                                                     |
+| attachment_read              | issue        | Read   | Read issue/comment attachments: list metadata, get metadata, or download content           |
+| issue_read                   | issue        | Read   | Read issue: details, comments, or labels                                                   |
+| issue_write                  | issue        | Write  | Write issues: create, update, manage comments and labels                                   |
+| list_pull_requests           | pull_request | Read   | List repository pull requests                                                              |
+| pull_request_read            | pull_request | Read   | Read pull request: details, diff, changed files, head commit status, reviews               |
+| pull_request_write           | pull_request | Write  | Write pull requests: create, update, close, reopen, merge, update branch, manage reviewers |
+| pull_request_review_write    | pull_request | Write  | Write PR reviews: create, submit, delete, dismiss                                          |
+| actions_config_read          | actions      | Read   | Read Actions secrets and variables                                                         |
+| actions_config_write         | actions      | Write  | Write Actions secrets and variables: upsert, create, update, delete                        |
+| actions_run_read             | actions      | Read   | Read Actions workflows, runs, jobs, logs, and artifacts                                    |
+| actions_run_write            | actions      | Write  | Write Actions runs: dispatch, cancel, rerun                                                |
+| create_repo                  | repository   | Write  | Create a new repository                                                                    |
+| fork_repo                    | repository   | Write  | Fork a repository                                                                          |
+| list_my_repos                | repository   | Read   | List repositories owned by the current user                                                |
+| list_org_repos               | repository   | Read   | List repositories in an organization                                                       |
+| get_repository_tree          | repository   | Read   | Get the repository file tree                                                               |
+| get_file_contents            | file         | Read   | Get file content and metadata                                                              |
+| get_dir_contents             | file         | Read   | Get the entries in a directory                                                             |
+| create_or_update_file        | file         | Write  | Create or update a file (provide sha to update an existing file)                           |
+| delete_file                  | file         | Write  | Delete a file                                                                              |
+| create_branch                | branch       | Write  | Create a new branch                                                                        |
+| delete_branch                | branch       | Write  | Delete a branch                                                                            |
+| list_branches                | branch       | Read   | List repository branches                                                                   |
+| create_tag                   | tag          | Write  | Create a tag                                                                               |
+| delete_tag                   | tag          | Write  | Delete a tag                                                                               |
+| get_tag                      | tag          | Read   | Get tag details                                                                            |
+| list_tags                    | tag          | Read   | List repository tags                                                                       |
+| list_commits                 | commit       | Read   | List repository commits                                                                    |
+| get_commit                   | commit       | Read   | Get commit details                                                                         |
+| create_release               | release      | Write  | Create a release                                                                           |
+| delete_release               | release      | Write  | Delete a release                                                                           |
+| get_release                  | release      | Read   | Get a release by ID                                                                        |
+| get_latest_release           | release      | Read   | Get the latest release                                                                     |
+| list_releases                | release      | Read   | List repository releases                                                                   |
 
-> **Note:** Several tools are consolidated, action-based tools, a single tool exposes multiple operations through a `method` parameter. Tools with `Write` access are hidden when the server runs in read-only mode (`-r` / `GITEA_READONLY`), and the exposed tool set can be filtered with `-O` / `--tools` (`GITEA_TOOLS`).
+> **Note:** Several tools are consolidated, action-based tools, a single tool exposes multiple operations through a `method` parameter. Tools with `Write` access are hidden when the server runs in read-only mode (`-r` / `GITEA_READONLY`), and the exposed tool set can be filtered by scope with `-S` / `--scope` (`GITEA_SCOPES`) and/or by individual tool name with `-O` / `--tools` (`GITEA_TOOLS`).
+
+With neither flag set, every tool loads. `--scope` limits loading to tools whose Scope column value is in the given list; `--tools` limits loading to the named tools; setting both loads the union of the selected scopes and the individually named tools. Unknown scope names are ignored with a startup warning.
+
+```bash
+gitea-mcp -S issue,pull_request
+gitea-mcp --scope repository,branch --tools get_me
+```
 
 Many tools accept `page` and `per_page` for pagination. The maximum effective page size is the Gitea server's `[api].MAX_RESPONSE_ITEMS` setting (default **50**), larger values are silently capped.

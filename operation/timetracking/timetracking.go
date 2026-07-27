@@ -16,7 +16,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-var Tool = tool.New()
+var Tool = tool.New("timetracking")
 
 const (
 	TimetrackingReadToolName  = "timetracking_read"

@@ -9,8 +9,9 @@ var (
 
 	MaxInlineAttachmentBytes int
 
-	Insecure     bool
-	ReadOnly     bool
-	Debug        bool
-	AllowedTools map[string]struct{}
+	Insecure      bool
+	ReadOnly      bool
+	Debug         bool
+	AllowedTools  map[string]struct{}
+	AllowedScopes map[string]struct{}
 )
