@@ -155,9 +155,9 @@ Cursor 等客户端可使用 stdio 命令：
 | issue_read                   | issue        | 读取 | 读取问题：详情、评论或标签                      |
 | issue_write                  | issue        | 写入 | 写入问题：创建、更新、管理评论和标签                 |
 | list_pull_requests           | pull_request | 读取 | 列出仓库拉取请求                           |
-| pull_request_read            | pull_request | 读取 | 读取拉取请求：详情、差异、变更文件、头部提交状态、审查        |
+| pull_request_read            | pull_request | 读取 | 读取拉取请求：详情、差异、变更文件、头部提交状态、审查、审查评论   |
 | pull_request_write           | pull_request | 写入 | 写入拉取请求：创建、更新、关闭、重新打开、合并、更新分支、管理审查者 |
-| pull_request_review_write    | pull_request | 写入 | 写入 PR 审查：创建、提交、删除、驳回               |
+| pull_request_review_write    | pull_request | 写入 | 写入 PR 审查：创建、提交、删除、驳回、回复和解决审查评论 |
 | actions_config_read          | actions      | 读取 | 读取 Actions 密钥和变量                   |
 | actions_config_write         | actions      | 写入 | 写入 Actions 密钥和变量：更新插入、创建、更新、删除     |
 | actions_run_read             | actions      | 读取 | 读取 Actions 工作流、运行、作业、日志和构件         |

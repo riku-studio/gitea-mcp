@@ -1042,3 +1042,147 @@ func Test_reopenPullRequestFn(t *testing.T) {
 		t.Fatalf("expected content in result")
 	}
 }
+
+// serveStub points the client at a test server that answers the SDK version
+// probe, leaving every other route to handler.
+func serveStub(t *testing.T, handler http.HandlerFunc) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/version" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"version":"1.27.0"}`))
+			return
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+
+	origHost, origToken := flag.Host, flag.Token
+	flag.Host, flag.Token = server.URL, "test-token"
+	t.Cleanup(func() { flag.Host, flag.Token = origHost, origToken })
+}
+
+func Test_pullRequestReviewWriteFn_comments(t *testing.T) {
+	const (
+		owner     = "octo"
+		repo      = "demo"
+		index     = 7
+		commentID = 42
+	)
+
+	for _, tc := range []struct {
+		method   string
+		path     string
+		wantBody string
+	}{
+		{"reply_comment", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/comments/%d/replies", owner, repo, index, commentID), "sure"},
+		{"resolve_thread", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/comments/%d/resolve", owner, repo, commentID), ""},
+		{"unresolve_thread", fmt.Sprintf("/api/v1/repos/%s/%s/pulls/comments/%d/unresolve", owner, repo, commentID), ""},
+	} {
+		t.Run(tc.method, func(t *testing.T) {
+			var gotPath, gotBody string
+
+			serveStub(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != tc.path {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if r.Method != http.MethodPost {
+					t.Errorf("expected POST method, got %s", r.Method)
+				}
+				gotPath = r.URL.Path
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				gotBody, _ = body["body"].(string)
+				if tc.wantBody == "" {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{"id":43,"body":"sure","path":"main.go","position":3}`))
+			})
+
+			req := mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Arguments: map[string]any{
+						"method":      tc.method,
+						"owner":       owner,
+						"repo":        repo,
+						"pull_number": float64(index),
+						"comment_id":  float64(commentID),
+						"body":        "sure",
+					},
+				},
+			}
+
+			result, err := pullRequestReviewWriteFn(context.Background(), req)
+			if err != nil {
+				t.Fatalf("pullRequestReviewWriteFn() error = %v", err)
+			}
+
+			if gotPath != tc.path {
+				t.Errorf("expected request to %s, got %q", tc.path, gotPath)
+			}
+
+			// resolve and unresolve send no body, reply sends the reply text
+			if gotBody != tc.wantBody {
+				t.Errorf("expected body %q, got %q", tc.wantBody, gotBody)
+			}
+
+			if len(result.Content) == 0 {
+				t.Fatalf("expected content in result")
+			}
+		})
+	}
+}
+
+func Test_listPullRequestReviewCommentsFn_allReviews(t *testing.T) {
+	const (
+		owner = "octo"
+		repo  = "demo"
+		index = 7
+	)
+
+	var gotReviewPaths []string
+
+	serveStub(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/reviews", owner, repo, index):
+			// the middle review has no review comments and must not be fetched
+			_, _ = w.Write([]byte(`[{"id":1,"comments_count":1},{"id":2,"comments_count":0},{"id":3,"comments_count":2}]`))
+		case fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/reviews/1/comments", owner, repo, index),
+			fmt.Sprintf("/api/v1/repos/%s/%s/pulls/%d/reviews/3/comments", owner, repo, index):
+			gotReviewPaths = append(gotReviewPaths, r.URL.Path)
+			_, _ = w.Write([]byte(`[{"id":11,"body":"nit","path":"main.go","position":3}]`))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: map[string]any{
+				"method":      "get_review_comments",
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": float64(index),
+			},
+		},
+	}
+
+	result, err := pullRequestReadFn(context.Background(), req)
+	if err != nil {
+		t.Fatalf("pullRequestReadFn() error = %v", err)
+	}
+
+	if len(gotReviewPaths) != 2 {
+		t.Errorf("expected comments of 2 reviews to be fetched, got %v", gotReviewPaths)
+	}
+
+	if len(result.Content) == 0 {
+		t.Fatalf("expected content in result")
+	}
+}

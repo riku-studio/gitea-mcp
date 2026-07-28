@@ -155,9 +155,9 @@ Cursor 等客戶端可使用 stdio 命令：
 | issue_read                   | issue        | 讀取 | 讀取問題：詳情、評論或標籤                      |
 | issue_write                  | issue        | 寫入 | 寫入問題：創建、更新、管理評論和標籤                 |
 | list_pull_requests           | pull_request | 讀取 | 列出倉庫拉取請求                           |
-| pull_request_read            | pull_request | 讀取 | 讀取拉取請求：詳情、差異、變更檔案、頭部提交狀態、審查        |
+| pull_request_read            | pull_request | 讀取 | 讀取拉取請求：詳情、差異、變更檔案、頭部提交狀態、審查、審查評論   |
 | pull_request_write           | pull_request | 寫入 | 寫入拉取請求：創建、更新、關閉、重新開啟、合併、更新分支、管理審查者 |
-| pull_request_review_write    | pull_request | 寫入 | 寫入 PR 審查：創建、提交、刪除、駁回               |
+| pull_request_review_write    | pull_request | 寫入 | 寫入 PR 審查：創建、提交、刪除、駁回、回覆和解決審查評論 |
 | actions_config_read          | actions      | 讀取 | 讀取 Actions 密鑰和變數                   |
 | actions_config_write         | actions      | 寫入 | 寫入 Actions 密鑰和變數：更新插入、創建、更新、刪除     |
 | actions_run_read             | actions      | 讀取 | 讀取 Actions 工作流程、執行、作業、日誌和產物        |

@@ -137,8 +137,9 @@ func slimReviewComment(c *gitea_sdk.PullReviewComment) map[string]any {
 	if c == nil {
 		return nil
 	}
-	return map[string]any{
+	m := map[string]any{
 		"id":           c.ID,
+		"review_id":    c.ReviewID,
 		"body":         c.Body,
 		"path":         c.Path,
 		"position":     c.LineNum,
@@ -149,6 +150,11 @@ func slimReviewComment(c *gitea_sdk.PullReviewComment) map[string]any {
 		"created_at":   c.Created,
 		"updated_at":   c.Updated,
 	}
+	// the thread's first comment carries the resolver
+	if c.Resolver != nil {
+		m["resolved_by"] = slim.UserLogin(c.Resolver)
+	}
+	return m
 }
 
 func slimReviewComments(comments []*gitea_sdk.PullReviewComment) []map[string]any {

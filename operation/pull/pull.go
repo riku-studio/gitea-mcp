@@ -44,13 +44,13 @@ var (
 
 	PullRequestReadTool = mcp.NewTool(
 		PullRequestReadToolName,
-		mcp.WithDescription("Read pull request: details, diff, changed files, head commit status, reviews."),
+		mcp.WithDescription("Read pull request: details, diff, changed files, head commit status, reviews, review comments."),
 		mcp.WithToolAnnotation(annotation.ReadOnly("Read pull request details")),
 		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
 		mcp.WithNumber("pull_number", mcp.Required()),
-		mcp.WithNumber("review_id", mcp.Description("for 'get_review'/'get_review_comments'")),
+		mcp.WithNumber("review_id", mcp.Description("for 'get_review'; optional for 'get_review_comments', omit to list all")),
 		mcp.WithBoolean("binary", mcp.Description("include binary diff")),
 		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
@@ -89,15 +89,16 @@ var (
 
 	PullRequestReviewWriteTool = mcp.NewTool(
 		PullRequestReviewWriteToolName,
-		mcp.WithDescription("Write PR reviews: create, submit, delete, dismiss."),
-		mcp.WithToolAnnotation(annotation.Write("Submit a pull request review")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "submit", "delete", "dismiss")),
+		mcp.WithDescription("Write PR reviews: create, submit, delete, dismiss, reply to and resolve review comments."),
+		mcp.WithToolAnnotation(annotation.Write("Write pull request reviews")),
+		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "submit", "delete", "dismiss", "reply_comment", "resolve_thread", "unresolve_thread")),
 		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
 		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("pull_number", mcp.Required()),
-		mcp.WithNumber("review_id", mcp.Description("required except for 'create'")),
+		mcp.WithNumber("pull_number", mcp.Description("required except for 'resolve_thread'/'unresolve_thread'")),
+		mcp.WithNumber("review_id", mcp.Description("for 'submit'/'delete'/'dismiss'")),
+		mcp.WithNumber("comment_id", mcp.Description("comment ID from 'get_review_comments'; resolve takes the thread's first")),
 		mcp.WithString("state", mcp.Enum("APPROVED", "REQUEST_CHANGES", "COMMENT", "PENDING")),
-		mcp.WithString("body"),
+		mcp.WithString("body", mcp.Description("review body, or reply text for 'reply_comment'")),
 		mcp.WithString("commit_id", mcp.Description("for 'create'")),
 		mcp.WithString("message", mcp.Description("dismissal reason")),
 		mcp.WithArray("comments", mcp.Description("inline comments (for 'create')"), mcp.Items(map[string]any{
@@ -257,6 +258,12 @@ func pullRequestReviewWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return deletePullRequestReviewFn(ctx, req)
 	case "dismiss":
 		return dismissPullRequestReviewFn(ctx, req)
+	case "reply_comment":
+		return replyPullRequestReviewCommentFn(ctx, req)
+	case "resolve_thread":
+		return resolveReviewThreadFn(ctx, req)
+	case "unresolve_thread":
+		return unresolveReviewThreadFn(ctx, req)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -567,19 +574,39 @@ func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolReques
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	reviewID, err := params.GetIndex(args, "review_id")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
-	comments, _, err := client.PullRequests.ListPullReviewComments(ctx, owner, repo, index, reviewID)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("list review comments for review %v on %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
+	// review comments hang off reviews, so without a review_id walk a page of
+	// reviews, keeping each thread and its replies together
+	var reviewIDs []int64
+	if reviewID := params.GetOptionalInt(args, "review_id", 0); reviewID != 0 {
+		reviewIDs = append(reviewIDs, reviewID)
+	} else {
+		page, pageSize := params.GetPagination(args, 30)
+		reviews, _, err := client.PullRequests.ListPullReviews(ctx, owner, repo, index, gitea_sdk.ListPullReviewsOptions{
+			ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+		})
+		if err != nil {
+			return to.ErrorResult(fmt.Errorf("list reviews for %v/%v/pr/%v err: %v", owner, repo, index, err))
+		}
+		reviewIDs = make([]int64, 0, len(reviews))
+		for _, review := range reviews {
+			if review.CodeCommentsCount > 0 {
+				reviewIDs = append(reviewIDs, review.ID)
+			}
+		}
+	}
+
+	var comments []*gitea_sdk.PullReviewComment
+	for _, reviewID := range reviewIDs {
+		reviewComments, _, err := client.PullRequests.ListPullReviewComments(ctx, owner, repo, index, reviewID)
+		if err != nil {
+			return to.ErrorResult(fmt.Errorf("list review comments for review %v on %v/%v/pr/%v err: %v", reviewID, owner, repo, index, err))
+		}
+		comments = append(comments, reviewComments...)
 	}
 
 	return to.TextResult(slimReviewComments(comments))
@@ -769,6 +796,91 @@ func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*
 		"message":    "Successfully dismissed review",
 		"review_id":  reviewID,
 		"pr_index":   index,
+		"repository": fmt.Sprintf("%s/%s", owner, repo),
+	}
+
+	return to.TextResult(successMsg)
+}
+
+func replyPullRequestReviewCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := req.GetArguments()
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, "pull_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	commentID, err := params.GetIndex(args, "comment_id")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	body, err := params.GetString(args, "body")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+
+	comment, _, err := client.PullRequests.CreatePullReviewCommentReply(ctx, owner, repo, index, commentID, gitea_sdk.CreatePullReviewCommentReplyOptions{
+		Body: body,
+	})
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("reply to review comment %v on %v/%v/pr/%v err: %v", commentID, owner, repo, index, err))
+	}
+
+	return to.TextResult(slimReviewComment(comment))
+}
+
+func resolveReviewThreadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return setReviewThreadResolvedFn(ctx, req, true)
+}
+
+func unresolveReviewThreadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return setReviewThreadResolvedFn(ctx, req, false)
+}
+
+func setReviewThreadResolvedFn(ctx context.Context, req mcp.CallToolRequest, resolved bool) (*mcp.CallToolResult, error) {
+	args := req.GetArguments()
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	commentID, err := params.GetIndex(args, "comment_id")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	client, err := gitea.ClientFromContext(ctx)
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
+	}
+
+	if resolved {
+		_, err = client.PullRequests.ResolvePullReviewComment(ctx, owner, repo, commentID)
+	} else {
+		_, err = client.PullRequests.UnresolvePullReviewComment(ctx, owner, repo, commentID)
+	}
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("set resolved=%v on review comment %v in %v/%v err: %v", resolved, commentID, owner, repo, err))
+	}
+
+	successMsg := map[string]any{
+		"message":    "Successfully updated review thread",
+		"comment_id": commentID,
+		"resolved":   resolved,
 		"repository": fmt.Sprintf("%s/%s", owner, repo),
 	}
 
