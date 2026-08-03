@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	gitea.dev/sdk v1.2.0
-	github.com/mark3labs/mcp-go v0.56.0
+	github.com/mark3labs/mcp-go v0.57.0
 	go.uber.org/zap v1.28.0
 	go.uber.org/zap/exp v0.3.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
