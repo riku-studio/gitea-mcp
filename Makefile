@@ -82,7 +82,12 @@ security-check: ## run security check
 .PHONY: tidy
 tidy: ## run go mod tidy
 	$(eval MIN_GO_VERSION := $(shell grep -Eo '^go\s+[0-9]+\.[0-9.]+' go.mod | cut -d' ' -f2))
+	$(eval GO_TOOLCHAIN := $(shell grep -Eo '^toolchain\s+go[0-9.]+' go.mod | cut -d' ' -f2))
 	$(GO) mod tidy -compat=$(MIN_GO_VERSION)
+	@# workaround https://github.com/golang/go/issues/75331: restore toolchain if tidy dropped it
+	@if [ -n "$(GO_TOOLCHAIN)" ] && ! grep -qE '^toolchain\s' go.mod; then \
+		$(GO) mod edit -toolchain=$(GO_TOOLCHAIN); \
+	fi
 
 .PHONY: vendor
 vendor: tidy ## tidy and verify module dependencies
