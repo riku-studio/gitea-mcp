@@ -11,8 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // BranchTool holds the branch-related tools (scope "branch").
@@ -25,53 +24,52 @@ const (
 )
 
 var (
-	CreateBranchTool = mcp.NewTool(
+	CreateBranchTool = tool.NewDefinition(
 		CreateBranchToolName,
-		mcp.WithDescription("Create a new branch in a repository, optionally from a specific source branch (defaults to the repository's default branch)."),
-		mcp.WithToolAnnotation(annotation.Write("Create a new branch")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("branch", mcp.Required()),
-		mcp.WithString("old_branch", mcp.Description("source branch (default: repo default)")),
+		"Create a new branch in a repository, optionally from a specific source branch (defaults to the repository's default branch).",
+		annotation.Write("Create a new branch"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("branch", tool.Required()),
+		tool.String("old_branch", tool.Description("source branch (default: repo default)")),
 	)
 
-	DeleteBranchTool = mcp.NewTool(
+	DeleteBranchTool = tool.NewDefinition(
 		DeleteBranchToolName,
-		mcp.WithDescription("Permanently delete a branch from a repository. This action is destructive and cannot be undone."),
-		mcp.WithToolAnnotation(annotation.Destructive("Delete a branch")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("branch", mcp.Required()),
+		"Permanently delete a branch from a repository. This action is destructive and cannot be undone.",
+		annotation.Destructive("Delete a branch"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("branch", tool.Required()),
 	)
 
-	ListBranchesTool = mcp.NewTool(
+	ListBranchesTool = tool.NewDefinition(
 		ListBranchesToolName,
-		mcp.WithDescription("List all branches in a repository, paginated."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List repository branches")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"List all branches in a repository, paginated.",
+		annotation.ReadOnly("List repository branches"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 )
 
 func init() {
-	BranchTool.RegisterWrite(server.ServerTool{
+	BranchTool.RegisterWrite(tool.ServerTool{
 		Tool:    CreateBranchTool,
 		Handler: CreateBranchFn,
 	})
-	BranchTool.RegisterWrite(server.ServerTool{
+	BranchTool.RegisterWrite(tool.ServerTool{
 		Tool:    DeleteBranchTool,
 		Handler: DeleteBranchFn,
 	})
-	BranchTool.RegisterRead(server.ServerTool{
+	BranchTool.RegisterRead(tool.ServerTool{
 		Tool:    ListBranchesTool,
 		Handler: ListBranchesFn,
 	})
 }
 
-func CreateBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func CreateBranchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -101,8 +99,7 @@ func CreateBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	return to.TextResult("Branch Created")
 }
 
-func DeleteBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func DeleteBranchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -127,8 +124,7 @@ func DeleteBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	return to.TextResult("Branch Deleted")
 }
 
-func ListBranchesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func ListBranchesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

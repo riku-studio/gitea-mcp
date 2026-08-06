@@ -9,8 +9,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("version")
@@ -19,20 +18,20 @@ const (
 	GetGiteaMCPServerVersion = "get_gitea_mcp_server_version"
 )
 
-var GetGiteaMCPServerVersionTool = mcp.NewTool(
+var GetGiteaMCPServerVersionTool = tool.NewDefinition(
 	GetGiteaMCPServerVersion,
-	mcp.WithDescription("Get the running version of the Gitea MCP Server itself (not the Gitea instance it connects to)."),
-	mcp.WithToolAnnotation(annotation.ReadOnly("Get server version")),
+	"Get the running version of the Gitea MCP Server itself (not the Gitea instance it connects to).",
+	annotation.ReadOnly("Get server version"),
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    GetGiteaMCPServerVersionTool,
 		Handler: GetGiteaMCPServerVersionFn,
 	})
 }
 
-func GetGiteaMCPServerVersionFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func GetGiteaMCPServerVersionFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	version := flag.Version
 	if version == "" {
 		version = "dev"

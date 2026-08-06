@@ -11,8 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // TagTool holds the tag-related tools (scope "tag").
@@ -26,67 +25,66 @@ const (
 )
 
 var (
-	CreateTagTool = mcp.NewTool(
+	CreateTagTool = tool.NewDefinition(
 		CreateTagToolName,
-		mcp.WithDescription("Create a new Git tag in a repository at a target commit, branch, or existing tag, with an optional annotation message."),
-		mcp.WithToolAnnotation(annotation.Write("Create a tag")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("tag_name", mcp.Required()),
-		mcp.WithString("target", mcp.Description("commitish")),
-		mcp.WithString("message", mcp.Description("tag message")),
+		"Create a new Git tag in a repository at a target commit, branch, or existing tag, with an optional annotation message.",
+		annotation.Write("Create a tag"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("tag_name", tool.Required()),
+		tool.String("target", tool.Description("commitish")),
+		tool.String("message", tool.Description("tag message")),
 	)
 
-	DeleteTagTool = mcp.NewTool(
+	DeleteTagTool = tool.NewDefinition(
 		DeleteTagToolName,
-		mcp.WithDescription("Permanently delete a tag from a repository. This action is destructive and cannot be undone."),
-		mcp.WithToolAnnotation(annotation.Destructive("Delete a tag")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("tag_name", mcp.Required()),
+		"Permanently delete a tag from a repository. This action is destructive and cannot be undone.",
+		annotation.Destructive("Delete a tag"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("tag_name", tool.Required()),
 	)
 
-	GetTagTool = mcp.NewTool(
+	GetTagTool = tool.NewDefinition(
 		GetTagToolName,
-		mcp.WithDescription("Get details for a single tag in a repository by name."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get tag details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("tag_name", mcp.Required()),
+		"Get details for a single tag in a repository by name.",
+		annotation.ReadOnly("Get tag details"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("tag_name", tool.Required()),
 	)
 
-	ListTagsTool = mcp.NewTool(
+	ListTagsTool = tool.NewDefinition(
 		ListTagsToolName,
-		mcp.WithDescription("List all tags in a repository, paginated."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List tags")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(20), mcp.Min(1)),
+		"List all tags in a repository, paginated.",
+		annotation.ReadOnly("List tags"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(20), tool.Minimum(1)),
 	)
 )
 
 func init() {
-	TagTool.RegisterWrite(server.ServerTool{
+	TagTool.RegisterWrite(tool.ServerTool{
 		Tool:    CreateTagTool,
 		Handler: CreateTagFn,
 	})
-	TagTool.RegisterWrite(server.ServerTool{
+	TagTool.RegisterWrite(tool.ServerTool{
 		Tool:    DeleteTagTool,
 		Handler: DeleteTagFn,
 	})
-	TagTool.RegisterRead(server.ServerTool{
+	TagTool.RegisterRead(tool.ServerTool{
 		Tool:    GetTagTool,
 		Handler: GetTagFn,
 	})
-	TagTool.RegisterRead(server.ServerTool{
+	TagTool.RegisterRead(tool.ServerTool{
 		Tool:    ListTagsTool,
 		Handler: ListTagsFn,
 	})
 }
 
-func CreateTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func CreateTagFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -118,8 +116,7 @@ func CreateTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	return to.TextResult("Tag Created")
 }
 
-func DeleteTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func DeleteTagFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -145,8 +142,7 @@ func DeleteTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 	return to.TextResult("Tag deleted")
 }
 
-func GetTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetTagFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -172,8 +168,7 @@ func GetTagFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	return to.TextResult(slimTag(tag))
 }
 
-func ListTagsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func ListTagsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

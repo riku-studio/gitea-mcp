@@ -8,37 +8,36 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
 	GetRepoTreeToolName = "get_repository_tree"
 )
 
-var GetRepoTreeTool = mcp.NewTool(
+var GetRepoTreeTool = tool.NewDefinition(
 	GetRepoTreeToolName,
-	mcp.WithDescription("Get the file tree of a repository at a given ref (SHA, branch, or tag), optionally recursively."),
-	mcp.WithToolAnnotation(annotation.ReadOnly("Get repository file tree")),
-	mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-	mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-	mcp.WithString("tree_sha", mcp.Required(), mcp.Description("SHA, branch, or tag")),
-	mcp.WithBoolean("recursive"),
-	mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-	mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+	"Get the file tree of a repository at a given ref (SHA, branch, or tag), optionally recursively.",
+	annotation.ReadOnly("Get repository file tree"),
+	tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+	tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+	tool.String("tree_sha", tool.Required(), tool.Description("SHA, branch, or tag")),
+	tool.Boolean("recursive"),
+	tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+	tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    GetRepoTreeTool,
 		Handler: GetRepoTreeFn,
 	})
 }
 
-func GetRepoTreeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetRepoTreeFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

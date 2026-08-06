@@ -48,7 +48,9 @@ func TestSlimIssues(t *testing.T) {
 }
 
 func TestSearchIssuesToolRequired(t *testing.T) {
-	if !slices.Contains(SearchIssuesTool.InputSchema.Required, "query") {
+	inputSchema := SearchIssuesTool.InputSchema.(map[string]any)
+	required, _ := inputSchema["required"].([]string)
+	if !slices.Contains(required, "query") {
 		t.Error("search_issues should require query")
 	}
 }

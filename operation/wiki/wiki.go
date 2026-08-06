@@ -12,8 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("wiki")
@@ -24,77 +23,76 @@ const (
 )
 
 var (
-	WikiReadTool = mcp.NewTool(
+	WikiReadTool = tool.NewDefinition(
 		WikiReadToolName,
-		mcp.WithDescription("Read wiki: list pages, get content, revision history."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read wiki pages")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "get", "get_revisions")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("pageName", mcp.Description("for 'get'/'get_revisions'")),
+		"Read wiki: list pages, get content, revision history.",
+		annotation.ReadOnly("Read wiki pages"),
+		tool.String("method", tool.Required(), tool.Enum("list", "get", "get_revisions")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("pageName", tool.Description("for 'get'/'get_revisions'")),
 	)
 
-	WikiWriteTool = mcp.NewTool(
+	WikiWriteTool = tool.NewDefinition(
 		WikiWriteToolName,
-		mcp.WithDescription("Write wiki pages: create, update, delete."),
-		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete wiki pages")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("pageName", mcp.Description("for 'update'/'delete'")),
-		mcp.WithString("title", mcp.Description("for 'create'")),
-		mcp.WithString("content", mcp.Description("for 'create'/'update'")),
-		mcp.WithString("message", mcp.Description("commit message")),
+		"Write wiki pages: create, update, delete.",
+		annotation.Destructive("Create, update, or delete wiki pages"),
+		tool.String("method", tool.Required(), tool.Enum("create", "update", "delete")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("pageName", tool.Description("for 'update'/'delete'")),
+		tool.String("title", tool.Description("for 'create'")),
+		tool.String("content", tool.Description("for 'create'/'update'")),
+		tool.String("message", tool.Description("commit message")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    WikiReadTool,
 		Handler: wikiReadFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    WikiWriteTool,
 		Handler: wikiWriteFn,
 	})
 }
 
-func wikiReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func wikiReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list":
-		return listWikiPagesFn(ctx, req)
+		return listWikiPagesFn(ctx, args)
 	case "get":
-		return getWikiPageFn(ctx, req)
+		return getWikiPageFn(ctx, args)
 	case "get_revisions":
-		return getWikiRevisionsFn(ctx, req)
+		return getWikiRevisionsFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func wikiWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func wikiWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "create":
-		return createWikiPageFn(ctx, req)
+		return createWikiPageFn(ctx, args)
 	case "update":
-		return updateWikiPageFn(ctx, req)
+		return updateWikiPageFn(ctx, args)
 	case "delete":
-		return deleteWikiPageFn(ctx, req)
+		return deleteWikiPageFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func listWikiPagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listWikiPagesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -113,8 +111,7 @@ func listWikiPagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult(result)
 }
 
-func getWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getWikiPageFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -137,8 +134,7 @@ func getWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	return to.TextResult(result)
 }
 
-func getWikiRevisionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getWikiRevisionsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -161,8 +157,7 @@ func getWikiRevisionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(result)
 }
 
-func createWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func createWikiPageFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -200,8 +195,7 @@ func createWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(result)
 }
 
-func updateWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func updateWikiPageFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -245,8 +239,7 @@ func updateWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(result)
 }
 
-func deleteWikiPageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func deleteWikiPageFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

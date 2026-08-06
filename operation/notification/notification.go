@@ -12,8 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("notification")
@@ -24,79 +23,76 @@ const (
 )
 
 var (
-	NotificationReadTool = mcp.NewTool(
+	NotificationReadTool = tool.NewDefinition(
 		NotificationReadToolName,
-		mcp.WithDescription("Read notifications: list (optionally scoped to a repo) or get a thread by ID."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read notifications")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "get")),
-		mcp.WithString("owner", mcp.Description("scope 'list' to a repo")),
-		mcp.WithString("repo", mcp.Description("scope 'list' to a repo")),
-		mcp.WithNumber("id", mcp.Description("thread ID (for 'get')")),
-		mcp.WithString("status", mcp.Enum("unread", "read", "pinned")),
-		mcp.WithString("subject_type", mcp.Enum("Issue", "Pull", "Commit", "Repository")),
-		mcp.WithString("since", mcp.Description("updated after ISO 8601")),
-		mcp.WithString("before", mcp.Description("updated before ISO 8601")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Read notifications: list (optionally scoped to a repo) or get a thread by ID.",
+		annotation.ReadOnly("Read notifications"),
+		tool.String("method", tool.Required(), tool.Enum("list", "get")),
+		tool.String("owner", tool.Description("scope 'list' to a repo")),
+		tool.String("repo", tool.Description("scope 'list' to a repo")),
+		tool.Number("id", tool.Description("thread ID (for 'get')")),
+		tool.String("status", tool.Enum("unread", "read", "pinned")),
+		tool.String("subject_type", tool.Enum("Issue", "Pull", "Commit", "Repository")),
+		tool.String("since", tool.Description("updated after ISO 8601")),
+		tool.String("before", tool.Description("updated before ISO 8601")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	NotificationWriteTool = mcp.NewTool(
+	NotificationWriteTool = tool.NewDefinition(
 		NotificationWriteToolName,
-		mcp.WithDescription("Mark a notification or all notifications as read."),
-		mcp.WithToolAnnotation(annotation.Write("Manage notifications")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("mark_read", "mark_all_read")),
-		mcp.WithNumber("id", mcp.Description("thread ID (for 'mark_read')")),
-		mcp.WithString("owner", mcp.Description("scope 'mark_all_read' to a repo")),
-		mcp.WithString("repo", mcp.Description("scope 'mark_all_read' to a repo")),
-		mcp.WithString("last_read_at", mcp.Description("ISO 8601; defaults to now")),
+		"Mark a notification or all notifications as read.",
+		annotation.Write("Manage notifications"),
+		tool.String("method", tool.Required(), tool.Enum("mark_read", "mark_all_read")),
+		tool.Number("id", tool.Description("thread ID (for 'mark_read')")),
+		tool.String("owner", tool.Description("scope 'mark_all_read' to a repo")),
+		tool.String("repo", tool.Description("scope 'mark_all_read' to a repo")),
+		tool.String("last_read_at", tool.Description("ISO 8601; defaults to now")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    NotificationReadTool,
 		Handler: notificationReadFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    NotificationWriteTool,
 		Handler: notificationWriteFn,
 	})
 }
 
-func notificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func notificationReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list":
-		return listNotificationsFn(ctx, req)
+		return listNotificationsFn(ctx, args)
 	case "get":
-		return getNotificationFn(ctx, req)
+		return getNotificationFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func notificationWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func notificationWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "mark_read":
-		return markNotificationReadFn(ctx, req)
+		return markNotificationReadFn(ctx, args)
 	case "mark_all_read":
-		return markAllNotificationsReadFn(ctx, req)
+		return markAllNotificationsReadFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listNotificationsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListNotificationOptions{
 		ListOptions: gitea_sdk.ListOptions{
@@ -139,8 +135,8 @@ func listNotificationsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	return to.TextResult(slimThreads(threads))
 }
 
-func getNotificationFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, err := params.GetIndex(req.GetArguments(), "id")
+func getNotificationFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -155,8 +151,8 @@ func getNotificationFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(slimThread(thread))
 }
 
-func markNotificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, err := params.GetIndex(req.GetArguments(), "id")
+func markNotificationReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -174,8 +170,7 @@ func markNotificationReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return to.TextResult("Notification marked as read")
 }
 
-func markAllNotificationsReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func markAllNotificationsReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	lastReadAt := time.Now()
 	if t := params.GetOptionalTime(args, "last_read_at"); t != nil {
 		lastReadAt = *t

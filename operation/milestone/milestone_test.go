@@ -12,7 +12,7 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func Test_milestoneWriteFn_dueOn(t *testing.T) {
@@ -56,7 +56,7 @@ func Test_milestoneWriteFn_dueOn(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		fn     func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error)
+		fn     func(context.Context, map[string]any) (*mcp.CallToolResult, error)
 		method string
 		extra  map[string]any
 	}{
@@ -69,7 +69,7 @@ func Test_milestoneWriteFn_dueOn(t *testing.T) {
 			a := map[string]any{}
 			maps.Copy(a, args)
 			maps.Copy(a, tc.extra)
-			res, err := tc.fn(context.Background(), mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: a}})
+			res, err := tc.fn(context.Background(), a)
 			if err != nil || res.IsError {
 				t.Fatalf("%s err=%v result=%v", tc.name, err, res)
 			}

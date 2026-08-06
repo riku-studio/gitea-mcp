@@ -11,8 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // CommitTool holds the commit-related tools (scope "commit").
@@ -24,41 +23,40 @@ const (
 )
 
 var (
-	ListRepoCommitsTool = mcp.NewTool(
+	ListRepoCommitsTool = tool.NewDefinition(
 		ListRepoCommitsToolName,
-		mcp.WithDescription("List commits in a repository, optionally starting from a specific branch or SHA and filtered to commits touching a given file path."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List repository commits")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("sha", mcp.Description("starting SHA or branch")),
-		mcp.WithString("path", mcp.Description("only commits touching this path")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
+		"List commits in a repository, optionally starting from a specific branch or SHA and filtered to commits touching a given file path.",
+		annotation.ReadOnly("List repository commits"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("sha", tool.Description("starting SHA or branch")),
+		tool.String("path", tool.Description("only commits touching this path")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30), tool.Minimum(1)),
 	)
 
-	GetCommitTool = mcp.NewTool(
+	GetCommitTool = tool.NewDefinition(
 		GetCommitToolName,
-		mcp.WithDescription("Get details for a single commit in a repository by its SHA."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get commit details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("sha", mcp.Required()),
+		"Get details for a single commit in a repository by its SHA.",
+		annotation.ReadOnly("Get commit details"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("sha", tool.Required()),
 	)
 )
 
 func init() {
-	CommitTool.RegisterRead(server.ServerTool{
+	CommitTool.RegisterRead(tool.ServerTool{
 		Tool:    ListRepoCommitsTool,
 		Handler: ListRepoCommitsFn,
 	})
-	CommitTool.RegisterRead(server.ServerTool{
+	CommitTool.RegisterRead(tool.ServerTool{
 		Tool:    GetCommitTool,
 		Handler: GetCommitFn,
 	})
 }
 
-func ListRepoCommitsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func ListRepoCommitsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -89,8 +87,7 @@ func ListRepoCommitsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(slimCommits(commits))
 }
 
-func GetCommitFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetCommitFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

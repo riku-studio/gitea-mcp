@@ -1,18 +1,16 @@
 package annotation
 
-import "github.com/mark3labs/mcp-go/mcp"
+import "github.com/modelcontextprotocol/go-sdk/mcp"
 
-func ReadOnly(title string) mcp.ToolAnnotation {
+func ReadOnly(title string) *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{Title: title, ReadOnlyHint: true}
+}
+
+func Write(title string) *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{Title: title}
+}
+
+func Destructive(title string) *mcp.ToolAnnotations {
 	t := true
-	return mcp.ToolAnnotation{Title: title, ReadOnlyHint: &t}
-}
-
-func Write(title string) mcp.ToolAnnotation {
-	f := false
-	return mcp.ToolAnnotation{Title: title, ReadOnlyHint: &f}
-}
-
-func Destructive(title string) mcp.ToolAnnotation {
-	f, t := false, true
-	return mcp.ToolAnnotation{Title: title, ReadOnlyHint: &f, DestructiveHint: &t}
+	return &mcp.ToolAnnotations{Title: title, DestructiveHint: &t}
 }

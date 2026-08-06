@@ -44,8 +44,10 @@ func TestSlimTreeNil(t *testing.T) {
 }
 
 func TestGetRepoTreeToolRequired(t *testing.T) {
+	inputSchema := GetRepoTreeTool.InputSchema.(map[string]any)
+	required, _ := inputSchema["required"].([]string)
 	for _, field := range []string{"owner", "repo", "tree_sha"} {
-		if !slices.Contains(GetRepoTreeTool.InputSchema.Required, field) {
+		if !slices.Contains(required, field) {
 			t.Errorf("expected %q to be required", field)
 		}
 	}

@@ -12,8 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("timetracking")
@@ -24,86 +23,86 @@ const (
 )
 
 var (
-	TimetrackingReadTool = mcp.NewTool(
+	TimetrackingReadTool = tool.NewDefinition(
 		TimetrackingReadToolName,
-		mcp.WithDescription("Read time tracking: issue times, repo times, active stopwatches, your tracked times."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read tracked time")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list_issue_times", "list_repo_times", "get_my_stopwatches", "get_my_times")),
-		mcp.WithString("owner", mcp.Description("for list_* methods")),
-		mcp.WithString("repo", mcp.Description("for list_* methods")),
-		mcp.WithNumber("issue_number", mcp.Description("for 'list_issue_times'")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Read time tracking: issue times, repo times, active stopwatches, your tracked times.",
+		annotation.ReadOnly("Read tracked time"),
+		tool.String("method", tool.Required(), tool.Enum("list_issue_times", "list_repo_times", "get_my_stopwatches", "get_my_times")),
+		tool.String("owner", tool.Description("for list_* methods")),
+		tool.String("repo", tool.Description("for list_* methods")),
+		tool.Number("issue_number", tool.Description("for 'list_issue_times'")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	TimetrackingWriteTool = mcp.NewTool(
+	TimetrackingWriteTool = tool.NewDefinition(
 		TimetrackingWriteToolName,
-		mcp.WithDescription("Write time tracking: stopwatches and entries."),
-		mcp.WithToolAnnotation(annotation.Write("Add or manage tracked time")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("start_stopwatch", "stop_stopwatch", "delete_stopwatch", "add_time", "delete_time")),
-		mcp.WithString("owner", mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("issue_number"),
-		mcp.WithNumber("time", mcp.Description("seconds (for 'add_time')")),
-		mcp.WithNumber("id", mcp.Description("entry ID (for 'delete_time')")),
+		"Write time tracking: stopwatches and entries.",
+		annotation.Write("Add or manage tracked time"),
+		tool.String("method", tool.Required(), tool.Enum("start_stopwatch", "stop_stopwatch", "delete_stopwatch", "add_time", "delete_time")),
+		tool.String("owner", tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Description(params.RepoDesc)),
+		tool.Number("issue_number"),
+		tool.Number("time", tool.Description("seconds (for 'add_time')")),
+		tool.Number("id", tool.Description("entry ID (for 'delete_time')")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: TimetrackingReadTool, Handler: readFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: TimetrackingWriteTool, Handler: writeFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: TimetrackingReadTool, Handler: readFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: TimetrackingWriteTool, Handler: writeFn})
 }
 
-func readFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func readFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list_issue_times":
-		return listTrackedTimesFn(ctx, req)
+		return listTrackedTimesFn(ctx, args)
 	case "list_repo_times":
-		return listRepoTimesFn(ctx, req)
+		return listRepoTimesFn(ctx, args)
 	case "get_my_stopwatches":
-		return getMyStopwatchesFn(ctx, req)
+		return getMyStopwatchesFn(ctx, args)
 	case "get_my_times":
-		return getMyTimesFn(ctx, req)
+		return getMyTimesFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func writeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func writeFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "start_stopwatch":
-		return startStopwatchFn(ctx, req)
+		return startStopwatchFn(ctx, args)
 	case "stop_stopwatch":
-		return stopStopwatchFn(ctx, req)
+		return stopStopwatchFn(ctx, args)
 	case "delete_stopwatch":
-		return deleteStopwatchFn(ctx, req)
+		return deleteStopwatchFn(ctx, args)
 	case "add_time":
-		return addTrackedTimeFn(ctx, req)
+		return addTrackedTimeFn(ctx, args)
 	case "delete_time":
-		return deleteTrackedTimeFn(ctx, req)
+		return deleteTrackedTimeFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func startStopwatchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -118,16 +117,16 @@ func startStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(fmt.Sprintf("Stopwatch started on issue %s/%s#%d", owner, repo, index))
 }
 
-func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func stopStopwatchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -142,16 +141,16 @@ func stopStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult(fmt.Sprintf("Stopwatch stopped on issue %s/%s#%d - time recorded", owner, repo, index))
 }
 
-func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func deleteStopwatchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -166,7 +165,7 @@ func deleteStopwatchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(fmt.Sprintf("Stopwatch deleted/cancelled on issue %s/%s#%d", owner, repo, index))
 }
 
-func getMyStopwatchesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func getMyStopwatchesFn(ctx context.Context, _ map[string]any) (*mcp.CallToolResult, error) {
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
@@ -181,20 +180,20 @@ func getMyStopwatchesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(slimStopWatches(stopwatches))
 }
 
-func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listTrackedTimesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
@@ -215,21 +214,21 @@ func listTrackedTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(slimTrackedTimes(times))
 }
 
-func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func addTrackedTimeFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 
-	timeSeconds, err := params.GetIndex(req.GetArguments(), "time")
+	timeSeconds, err := params.GetIndex(args, "time")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -246,21 +245,21 @@ func addTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(slimTrackedTime(trackedTime))
 }
 
-func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func deleteTrackedTimeFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 
-	index, err := params.GetIndex(req.GetArguments(), "issue_number")
+	index, err := params.GetIndex(args, "issue_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	id, err := params.GetIndex(req.GetArguments(), "id")
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -275,17 +274,17 @@ func deleteTrackedTimeFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	return to.TextResult(fmt.Sprintf("Tracked time entry %d deleted from issue %s/%s#%d", id, owner, repo, index))
 }
 
-func listRepoTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoTimesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
@@ -305,7 +304,7 @@ func listRepoTimesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult(slimTrackedTimes(times))
 }
 
-func getMyTimesFn(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func getMyTimesFn(ctx context.Context, _ map[string]any) (*mcp.CallToolResult, error) {
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))

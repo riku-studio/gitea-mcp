@@ -11,8 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("milestone")
@@ -23,90 +22,90 @@ const (
 )
 
 var (
-	MilestoneReadTool = mcp.NewTool(
+	MilestoneReadTool = tool.NewDefinition(
 		MilestoneReadToolName,
-		mcp.WithDescription("Read milestones: get one or list."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read milestones")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "list")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("id", mcp.Description("for 'get'")),
-		mcp.WithString("state", mcp.DefaultString("all")),
-		mcp.WithString("name", mcp.Description("name filter (for 'list')")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Read milestones: get one or list.",
+		annotation.ReadOnly("Read milestones"),
+		tool.String("method", tool.Required(), tool.Enum("get", "list")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("id", tool.Description("for 'get'")),
+		tool.String("state", tool.Default("all")),
+		tool.String("name", tool.Description("name filter (for 'list')")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	MilestoneWriteTool = mcp.NewTool(
+	MilestoneWriteTool = tool.NewDefinition(
 		MilestoneWriteToolName,
-		mcp.WithDescription("Write milestones: create, update, delete."),
-		mcp.WithToolAnnotation(annotation.Destructive("Create, update, or delete milestones")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "edit", "delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("id", mcp.Description("for 'update'/'delete'")),
-		mcp.WithString("title", mcp.Description("for 'create'")),
-		mcp.WithString("description"),
-		mcp.WithString("due_on", mcp.Description("due date")),
-		mcp.WithString("state", mcp.Enum("open", "closed")),
+		"Write milestones: create, update, delete.",
+		annotation.Destructive("Create, update, or delete milestones"),
+		tool.String("method", tool.Required(), tool.Enum("create", "update", "edit", "delete")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("id", tool.Description("for 'update'/'delete'")),
+		tool.String("title", tool.Description("for 'create'")),
+		tool.String("description"),
+		tool.String("due_on", tool.Description("due date")),
+		tool.String("state", tool.Enum("open", "closed")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    MilestoneReadTool,
 		Handler: milestoneReadFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    MilestoneWriteTool,
 		Handler: milestoneWriteFn,
 	})
 }
 
-func milestoneReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func milestoneReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "get":
-		return getMilestoneFn(ctx, req)
+		return getMilestoneFn(ctx, args)
 	case "list":
-		return listMilestonesFn(ctx, req)
+		return listMilestonesFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func milestoneWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func milestoneWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "create":
-		return createMilestoneFn(ctx, req)
+		return createMilestoneFn(ctx, args)
 	case "update":
-		return editMilestoneFn(ctx, req)
+		return editMilestoneFn(ctx, args)
 	case "edit":
-		return editMilestoneFn(ctx, req)
+		return editMilestoneFn(ctx, args)
 	case "delete":
-		return deleteMilestoneFn(ctx, req)
+		return deleteMilestoneFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func getMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getMilestoneFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	id, err := params.GetIndex(req.GetArguments(), "id")
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -122,18 +121,18 @@ func getMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	return to.TextResult(slimMilestone(milestone))
 }
 
-func listMilestonesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listMilestonesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	state := params.GetOptionalString(req.GetArguments(), "state", "all")
-	name := params.GetOptionalString(req.GetArguments(), "name", "")
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	state := params.GetOptionalString(args, "state", "all")
+	name := params.GetOptionalString(args, "name", "")
+	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListMilestoneOption{
 		State: gitea_sdk.StateType(state),
 		Name:  name,
@@ -153,16 +152,16 @@ func listMilestonesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(slimMilestones(milestones))
 }
 
-func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func createMilestoneFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	title, err := params.GetString(req.GetArguments(), "title")
+	title, err := params.GetString(args, "title")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -171,11 +170,11 @@ func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 		Title: title,
 	}
 
-	description, ok := req.GetArguments()["description"].(string)
+	description, ok := args["description"].(string)
 	if ok {
 		opt.Description = description
 	}
-	opt.Deadline = params.GetOptionalTime(req.GetArguments(), "due_on")
+	opt.Deadline = params.GetOptionalTime(args, "due_on")
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -189,21 +188,20 @@ func createMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(slimMilestone(milestone))
 }
 
-func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func editMilestoneFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	id, err := params.GetIndex(req.GetArguments(), "id")
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 
-	args := req.GetArguments()
 	opt := gitea_sdk.EditMilestoneOption{
 		Description: params.GetPresentStringPtr(args, "description"),
 		Deadline:    params.GetOptionalTime(args, "due_on"),
@@ -228,16 +226,16 @@ func editMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult(slimMilestone(milestone))
 }
 
-func deleteMilestoneFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func deleteMilestoneFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	id, err := params.GetIndex(req.GetArguments(), "id")
+	id, err := params.GetIndex(args, "id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

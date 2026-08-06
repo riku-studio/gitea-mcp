@@ -6,15 +6,14 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func makeTool(name string) server.ServerTool {
-	return server.ServerTool{Tool: mcp.NewTool(name)}
+func makeTool(name string) ServerTool {
+	return ServerTool{Tool: &mcp.Tool{Name: name}}
 }
 
-func names(sts []server.ServerTool) []string {
+func names(sts []ServerTool) []string {
 	out := make([]string, len(sts))
 	for i, st := range sts {
 		out[i] = st.Tool.Name

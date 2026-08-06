@@ -12,8 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("repository")
@@ -26,74 +25,73 @@ const (
 )
 
 var (
-	CreateRepoTool = mcp.NewTool(
+	CreateRepoTool = tool.NewDefinition(
 		CreateRepoToolName,
-		mcp.WithDescription("Create a new Git repository, optionally under an organization (defaults to the authenticated user's account), with options for visibility, template, license, .gitignore, and initial README."),
-		mcp.WithToolAnnotation(annotation.Write("Create a new repository")),
-		mcp.WithString("name", mcp.Required()),
-		mcp.WithString("description"),
-		mcp.WithBoolean("private"),
-		mcp.WithString("issue_labels"),
-		mcp.WithBoolean("auto_init"),
-		mcp.WithBoolean("template"),
-		mcp.WithString("gitignores"),
-		mcp.WithString("license"),
-		mcp.WithString("readme"),
-		mcp.WithString("default_branch"),
-		mcp.WithString("trust_model", mcp.Enum("default", "collaborator", "committer", "collaboratorcommitter")),
-		mcp.WithString("object_format_name", mcp.Enum("sha1", "sha256")),
-		mcp.WithString("organization", mcp.Description("defaults to personal account")),
+		"Create a new Git repository, optionally under an organization (defaults to the authenticated user's account), with options for visibility, template, license, .gitignore, and initial README.",
+		annotation.Write("Create a new repository"),
+		tool.String("name", tool.Required()),
+		tool.String("description"),
+		tool.Boolean("private"),
+		tool.String("issue_labels"),
+		tool.Boolean("auto_init"),
+		tool.Boolean("template"),
+		tool.String("gitignores"),
+		tool.String("license"),
+		tool.String("readme"),
+		tool.String("default_branch"),
+		tool.String("trust_model", tool.Enum("default", "collaborator", "committer", "collaboratorcommitter")),
+		tool.String("object_format_name", tool.Enum("sha1", "sha256")),
+		tool.String("organization", tool.Description("defaults to personal account")),
 	)
 
-	ForkRepoTool = mcp.NewTool(
+	ForkRepoTool = tool.NewDefinition(
 		ForkRepoToolName,
-		mcp.WithDescription("Fork an existing repository into the authenticated user's account or a target organization, optionally under a new name."),
-		mcp.WithToolAnnotation(annotation.Write("Fork a repository")),
-		mcp.WithString("user", mcp.Required(), mcp.Description("owner of source repo")),
-		mcp.WithString("repo", mcp.Required()),
-		mcp.WithString("organization", mcp.Description("target org")),
-		mcp.WithString("name", mcp.Description("fork name")),
+		"Fork an existing repository into the authenticated user's account or a target organization, optionally under a new name.",
+		annotation.Write("Fork a repository"),
+		tool.String("user", tool.Required(), tool.Description("owner of source repo")),
+		tool.String("repo", tool.Required()),
+		tool.String("organization", tool.Description("target org")),
+		tool.String("name", tool.Description("fork name")),
 	)
 
-	ListMyReposTool = mcp.NewTool(
+	ListMyReposTool = tool.NewDefinition(
 		ListMyReposToolName,
-		mcp.WithDescription("List repositories owned by the authenticated user."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List my repositories")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
+		"List repositories owned by the authenticated user.",
+		annotation.ReadOnly("List my repositories"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30), tool.Minimum(1)),
 	)
 
-	ListOrgReposTool = mcp.NewTool(
+	ListOrgReposTool = tool.NewDefinition(
 		ListOrgReposToolName,
-		mcp.WithDescription("List repositories belonging to an organization."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List organization repositories")),
-		mcp.WithString("org", mcp.Required()),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(100), mcp.Min(1)),
+		"List repositories belonging to an organization.",
+		annotation.ReadOnly("List organization repositories"),
+		tool.String("org", tool.Required()),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(100), tool.Minimum(1)),
 	)
 )
 
 func init() {
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    CreateRepoTool,
 		Handler: CreateRepoFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    ForkRepoTool,
 		Handler: ForkRepoFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    ListMyReposTool,
 		Handler: ListMyReposFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    ListOrgReposTool,
 		Handler: ListOrgReposFn,
 	})
 }
 
-func CreateRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func CreateRepoFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -145,8 +143,7 @@ func CreateRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	return to.TextResult(slim.Repo(repo))
 }
 
-func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func ForkRepoFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	user, err := params.GetString(args, "user")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -170,8 +167,8 @@ func ForkRepoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	return to.TextResult("Fork success")
 }
 
-func ListMyReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+func ListMyReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListReposOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,
@@ -190,12 +187,12 @@ func ListMyReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	return to.TextResult(slim.Repos(repos))
 }
 
-func ListOrgReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func ListOrgReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 100)
+	page, pageSize := params.GetPagination(args, 100)
 	opt := gitea_sdk.ListOrgReposOptions{
 		ListOptions: gitea_sdk.ListOptions{
 			Page:     page,

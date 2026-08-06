@@ -12,7 +12,7 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func Test_editPullRequestFn(t *testing.T) {
@@ -77,19 +77,15 @@ func Test_editPullRequestFn(t *testing.T) {
 				flag.Version = origVersion
 			}()
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: map[string]any{
-						"owner":       owner,
-						"repo":        repo,
-						"pull_number": ii.val,
-						"title":       "WIP: my feature",
-						"state":       "open",
-					},
-				},
+			args := map[string]any{
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": ii.val,
+				"title":       "WIP: my feature",
+				"state":       "open",
 			}
 
-			result, err := editPullRequestFn(context.Background(), req)
+			result, err := editPullRequestFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("editPullRequestFn() error = %v", err)
 			}
@@ -113,7 +109,7 @@ func Test_editPullRequestFn(t *testing.T) {
 			if len(result.Content) == 0 {
 				t.Fatalf("expected content in result")
 			}
-			textContent, ok := mcp.AsTextContent(result.Content[0])
+			textContent, ok := result.Content[0].(*mcp.TextContent)
 			if !ok {
 				t.Fatalf("expected text content, got %T", result.Content[0])
 			}
@@ -193,21 +189,17 @@ func Test_mergePullRequestFn(t *testing.T) {
 				flag.Version = origVersion
 			}()
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: map[string]any{
-						"owner":         owner,
-						"repo":          repo,
-						"pull_number":   ii.val,
-						"merge_style":   "squash",
-						"title":         "feat: my squashed commit",
-						"message":       "Squash merge of PR #5",
-						"delete_branch": true,
-					},
-				},
+			args := map[string]any{
+				"owner":         owner,
+				"repo":          repo,
+				"pull_number":   ii.val,
+				"merge_style":   "squash",
+				"title":         "feat: my squashed commit",
+				"message":       "Squash merge of PR #5",
+				"delete_branch": true,
 			}
 
-			result, err := mergePullRequestFn(context.Background(), req)
+			result, err := mergePullRequestFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("mergePullRequestFn() error = %v", err)
 			}
@@ -237,7 +229,7 @@ func Test_mergePullRequestFn(t *testing.T) {
 			if len(result.Content) == 0 {
 				t.Fatalf("expected content in result")
 			}
-			textContent, ok := mcp.AsTextContent(result.Content[0])
+			textContent, ok := result.Content[0].(*mcp.TextContent)
 			if !ok {
 				t.Fatalf("expected text content, got %T", result.Content[0])
 			}
@@ -306,21 +298,17 @@ func Test_mergePullRequestFn_newParams(t *testing.T) {
 		flag.Version = origVersion
 	}()
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"owner":                     owner,
-				"repo":                      repo,
-				"pull_number":               float64(index),
-				"merge_style":               "merge",
-				"force_merge":               true,
-				"merge_when_checks_succeed": true,
-				"head_commit_id":            "abc123",
-			},
-		},
+	args := map[string]any{
+		"owner":                     owner,
+		"repo":                      repo,
+		"pull_number":               float64(index),
+		"merge_style":               "merge",
+		"force_merge":               true,
+		"merge_when_checks_succeed": true,
+		"head_commit_id":            "abc123",
 	}
 
-	_, err := mergePullRequestFn(context.Background(), req)
+	_, err := mergePullRequestFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("mergePullRequestFn() error = %v", err)
 	}
@@ -386,22 +374,18 @@ func Test_createPullRequestFn_labels(t *testing.T) {
 		flag.Version = origVersion
 	}()
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"owner":    owner,
-				"repo":     repo,
-				"title":    "test",
-				"body":     "body",
-				"head":     "feature",
-				"base":     "main",
-				"labels":   []any{float64(1), float64(2)},
-				"deadline": "2026-06-01T00:00:00Z",
-			},
-		},
+	args := map[string]any{
+		"owner":    owner,
+		"repo":     repo,
+		"title":    "test",
+		"body":     "body",
+		"head":     "feature",
+		"base":     "main",
+		"labels":   []any{float64(1), float64(2)},
+		"deadline": "2026-06-01T00:00:00Z",
 	}
 
-	_, err := createPullRequestFn(context.Background(), req)
+	_, err := createPullRequestFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("createPullRequestFn() error = %v", err)
 	}
@@ -525,13 +509,7 @@ func Test_createPullRequestFn_draft(t *testing.T) {
 				args["draft"] = tc.draft
 			}
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: args,
-				},
-			}
-
-			_, err := createPullRequestFn(context.Background(), req)
+			_, err := createPullRequestFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("createPullRequestFn() error = %v", err)
 			}
@@ -630,13 +608,7 @@ func Test_editPullRequestFn_draft(t *testing.T) {
 				args["draft"] = tc.draft
 			}
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: args,
-				},
-			}
-
-			_, err := editPullRequestFn(context.Background(), req)
+			_, err := editPullRequestFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("editPullRequestFn() error = %v", err)
 			}
@@ -720,18 +692,14 @@ func Test_getPullRequestDiffFn(t *testing.T) {
 				flag.Version = origVersion
 			}()
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: map[string]any{
-						"owner":       owner,
-						"repo":        repo,
-						"pull_number": ii.val,
-						"binary":      true,
-					},
-				},
+			args := map[string]any{
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": ii.val,
+				"binary":      true,
 			}
 
-			result, err := getPullRequestDiffFn(context.Background(), req)
+			result, err := getPullRequestDiffFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("getPullRequestDiffFn() error = %v", err)
 			}
@@ -758,7 +726,7 @@ func Test_getPullRequestDiffFn(t *testing.T) {
 				t.Fatalf("expected content in result")
 			}
 
-			textContent, ok := mcp.AsTextContent(result.Content[0])
+			textContent, ok := result.Content[0].(*mcp.TextContent)
 			if !ok {
 				t.Fatalf("expected text content, got %T", result.Content[0])
 			}
@@ -807,17 +775,17 @@ func Test_getPullRequestByIndexFn_includesAttachments(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo, "pull_number": float64(index),
-	}}}
-	res, err := getPullRequestByIndexFn(context.Background(), req)
+	}
+	res, err := getPullRequestByIndexFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
 	}
 	if res.IsError {
 		t.Fatalf("unexpected error result: %v", res.Content)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `[shot.png](https://example/shot.png)`) {
 		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
 	}
@@ -855,14 +823,14 @@ func Test_getPullRequestByIndexFn_emptyAssetsLeavesBody(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo, "pull_number": float64(index),
-	}}}
-	res, err := getPullRequestByIndexFn(context.Background(), req)
+	}
+	res, err := getPullRequestByIndexFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `"body":"plain body"`) {
 		t.Fatalf("expected body unchanged when assets are empty, got: %s", body)
 	}
@@ -899,17 +867,17 @@ func Test_getPullRequestByIndexFn_assetsFailureNonFatal(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo, "pull_number": float64(index),
-	}}}
-	res, err := getPullRequestByIndexFn(context.Background(), req)
+	}
+	res, err := getPullRequestByIndexFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("getPullRequestByIndexFn() error = %v", err)
 	}
 	if res.IsError {
 		t.Fatalf("assets fetch failure should not fail the PR fetch: %v", res.Content)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `"plain body"`) {
 		t.Fatalf("expected PR body preserved when assets fail, got: %s", body)
 	}
@@ -954,18 +922,14 @@ func Test_closePullRequestFn(t *testing.T) {
 	flag.Token = "test-token"
 	t.Cleanup(func() { flag.Host = origHost; flag.Token = origToken })
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"method":      "close",
-				"owner":       owner,
-				"repo":        repo,
-				"pull_number": float64(index),
-			},
-		},
+	args := map[string]any{
+		"method":      "close",
+		"owner":       owner,
+		"repo":        repo,
+		"pull_number": float64(index),
 	}
 
-	result, err := closePullRequestFn(context.Background(), req)
+	result, err := closePullRequestFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("closePullRequestFn() error = %v", err)
 	}
@@ -1018,18 +982,14 @@ func Test_reopenPullRequestFn(t *testing.T) {
 	flag.Token = "test-token"
 	t.Cleanup(func() { flag.Host = origHost; flag.Token = origToken })
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"method":      "reopen",
-				"owner":       owner,
-				"repo":        repo,
-				"pull_number": float64(index),
-			},
-		},
+	args := map[string]any{
+		"method":      "reopen",
+		"owner":       owner,
+		"repo":        repo,
+		"pull_number": float64(index),
 	}
 
-	result, err := reopenPullRequestFn(context.Background(), req)
+	result, err := reopenPullRequestFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("reopenPullRequestFn() error = %v", err)
 	}
@@ -1103,20 +1063,16 @@ func Test_pullRequestReviewWriteFn_comments(t *testing.T) {
 				_, _ = w.Write([]byte(`{"id":43,"body":"sure","path":"main.go","position":3}`))
 			})
 
-			req := mcp.CallToolRequest{
-				Params: mcp.CallToolParams{
-					Arguments: map[string]any{
-						"method":      tc.method,
-						"owner":       owner,
-						"repo":        repo,
-						"pull_number": float64(index),
-						"comment_id":  float64(commentID),
-						"body":        "sure",
-					},
-				},
+			args := map[string]any{
+				"method":      tc.method,
+				"owner":       owner,
+				"repo":        repo,
+				"pull_number": float64(index),
+				"comment_id":  float64(commentID),
+				"body":        "sure",
 			}
 
-			result, err := pullRequestReviewWriteFn(context.Background(), req)
+			result, err := pullRequestReviewWriteFn(context.Background(), args)
 			if err != nil {
 				t.Fatalf("pullRequestReviewWriteFn() error = %v", err)
 			}
@@ -1162,18 +1118,14 @@ func Test_listPullRequestReviewCommentsFn_allReviews(t *testing.T) {
 		}
 	})
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"method":      "get_review_comments",
-				"owner":       owner,
-				"repo":        repo,
-				"pull_number": float64(index),
-			},
-		},
+	args := map[string]any{
+		"method":      "get_review_comments",
+		"owner":       owner,
+		"repo":        repo,
+		"pull_number": float64(index),
 	}
 
-	result, err := pullRequestReadFn(context.Background(), req)
+	result, err := pullRequestReadFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("pullRequestReadFn() error = %v", err)
 	}

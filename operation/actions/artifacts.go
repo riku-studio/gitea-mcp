@@ -15,7 +15,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // Artifact endpoints require Gitea 1.25+. Older servers answer 404/405, which is
@@ -28,21 +28,21 @@ func artifactNotSupportedErr(err error) error {
 	return err
 }
 
-func listRepoActionArtifactsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionArtifactsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
 	query.Set("limit", strconv.Itoa(pageSize))
-	if name := params.GetOptionalString(req.GetArguments(), "artifact_name", ""); name != "" {
+	if name := params.GetOptionalString(args, "artifact_name", ""); name != "" {
 		query.Set("name", name)
 	}
 
@@ -59,25 +59,25 @@ func listRepoActionArtifactsFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(slimActionArtifacts(result))
 }
 
-func listRepoActionRunArtifactsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionRunArtifactsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	runID, err := params.GetIndex(req.GetArguments(), "run_id")
+	runID, err := params.GetIndex(args, "run_id")
 	if err != nil || runID <= 0 {
 		return to.ErrorResult(errors.New("run_id is required"))
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
 	query.Set("limit", strconv.Itoa(pageSize))
-	if name := params.GetOptionalString(req.GetArguments(), "artifact_name", ""); name != "" {
+	if name := params.GetOptionalString(args, "artifact_name", ""); name != "" {
 		query.Set("name", name)
 	}
 
@@ -94,16 +94,16 @@ func listRepoActionRunArtifactsFn(ctx context.Context, req mcp.CallToolRequest) 
 	return to.TextResult(slimActionArtifacts(result))
 }
 
-func getRepoActionArtifactFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionArtifactFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	artifactID, err := params.GetIndex(req.GetArguments(), "artifact_id")
+	artifactID, err := params.GetIndex(args, "artifact_id")
 	if err != nil || artifactID <= 0 {
 		return to.ErrorResult(errors.New("artifact_id is required"))
 	}
@@ -121,20 +121,20 @@ func getRepoActionArtifactFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(slimActionArtifact(result))
 }
 
-func downloadRepoActionArtifactFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func downloadRepoActionArtifactFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	artifactID, err := params.GetIndex(req.GetArguments(), "artifact_id")
+	artifactID, err := params.GetIndex(args, "artifact_id")
 	if err != nil || artifactID <= 0 {
 		return to.ErrorResult(errors.New("artifact_id is required"))
 	}
-	outputPath, _ := req.GetArguments()["output_path"].(string)
+	outputPath, _ := args["output_path"].(string)
 
 	// Best-effort metadata lookup: gives a friendly filename and lets us fail
 	// early with a clear message when the artifact has expired.

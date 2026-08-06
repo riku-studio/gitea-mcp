@@ -11,10 +11,10 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
@@ -44,103 +44,103 @@ func toSecretMetas(secrets []*gitea_sdk.Secret) []secretMeta {
 }
 
 var (
-	ActionsConfigReadTool = mcp.NewTool(
+	ActionsConfigReadTool = tool.NewDefinition(
 		ActionsConfigReadToolName,
-		mcp.WithDescription("Read Actions secrets and variables."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions secrets and variables")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list_repo_secrets", "list_org_secrets", "list_repo_variables", "get_repo_variable", "list_org_variables", "get_org_variable")),
-		mcp.WithString("owner", mcp.Description("for repo methods")),
-		mcp.WithString("repo", mcp.Description("for repo methods")),
-		mcp.WithString("org", mcp.Description("for org methods")),
-		mcp.WithString("name", mcp.Description("for get methods")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
+		"Read Actions secrets and variables.",
+		annotation.ReadOnly("Read Actions secrets and variables"),
+		tool.String("method", tool.Required(), tool.Enum("list_repo_secrets", "list_org_secrets", "list_repo_variables", "get_repo_variable", "list_org_variables", "get_org_variable")),
+		tool.String("owner", tool.Description("for repo methods")),
+		tool.String("repo", tool.Description("for repo methods")),
+		tool.String("org", tool.Description("for org methods")),
+		tool.String("name", tool.Description("for get methods")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30), tool.Minimum(1)),
 	)
 
-	ActionsConfigWriteTool = mcp.NewTool(
+	ActionsConfigWriteTool = tool.NewDefinition(
 		ActionsConfigWriteToolName,
-		mcp.WithDescription("Write Actions secrets and variables: upsert, create, update, delete."),
-		mcp.WithToolAnnotation(annotation.Destructive("Manage Actions secrets and variables")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("upsert_repo_secret", "delete_repo_secret", "upsert_org_secret", "delete_org_secret", "create_repo_variable", "update_repo_variable", "delete_repo_variable", "create_org_variable", "update_org_variable", "delete_org_variable")),
-		mcp.WithString("owner", mcp.Description("for repo methods")),
-		mcp.WithString("repo", mcp.Description("for repo methods")),
-		mcp.WithString("org", mcp.Description("for org methods")),
-		mcp.WithString("name", mcp.Description("secret or variable name")),
-		mcp.WithString("data", mcp.Description("secret value (upsert)")),
-		mcp.WithString("value", mcp.Description("variable value")),
-		mcp.WithString("description"),
+		"Write Actions secrets and variables: upsert, create, update, delete.",
+		annotation.Destructive("Manage Actions secrets and variables"),
+		tool.String("method", tool.Required(), tool.Enum("upsert_repo_secret", "delete_repo_secret", "upsert_org_secret", "delete_org_secret", "create_repo_variable", "update_repo_variable", "delete_repo_variable", "create_org_variable", "update_org_variable", "delete_org_variable")),
+		tool.String("owner", tool.Description("for repo methods")),
+		tool.String("repo", tool.Description("for repo methods")),
+		tool.String("org", tool.Description("for org methods")),
+		tool.String("name", tool.Description("secret or variable name")),
+		tool.String("data", tool.Description("secret value (upsert)")),
+		tool.String("value", tool.Description("variable value")),
+		tool.String("description"),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: ActionsConfigReadTool, Handler: configReadFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: ActionsConfigWriteTool, Handler: configWriteFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: ActionsConfigReadTool, Handler: configReadFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: ActionsConfigWriteTool, Handler: configWriteFn})
 }
 
-func configReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func configReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list_repo_secrets":
-		return listRepoActionSecretsFn(ctx, req)
+		return listRepoActionSecretsFn(ctx, args)
 	case "list_org_secrets":
-		return listOrgActionSecretsFn(ctx, req)
+		return listOrgActionSecretsFn(ctx, args)
 	case "list_repo_variables":
-		return listRepoActionVariablesFn(ctx, req)
+		return listRepoActionVariablesFn(ctx, args)
 	case "get_repo_variable":
-		return getRepoActionVariableFn(ctx, req)
+		return getRepoActionVariableFn(ctx, args)
 	case "list_org_variables":
-		return listOrgActionVariablesFn(ctx, req)
+		return listOrgActionVariablesFn(ctx, args)
 	case "get_org_variable":
-		return getOrgActionVariableFn(ctx, req)
+		return getOrgActionVariableFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func configWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func configWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "upsert_repo_secret":
-		return upsertRepoActionSecretFn(ctx, req)
+		return upsertRepoActionSecretFn(ctx, args)
 	case "delete_repo_secret":
-		return deleteRepoActionSecretFn(ctx, req)
+		return deleteRepoActionSecretFn(ctx, args)
 	case "upsert_org_secret":
-		return upsertOrgActionSecretFn(ctx, req)
+		return upsertOrgActionSecretFn(ctx, args)
 	case "delete_org_secret":
-		return deleteOrgActionSecretFn(ctx, req)
+		return deleteOrgActionSecretFn(ctx, args)
 	case "create_repo_variable":
-		return createRepoActionVariableFn(ctx, req)
+		return createRepoActionVariableFn(ctx, args)
 	case "update_repo_variable":
-		return updateRepoActionVariableFn(ctx, req)
+		return updateRepoActionVariableFn(ctx, args)
 	case "delete_repo_variable":
-		return deleteRepoActionVariableFn(ctx, req)
+		return deleteRepoActionVariableFn(ctx, args)
 	case "create_org_variable":
-		return createOrgActionVariableFn(ctx, req)
+		return createOrgActionVariableFn(ctx, args)
 	case "update_org_variable":
-		return updateOrgActionVariableFn(ctx, req)
+		return updateOrgActionVariableFn(ctx, args)
 	case "delete_org_variable":
-		return deleteOrgActionVariableFn(ctx, req)
+		return deleteOrgActionVariableFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func listRepoActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionSecretsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -157,24 +157,24 @@ func listRepoActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(toSecretMetas(secrets))
 }
 
-func upsertRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func upsertRepoActionSecretFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	data, err := params.GetString(req.GetArguments(), "data")
+	data, err := params.GetString(args, "data")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	description, _ := req.GetArguments()["description"].(string)
+	description, _ := args["description"].(string)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -190,16 +190,16 @@ func upsertRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return to.TextResult(map[string]any{"message": "secret upserted", "status": resp.StatusCode})
 }
 
-func deleteRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func deleteRepoActionSecretFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -215,12 +215,12 @@ func deleteRepoActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return to.TextResult(map[string]any{"message": "secret deleted", "status": resp.StatusCode})
 }
 
-func listOrgActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func listOrgActionSecretsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -237,20 +237,20 @@ func listOrgActionSecretsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return to.TextResult(toSecretMetas(secrets))
 }
 
-func upsertOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func upsertOrgActionSecretFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	data, err := params.GetString(req.GetArguments(), "data")
+	data, err := params.GetString(args, "data")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	description, _ := req.GetArguments()["description"].(string)
+	description, _ := args["description"].(string)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -266,12 +266,12 @@ func upsertOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(map[string]any{"message": "secret upserted", "status": resp.StatusCode})
 }
 
-func deleteOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func deleteOrgActionSecretFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -285,16 +285,16 @@ func deleteOrgActionSecretFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(map[string]any{"message": "secret deleted"})
 }
 
-func listRepoActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionVariablesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
@@ -308,16 +308,16 @@ func listRepoActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(result)
 }
 
-func getRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -333,20 +333,20 @@ func getRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(variable)
 }
 
-func createRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func createRepoActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	value, err := params.GetString(req.GetArguments(), "value")
+	value, err := params.GetString(args, "value")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -362,20 +362,20 @@ func createRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	return to.TextResult(map[string]any{"message": "variable created", "status": resp.StatusCode})
 }
 
-func updateRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func updateRepoActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	value, err := params.GetString(req.GetArguments(), "value")
+	value, err := params.GetString(args, "value")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -391,16 +391,16 @@ func updateRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	return to.TextResult(map[string]any{"message": "variable updated", "status": resp.StatusCode})
 }
 
-func deleteRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func deleteRepoActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -416,12 +416,12 @@ func deleteRepoActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*
 	return to.TextResult(map[string]any{"message": "variable deleted", "status": resp.StatusCode})
 }
 
-func listOrgActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func listOrgActionVariablesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -436,12 +436,12 @@ func listOrgActionVariablesFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return to.TextResult(variables)
 }
 
-func getOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func getOrgActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -457,20 +457,20 @@ func getOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return to.TextResult(variable)
 }
 
-func createOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func createOrgActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	value, err := params.GetString(req.GetArguments(), "value")
+	value, err := params.GetString(args, "value")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	description, _ := req.GetArguments()["description"].(string)
+	description, _ := args["description"].(string)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -486,20 +486,20 @@ func createOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(map[string]any{"message": "variable created", "status": resp.StatusCode})
 }
 
-func updateOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func updateOrgActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	value, err := params.GetString(req.GetArguments(), "value")
+	value, err := params.GetString(args, "value")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	description, _ := req.GetArguments()["description"].(string)
+	description, _ := args["description"].(string)
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -516,12 +516,12 @@ func updateOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(map[string]any{"message": "variable updated", "status": resp.StatusCode})
 }
 
-func deleteOrgActionVariableFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func deleteOrgActionVariableFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	name, err := params.GetString(req.GetArguments(), "name")
+	name, err := params.GetString(args, "name")
 	if err != nil {
 		return to.ErrorResult(err)
 	}

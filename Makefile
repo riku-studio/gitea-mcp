@@ -6,6 +6,8 @@ LDFLAGS := -X "main.Version=$(VERSION)"
 GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 # renovate: datasource=go
 GOVULNCHECK_PACKAGE ?= golang.org/x/vuln/cmd/govulncheck@v1.6.0 # renovate: datasource=go
 
+GOTEST_FLAGS ?= -race -timeout 20m
+
 .PHONY: help
 help: ## print this help message
 	@echo "Usage: make [target]"
@@ -37,6 +39,10 @@ clean: ## delete build artifacts
 .PHONY: build
 build: ## build the application
 	$(GO) build -v -ldflags '-s -w $(LDFLAGS)' -o $(EXECUTABLE)
+
+.PHONY: test
+test: ## run Go tests
+	$(GO) test $(GOTEST_FLAGS) ./...
 
 .PHONY: air
 air: ## install air for hot reload

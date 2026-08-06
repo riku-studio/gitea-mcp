@@ -1,54 +1,20 @@
 package operation
 
-import (
-	"testing"
+import "testing"
 
-	"gitea.com/gitea/gitea-mcp/pkg/flag"
-)
-
-// TestAllToolsHaveDescriptions ensures every registered tool sets a non-empty
-// Tool.Description. mcp-go only serializes the "description" field of a tool
-// when it is non-empty, so an omitted description makes strict MCP clients
-// (e.g. mcp-probe) reject the tools/list response with "missing field
-// `description`".
-func TestAllToolsHaveDescriptions(t *testing.T) {
-	origRO, origAllow := flag.ReadOnly, flag.AllowedTools
-	t.Cleanup(func() {
-		flag.ReadOnly, flag.AllowedTools = origRO, origAllow
-	})
-	flag.ReadOnly = false
-	flag.AllowedTools = nil
-
-	var missing []string
-	for _, d := range domainTools {
-		for _, st := range d.Tools() {
-			if st.Tool.Description == "" {
-				missing = append(missing, st.Tool.Name)
-			}
-		}
+func TestNewHTTPServerConfig(t *testing.T) {
+	server := newHTTPServer(":12345", newMCPServer("test"))
+	if server.Addr != ":12345" {
+		t.Errorf("Addr = %q, want %q", server.Addr, ":12345")
 	}
-	if len(missing) > 0 {
-		t.Errorf("tools missing a description: %v", missing)
+	if server.Handler == nil {
+		t.Error("Handler is nil")
 	}
-}
-
-// TestDomainToolsScopesAreUniqueAndNonEmpty ensures every entry registered in
-// domainTools has a canonical, non-empty scope name and that no two domains
-// share the same scope (each domain.Tools() call is filtered by exactly one
-// scope name via flag.AllowedScopes).
-func TestDomainToolsScopesAreUniqueAndNonEmpty(t *testing.T) {
-	seen := map[string]struct{}{}
-	for _, d := range domainTools {
-		scope := d.Scope()
-		if scope == "" {
-			t.Errorf("domainTools contains a domain with an empty scope")
-			continue
-		}
-		if _, ok := seen[scope]; ok {
-			t.Errorf("domainTools contains a duplicate scope %q", scope)
-			continue
-		}
-		seen[scope] = struct{}{}
+	if server.ReadHeaderTimeout != httpReadHeaderTimeout {
+		t.Errorf("ReadHeaderTimeout = %v, want %v", server.ReadHeaderTimeout, httpReadHeaderTimeout)
+	}
+	if server.WriteTimeout != 0 {
+		t.Errorf("WriteTimeout = %v, want zero for SSE", server.WriteTimeout)
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TextResult(v any) (*mcp.CallToolResult, error) {
@@ -18,7 +18,9 @@ func TextResult(v any) (*mcp.CallToolResult, error) {
 	if flag.Debug {
 		log.Debugf("Text Result: %s", string(resultBytes))
 	}
-	return mcp.NewToolResultText(string(resultBytes)), nil
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(resultBytes)}},
+	}, nil
 }
 
 func ErrorResult(err error) (*mcp.CallToolResult, error) {

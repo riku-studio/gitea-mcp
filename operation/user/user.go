@@ -12,8 +12,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
@@ -24,27 +23,27 @@ const (
 var Tool = tool.New("user")
 
 var (
-	GetMyUserInfoTool = mcp.NewTool(
+	GetMyUserInfoTool = tool.NewDefinition(
 		GetMyUserInfoToolName,
-		mcp.WithDescription("Get current user"),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get current user information")),
+		"Get current user",
+		annotation.ReadOnly("Get current user information"),
 	)
 
-	GetUserOrgsTool = mcp.NewTool(
+	GetUserOrgsTool = tool.NewDefinition(
 		GetUserOrgsToolName,
-		mcp.WithDescription("List current user's organizations"),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get user organizations")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"List current user's organizations",
+		annotation.ReadOnly("Get user organizations"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: GetMyUserInfoTool, Handler: GetUserInfoFn})
-	Tool.RegisterRead(server.ServerTool{Tool: GetUserOrgsTool, Handler: GetUserOrgsFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: GetMyUserInfoTool, Handler: GetUserInfoFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: GetUserOrgsTool, Handler: GetUserOrgsFn})
 }
 
-func GetUserInfoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func GetUserInfoFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
@@ -56,8 +55,8 @@ func GetUserInfoFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	return to.TextResult(slim.UserDetail(user))
 }
 
-func GetUserOrgsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+func GetUserOrgsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	page, pageSize := params.GetPagination(args, 30)
 
 	opt := gitea_sdk.ListOrgsOptions{
 		ListOptions: gitea_sdk.ListOptions{

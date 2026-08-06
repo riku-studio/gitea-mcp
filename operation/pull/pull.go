@@ -15,8 +15,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("pull_request")
@@ -29,79 +28,79 @@ const (
 )
 
 var (
-	ListRepoPullRequestsTool = mcp.NewTool(
+	ListRepoPullRequestsTool = tool.NewDefinition(
 		ListRepoPullRequestsToolName,
-		mcp.WithDescription("List pull requests in a repository, filterable by state and milestone, with configurable sort order (e.g. recently updated, most commented)."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List pull requests")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("state", mcp.Enum("open", "closed", "all"), mcp.DefaultString("all")),
-		mcp.WithString("sort", mcp.Enum("oldest", "recentupdate", "leastupdate", "mostcomment", "leastcomment", "priority"), mcp.DefaultString("recentupdate")),
-		mcp.WithNumber("milestone"),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"List pull requests in a repository, filterable by state and milestone, with configurable sort order (e.g. recently updated, most commented).",
+		annotation.ReadOnly("List pull requests"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("state", tool.Enum("open", "closed", "all"), tool.Default("all")),
+		tool.String("sort", tool.Enum("oldest", "recentupdate", "leastupdate", "mostcomment", "leastcomment", "priority"), tool.Default("recentupdate")),
+		tool.Number("milestone"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	PullRequestReadTool = mcp.NewTool(
+	PullRequestReadTool = tool.NewDefinition(
 		PullRequestReadToolName,
-		mcp.WithDescription("Read pull request: details, diff, changed files, head commit status, reviews, review comments."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read pull request details")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("pull_number", mcp.Required()),
-		mcp.WithNumber("review_id", mcp.Description("for 'get_review'; optional for 'get_review_comments', omit to list all")),
-		mcp.WithBoolean("binary", mcp.Description("include binary diff")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Read pull request: details, diff, changed files, head commit status, reviews, review comments.",
+		annotation.ReadOnly("Read pull request details"),
+		tool.String("method", tool.Required(), tool.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("pull_number", tool.Required()),
+		tool.Number("review_id", tool.Description("for 'get_review'; optional for 'get_review_comments', omit to list all")),
+		tool.Boolean("binary", tool.Description("include binary diff")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	PullRequestWriteTool = mcp.NewTool(
+	PullRequestWriteTool = tool.NewDefinition(
 		PullRequestWriteToolName,
-		mcp.WithDescription("Write pull requests: create, update, close, reopen, merge, update branch from base, manage reviewers."),
-		mcp.WithToolAnnotation(annotation.Write("Create, update, close, reopen, or merge pull requests")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "update", "close", "reopen", "merge", "update_branch", "add_reviewers", "remove_reviewers")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("pull_number", mcp.Description("required except for 'create'")),
-		mcp.WithString("title", mcp.Description("required for 'create'; optional for 'update'/'merge'")),
-		mcp.WithString("body", mcp.Description("required for 'create'; optional for 'update'")),
-		mcp.WithString("head", mcp.Description("head branch (required for 'create')")),
-		mcp.WithString("base", mcp.Description("base branch (required for 'create')")),
-		mcp.WithString("assignee", mcp.Description("for 'update'")),
-		mcp.WithArray("assignees", mcp.Description("for 'update'"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithNumber("milestone", mcp.Description("for 'update'")),
-		mcp.WithString("state", mcp.Description("for 'update'"), mcp.Enum("open", "closed")),
-		mcp.WithBoolean("allow_maintainer_edit", mcp.Description("for 'update'")),
-		mcp.WithArray("labels", mcp.Description("label IDs"), mcp.Items(map[string]any{"type": "number"})),
-		mcp.WithString("deadline", mcp.Description("ISO 8601")),
-		mcp.WithBoolean("remove_deadline", mcp.Description("for 'update'")),
-		mcp.WithString("merge_style", mcp.Description("for 'merge'"), mcp.Enum("merge", "rebase", "rebase-merge", "squash", "fast-forward-only"), mcp.DefaultString("merge")),
-		mcp.WithString("message", mcp.Description("merge commit message or dismissal reason")),
-		mcp.WithBoolean("delete_branch", mcp.Description("for 'merge'")),
-		mcp.WithBoolean("force_merge", mcp.Description("merge even if checks fail")),
-		mcp.WithBoolean("merge_when_checks_succeed", mcp.Description("for 'merge'")),
-		mcp.WithString("head_commit_id", mcp.Description("expected head SHA for conflict detection")),
-		mcp.WithArray("reviewers", mcp.Description("for 'add_reviewers'/'remove_reviewers'"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithArray("team_reviewers", mcp.Description("for 'add_reviewers'/'remove_reviewers'"), mcp.Items(map[string]any{"type": "string"})),
-		mcp.WithBoolean("draft", mcp.Description("uses 'WIP: ' title prefix")),
+		"Write pull requests: create, update, close, reopen, merge, update branch from base, manage reviewers.",
+		annotation.Write("Create, update, close, reopen, or merge pull requests"),
+		tool.String("method", tool.Required(), tool.Enum("create", "update", "close", "reopen", "merge", "update_branch", "add_reviewers", "remove_reviewers")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("pull_number", tool.Description("required except for 'create'")),
+		tool.String("title", tool.Description("required for 'create'; optional for 'update'/'merge'")),
+		tool.String("body", tool.Description("required for 'create'; optional for 'update'")),
+		tool.String("head", tool.Description("head branch (required for 'create')")),
+		tool.String("base", tool.Description("base branch (required for 'create')")),
+		tool.String("assignee", tool.Description("for 'update'")),
+		tool.Array("assignees", tool.Description("for 'update'"), tool.Items(map[string]any{"type": "string"})),
+		tool.Number("milestone", tool.Description("for 'update'")),
+		tool.String("state", tool.Description("for 'update'"), tool.Enum("open", "closed")),
+		tool.Boolean("allow_maintainer_edit", tool.Description("for 'update'")),
+		tool.Array("labels", tool.Description("label IDs"), tool.Items(map[string]any{"type": "number"})),
+		tool.String("deadline", tool.Description("ISO 8601")),
+		tool.Boolean("remove_deadline", tool.Description("for 'update'")),
+		tool.String("merge_style", tool.Description("for 'merge'"), tool.Enum("merge", "rebase", "rebase-merge", "squash", "fast-forward-only"), tool.Default("merge")),
+		tool.String("message", tool.Description("merge commit message or dismissal reason")),
+		tool.Boolean("delete_branch", tool.Description("for 'merge'")),
+		tool.Boolean("force_merge", tool.Description("merge even if checks fail")),
+		tool.Boolean("merge_when_checks_succeed", tool.Description("for 'merge'")),
+		tool.String("head_commit_id", tool.Description("expected head SHA for conflict detection")),
+		tool.Array("reviewers", tool.Description("for 'add_reviewers'/'remove_reviewers'"), tool.Items(map[string]any{"type": "string"})),
+		tool.Array("team_reviewers", tool.Description("for 'add_reviewers'/'remove_reviewers'"), tool.Items(map[string]any{"type": "string"})),
+		tool.Boolean("draft", tool.Description("uses 'WIP: ' title prefix")),
 	)
 
-	PullRequestReviewWriteTool = mcp.NewTool(
+	PullRequestReviewWriteTool = tool.NewDefinition(
 		PullRequestReviewWriteToolName,
-		mcp.WithDescription("Write PR reviews: create, submit, delete, dismiss, reply to and resolve review comments."),
-		mcp.WithToolAnnotation(annotation.Write("Write pull request reviews")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("create", "submit", "delete", "dismiss", "reply_comment", "resolve_thread", "unresolve_thread")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("pull_number", mcp.Description("required except for 'resolve_thread'/'unresolve_thread'")),
-		mcp.WithNumber("review_id", mcp.Description("for 'submit'/'delete'/'dismiss'")),
-		mcp.WithNumber("comment_id", mcp.Description("comment ID from 'get_review_comments'; resolve takes the thread's first")),
-		mcp.WithString("state", mcp.Enum("APPROVED", "REQUEST_CHANGES", "COMMENT", "PENDING")),
-		mcp.WithString("body", mcp.Description("review body, or reply text for 'reply_comment'")),
-		mcp.WithString("commit_id", mcp.Description("for 'create'")),
-		mcp.WithString("message", mcp.Description("dismissal reason")),
-		mcp.WithArray("comments", mcp.Description("inline comments (for 'create')"), mcp.Items(map[string]any{
+		"Write PR reviews: create, submit, delete, dismiss, reply to and resolve review comments.",
+		annotation.Write("Write pull request reviews"),
+		tool.String("method", tool.Required(), tool.Enum("create", "submit", "delete", "dismiss", "reply_comment", "resolve_thread", "unresolve_thread")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("pull_number", tool.Description("required except for 'resolve_thread'/'unresolve_thread'")),
+		tool.Number("review_id", tool.Description("for 'submit'/'delete'/'dismiss'")),
+		tool.Number("comment_id", tool.Description("comment ID from 'get_review_comments'; resolve takes the thread's first")),
+		tool.String("state", tool.Enum("APPROVED", "REQUEST_CHANGES", "COMMENT", "PENDING")),
+		tool.String("body", tool.Description("review body, or reply text for 'reply_comment'")),
+		tool.String("commit_id", tool.Description("for 'create'")),
+		tool.String("message", tool.Description("dismissal reason")),
+		tool.Array("comments", tool.Description("inline comments (for 'create')"), tool.Items(map[string]any{
 			"type": "object",
 			"properties": map[string]any{
 				"path":         map[string]any{"type": "string"},
@@ -114,86 +113,86 @@ var (
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    ListRepoPullRequestsTool,
 		Handler: listRepoPullRequestsFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    PullRequestReadTool,
 		Handler: pullRequestReadFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    PullRequestWriteTool,
 		Handler: pullRequestWriteFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    PullRequestReviewWriteTool,
 		Handler: pullRequestReviewWriteFn,
 	})
 }
 
-func pullRequestReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func pullRequestReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "get":
-		return getPullRequestByIndexFn(ctx, req)
+		return getPullRequestByIndexFn(ctx, args)
 	case "get_diff":
-		return getPullRequestDiffFn(ctx, req)
+		return getPullRequestDiffFn(ctx, args)
 	case "get_files":
-		return getPullRequestFilesFn(ctx, req)
+		return getPullRequestFilesFn(ctx, args)
 	case "get_status":
-		return getPullRequestStatusFn(ctx, req)
+		return getPullRequestStatusFn(ctx, args)
 	case "get_reviews":
-		return listPullRequestReviewsFn(ctx, req)
+		return listPullRequestReviewsFn(ctx, args)
 	case "get_review":
-		return getPullRequestReviewFn(ctx, req)
+		return getPullRequestReviewFn(ctx, args)
 	case "get_review_comments":
-		return listPullRequestReviewCommentsFn(ctx, req)
+		return listPullRequestReviewCommentsFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func pullRequestWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func pullRequestWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "create":
-		return createPullRequestFn(ctx, req)
+		return createPullRequestFn(ctx, args)
 	case "update":
-		return editPullRequestFn(ctx, req)
+		return editPullRequestFn(ctx, args)
 	case "close":
-		return closePullRequestFn(ctx, req)
+		return closePullRequestFn(ctx, args)
 	case "reopen":
-		return reopenPullRequestFn(ctx, req)
+		return reopenPullRequestFn(ctx, args)
 	case "merge":
-		return mergePullRequestFn(ctx, req)
+		return mergePullRequestFn(ctx, args)
 	case "update_branch":
-		return updatePullRequestBranchFn(ctx, req)
+		return updatePullRequestBranchFn(ctx, args)
 	case "add_reviewers":
-		return createPullRequestReviewerFn(ctx, req)
+		return createPullRequestReviewerFn(ctx, args)
 	case "remove_reviewers":
-		return deletePullRequestReviewerFn(ctx, req)
+		return deletePullRequestReviewerFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func closePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func closePullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "pull_number")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -214,16 +213,16 @@ func closePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(slimPullRequest(pr))
 }
 
-func reopenPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func reopenPullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	index, err := params.GetIndex(req.GetArguments(), "pull_number")
+	index, err := params.GetIndex(args, "pull_number")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -244,33 +243,32 @@ func reopenPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 	return to.TextResult(slimPullRequest(pr))
 }
 
-func pullRequestReviewWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func pullRequestReviewWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "create":
-		return createPullRequestReviewFn(ctx, req)
+		return createPullRequestReviewFn(ctx, args)
 	case "submit":
-		return submitPullRequestReviewFn(ctx, req)
+		return submitPullRequestReviewFn(ctx, args)
 	case "delete":
-		return deletePullRequestReviewFn(ctx, req)
+		return deletePullRequestReviewFn(ctx, args)
 	case "dismiss":
-		return dismissPullRequestReviewFn(ctx, req)
+		return dismissPullRequestReviewFn(ctx, args)
 	case "reply_comment":
-		return replyPullRequestReviewCommentFn(ctx, req)
+		return replyPullRequestReviewCommentFn(ctx, args)
 	case "resolve_thread":
-		return resolveReviewThreadFn(ctx, req)
+		return resolveReviewThreadFn(ctx, args)
 	case "unresolve_thread":
-		return unresolveReviewThreadFn(ctx, req)
+		return unresolveReviewThreadFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPullRequestByIndexFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -305,8 +303,7 @@ func getPullRequestByIndexFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(m)
 }
 
-func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPullRequestDiffFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -335,8 +332,7 @@ func getPullRequestDiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return to.TextResult(string(diffBytes))
 }
 
-func listRepoPullRequestsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listRepoPullRequestsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -392,8 +388,7 @@ func applyDraftPrefix(title string, isDraft bool) string {
 	return title
 }
 
-func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func createPullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -447,8 +442,7 @@ func createPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 
 type reviewerOp func(client *gitea_sdk.PullRequestsService, ctx context.Context, owner, repo string, index int64, opt gitea_sdk.PullReviewRequestOptions) (*gitea_sdk.Response, error)
 
-func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb string, op reviewerOp) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func pullRequestReviewerFn(ctx context.Context, args map[string]any, verb string, op reviewerOp) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -486,16 +480,15 @@ func pullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest, verb st
 	})
 }
 
-func createPullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return pullRequestReviewerFn(ctx, req, "create", (*gitea_sdk.PullRequestsService).CreateReviewRequests)
+func createPullRequestReviewerFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	return pullRequestReviewerFn(ctx, args, "create", (*gitea_sdk.PullRequestsService).CreateReviewRequests)
 }
 
-func deletePullRequestReviewerFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return pullRequestReviewerFn(ctx, req, "delete", (*gitea_sdk.PullRequestsService).DeleteReviewRequests)
+func deletePullRequestReviewerFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	return pullRequestReviewerFn(ctx, args, "delete", (*gitea_sdk.PullRequestsService).DeleteReviewRequests)
 }
 
-func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listPullRequestReviewsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -528,8 +521,7 @@ func listPullRequestReviewsFn(ctx context.Context, req mcp.CallToolRequest) (*mc
 	return to.TextResult(slimReviews(reviews))
 }
 
-func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPullRequestReviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -560,8 +552,7 @@ func getPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	return to.TextResult(slimReview(review))
 }
 
-func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listPullRequestReviewCommentsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -612,8 +603,7 @@ func listPullRequestReviewCommentsFn(ctx context.Context, req mcp.CallToolReques
 	return to.TextResult(slimReviewComments(comments))
 }
 
-func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func createPullRequestReviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -676,8 +666,7 @@ func createPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(slimReview(review))
 }
 
-func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func submitPullRequestReviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -719,8 +708,7 @@ func submitPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(slimReview(review))
 }
 
-func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func deletePullRequestReviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -758,8 +746,7 @@ func deletePullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(successMsg)
 }
 
-func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func dismissPullRequestReviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -802,8 +789,7 @@ func dismissPullRequestReviewFn(ctx context.Context, req mcp.CallToolRequest) (*
 	return to.TextResult(successMsg)
 }
 
-func replyPullRequestReviewCommentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func replyPullRequestReviewCommentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -840,16 +826,15 @@ func replyPullRequestReviewCommentFn(ctx context.Context, req mcp.CallToolReques
 	return to.TextResult(slimReviewComment(comment))
 }
 
-func resolveReviewThreadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return setReviewThreadResolvedFn(ctx, req, true)
+func resolveReviewThreadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	return setReviewThreadResolvedFn(ctx, args, true)
 }
 
-func unresolveReviewThreadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return setReviewThreadResolvedFn(ctx, req, false)
+func unresolveReviewThreadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	return setReviewThreadResolvedFn(ctx, args, false)
 }
 
-func setReviewThreadResolvedFn(ctx context.Context, req mcp.CallToolRequest, resolved bool) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func setReviewThreadResolvedFn(ctx context.Context, args map[string]any, resolved bool) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -887,8 +872,7 @@ func setReviewThreadResolvedFn(ctx context.Context, req mcp.CallToolRequest, res
 	return to.TextResult(successMsg)
 }
 
-func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func mergePullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -951,8 +935,7 @@ func mergePullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(successMsg)
 }
 
-func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func editPullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -1026,8 +1009,7 @@ func editPullRequestFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(slimPullRequest(pr))
 }
 
-func updatePullRequestBranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func updatePullRequestBranchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -1048,8 +1030,7 @@ func updatePullRequestBranchFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(map[string]any{"message": "branch updated from base"})
 }
 
-func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPullRequestFilesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -1076,8 +1057,7 @@ func getPullRequestFilesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	return to.TextResult(files)
 }
 
-func getPullRequestStatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPullRequestStatusFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

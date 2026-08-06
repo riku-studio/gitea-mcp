@@ -12,7 +12,7 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func Test_listRepoIssuesFn_filters(t *testing.T) {
@@ -60,20 +60,16 @@ func Test_listRepoIssuesFn_filters(t *testing.T) {
 		flag.Version = origVersion
 	}()
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"owner":      owner,
-				"repo":       repo,
-				"type":       "issues",
-				"labels":     []any{"bug", "enhancement"},
-				"milestones": []any{"v1.0", "2"},
-				"since":      "2026-01-01T00:00:00Z",
-			},
-		},
+	args := map[string]any{
+		"owner":      owner,
+		"repo":       repo,
+		"type":       "issues",
+		"labels":     []any{"bug", "enhancement"},
+		"milestones": []any{"v1.0", "2"},
+		"since":      "2026-01-01T00:00:00Z",
 	}
 
-	_, err := listRepoIssuesFn(context.Background(), req)
+	_, err := listRepoIssuesFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("listRepoIssuesFn() error = %v", err)
 	}
@@ -126,17 +122,17 @@ func Test_listRepoIssuesFn_includesMilestone(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo,
-	}}}
-	res, err := listRepoIssuesFn(context.Background(), req)
+	}
+	res, err := listRepoIssuesFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("listRepoIssuesFn() error = %v", err)
 	}
 	if res.IsError {
 		t.Fatalf("unexpected error result: %v", res.Content)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `"milestone"`) || !strings.Contains(body, `"v1.0"`) {
 		t.Fatalf("expected milestone in list output, got: %s", body)
 	}
@@ -189,20 +185,16 @@ func Test_createIssueFn_labels(t *testing.T) {
 		flag.Version = origVersion
 	}()
 
-	req := mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: map[string]any{
-				"owner":    owner,
-				"repo":     repo,
-				"title":    "test issue",
-				"body":     "body",
-				"labels":   []any{float64(10), float64(20)},
-				"deadline": "2026-06-01T00:00:00Z",
-			},
-		},
+	args := map[string]any{
+		"owner":    owner,
+		"repo":     repo,
+		"title":    "test issue",
+		"body":     "body",
+		"labels":   []any{float64(10), float64(20)},
+		"deadline": "2026-06-01T00:00:00Z",
 	}
 
-	_, err := createIssueFn(context.Background(), req)
+	_, err := createIssueFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("createIssueFn() error = %v", err)
 	}
@@ -255,17 +247,17 @@ func Test_getIssueByIndexFn_includesAttachments(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo, "issue_number": float64(42),
-	}}}
-	res, err := getIssueByIndexFn(context.Background(), req)
+	}
+	res, err := getIssueByIndexFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("getIssueByIndexFn() error = %v", err)
 	}
 	if res.IsError {
 		t.Fatalf("unexpected error result: %v", res.Content)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `[shot.png](https://example/shot.png)`) {
 		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
 	}
@@ -304,17 +296,17 @@ func Test_getIssueCommentsByIndexFn_includesAttachments(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	req := mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	args := map[string]any{
 		"owner": owner, "repo": repo, "issue_number": float64(7),
-	}}}
-	res, err := getIssueCommentsByIndexFn(context.Background(), req)
+	}
+	res, err := getIssueCommentsByIndexFn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("getIssueCommentsByIndexFn() error = %v", err)
 	}
 	if res.IsError {
 		t.Fatalf("unexpected error result: %v", res.Content)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `[log.txt](https://example/log.txt)`) {
 		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
 	}

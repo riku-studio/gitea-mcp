@@ -13,8 +13,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("search")
@@ -27,81 +26,81 @@ const (
 )
 
 var (
-	SearchUsersTool = mcp.NewTool(
+	SearchUsersTool = tool.NewDefinition(
 		SearchUsersToolName,
-		mcp.WithDescription("Search for Gitea users by username or full name."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Search users")),
-		mcp.WithString("query", mcp.Required()),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Search for Gitea users by username or full name.",
+		annotation.ReadOnly("Search users"),
+		tool.String("query", tool.Required()),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	SearOrgTeamsTool = mcp.NewTool(
+	SearOrgTeamsTool = tool.NewDefinition(
 		SearchOrgTeamsToolName,
-		mcp.WithDescription("Search for teams within an organization by name, optionally including each team's description in the results."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Search organization teams")),
-		mcp.WithString("org", mcp.Required()),
-		mcp.WithString("query", mcp.Required()),
-		mcp.WithBoolean("includeDescription"),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Search for teams within an organization by name, optionally including each team's description in the results.",
+		annotation.ReadOnly("Search organization teams"),
+		tool.String("org", tool.Required()),
+		tool.String("query", tool.Required()),
+		tool.Boolean("includeDescription"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	SearchReposTool = mcp.NewTool(
+	SearchReposTool = tool.NewDefinition(
 		SearchReposToolName,
-		mcp.WithDescription("Search for repositories by keyword, with filters for topic/description matching, owner, visibility, archived status, and sort order."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Search repositories")),
-		mcp.WithString("query", mcp.Required()),
-		mcp.WithBoolean("keywordIsTopic"),
-		mcp.WithBoolean("keywordInDescription"),
-		mcp.WithNumber("ownerID"),
-		mcp.WithBoolean("isPrivate"),
-		mcp.WithBoolean("isArchived"),
-		mcp.WithString("sort"),
-		mcp.WithString("order"),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Search for repositories by keyword, with filters for topic/description matching, owner, visibility, archived status, and sort order.",
+		annotation.ReadOnly("Search repositories"),
+		tool.String("query", tool.Required()),
+		tool.Boolean("keywordIsTopic"),
+		tool.Boolean("keywordInDescription"),
+		tool.Number("ownerID"),
+		tool.Boolean("isPrivate"),
+		tool.Boolean("isArchived"),
+		tool.String("sort"),
+		tool.String("order"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
-	SearchIssuesTool = mcp.NewTool(
+	SearchIssuesTool = tool.NewDefinition(
 		SearchIssuesToolName,
-		mcp.WithDescription("Search issues and PRs across repositories"),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Search issues")),
-		mcp.WithString("query", mcp.Required()),
-		mcp.WithString("state", mcp.Enum("open", "closed", "all")),
-		mcp.WithString("type", mcp.Enum("issues", "pulls")),
-		mcp.WithString("labels", mcp.Description("comma-separated")),
-		mcp.WithString("owner", mcp.Description("filter by owner")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30)),
+		"Search issues and PRs across repositories",
+		annotation.ReadOnly("Search issues"),
+		tool.String("query", tool.Required()),
+		tool.String("state", tool.Enum("open", "closed", "all")),
+		tool.String("type", tool.Enum("issues", "pulls")),
+		tool.String("labels", tool.Description("comma-separated")),
+		tool.String("owner", tool.Description("filter by owner")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    SearchUsersTool,
 		Handler: UsersFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    SearOrgTeamsTool,
 		Handler: OrgTeamsFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    SearchReposTool,
 		Handler: ReposFn,
 	})
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    SearchIssuesTool,
 		Handler: IssuesFn,
 	})
 }
 
-func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	keyword, err := params.GetString(req.GetArguments(), "query")
+func UsersFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	keyword, err := params.GetString(args, "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.SearchUsersOption{
 		KeyWord: keyword,
 		ListOptions: gitea_sdk.ListOptions{
@@ -120,17 +119,17 @@ func UsersFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	return to.TextResult(slimUserDetails(users))
 }
 
-func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	org, err := params.GetString(req.GetArguments(), "org")
+func OrgTeamsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	org, err := params.GetString(args, "org")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	query, err := params.GetString(req.GetArguments(), "query")
+	query, err := params.GetString(args, "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	includeDescription, _ := req.GetArguments()["includeDescription"].(bool)
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	includeDescription, _ := args["includeDescription"].(bool)
+	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.SearchTeamsOptions{
 		Query:              query,
 		IncludeDescription: includeDescription,
@@ -150,12 +149,11 @@ func OrgTeamsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	return to.TextResult(slimTeams(teams))
 }
 
-func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	keyword, err := params.GetString(req.GetArguments(), "query")
+func ReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	keyword, err := params.GetString(args, "query")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	args := req.GetArguments()
 	keywordIsTopic, _ := args["keywordIsTopic"].(bool)
 	keywordInDescription, _ := args["keywordInDescription"].(bool)
 	sort, _ := args["sort"].(string)
@@ -186,8 +184,7 @@ func ReposFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	return to.TextResult(slim.Repos(repos))
 }
 
-func IssuesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func IssuesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	query, err := params.GetString(args, "query")
 	if err != nil {
 		return to.ErrorResult(err)

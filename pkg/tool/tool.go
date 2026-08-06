@@ -1,26 +1,38 @@
 package tool
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+type Handler func(context.Context, map[string]any) (*mcp.CallToolResult, error)
+
+type ServerTool struct {
+	Tool    *mcp.Tool
+	Handler Handler
+}
 
 type Tool struct {
 	scope string
-	write []server.ServerTool
-	read  []server.ServerTool
+	write []ServerTool
+	read  []ServerTool
 }
 
 func New(scope string) *Tool {
 	return &Tool{
 		scope: scope,
-		write: make([]server.ServerTool, 0, 100),
-		read:  make([]server.ServerTool, 0, 100),
+		write: make([]ServerTool, 0, 100),
+		read:  make([]ServerTool, 0, 100),
 	}
 }
 
@@ -29,23 +41,23 @@ func (t *Tool) Scope() string {
 	return t.scope
 }
 
-func (t *Tool) RegisterWrite(s server.ServerTool) {
+func (t *Tool) RegisterWrite(s ServerTool) {
 	t.write = append(t.write, s)
 }
 
-func (t *Tool) RegisterRead(s server.ServerTool) {
+func (t *Tool) RegisterRead(s ServerTool) {
 	t.read = append(t.read, s)
 }
 
 // ReadTools returns the read-only tools registered on this domain, ignoring
 // the read-only and allowlist flags that Tools applies.
-func (t *Tool) ReadTools() []server.ServerTool {
+func (t *Tool) ReadTools() []ServerTool {
 	return t.read
 }
 
 // WriteTools returns the write tools registered on this domain, ignoring the
 // read-only and allowlist flags that Tools applies.
-func (t *Tool) WriteTools() []server.ServerTool {
+func (t *Tool) WriteTools() []ServerTool {
 	return t.write
 }
 
@@ -53,8 +65,8 @@ func (t *Tool) WriteTools() []server.ServerTool {
 // read-only filter and the scope/tool allowlists (union semantics: a tool is
 // kept if its domain's scope is in AllowedScopes OR its name is in
 // AllowedTools). With no allowlists set, all tools pass through unchanged.
-func (t *Tool) Tools() []server.ServerTool {
-	all := make([]server.ServerTool, 0, len(t.write)+len(t.read))
+func (t *Tool) Tools() []ServerTool {
+	all := make([]ServerTool, 0, len(t.write)+len(t.read))
 	if !flag.ReadOnly {
 		all = append(all, t.write...)
 	}
@@ -63,7 +75,7 @@ func (t *Tool) Tools() []server.ServerTool {
 		return all
 	}
 	_, scopeAllowed := flag.AllowedScopes[t.scope]
-	filtered := make([]server.ServerTool, 0, len(all))
+	filtered := make([]ServerTool, 0, len(all))
 	for _, st := range all {
 		_, toolAllowed := flag.AllowedTools[st.Tool.Name]
 		if scopeAllowed || toolAllowed {
@@ -71,6 +83,55 @@ func (t *Tool) Tools() []server.ServerTool {
 		}
 	}
 	return filtered
+}
+
+// MCPHandler adapts a project handler to the official SDK's low-level handler.
+func (s ServerTool) MCPHandler() mcp.ToolHandler {
+	return func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				panicErr := fmt.Errorf("panic recovered in %s tool handler: %v", s.Tool.Name, recovered)
+				log.Errorf("%s", panicErr)
+				err = internalError(panicErr)
+			}
+		}()
+
+		arguments, err := decodeArguments(req.Params.Arguments)
+		if err != nil {
+			return nil, err
+		}
+
+		result, err = s.Handler(ctx, arguments)
+		if err != nil {
+			var protocolErr *jsonrpc.Error
+			if errors.As(err, &protocolErr) {
+				return nil, err
+			}
+			// Preserve mcp-go behavior; tool-result errors are a separate change.
+			return nil, internalError(err)
+		}
+		return result, nil
+	}
+}
+
+func decodeArguments(raw json.RawMessage) (map[string]any, error) {
+	// An omitted and a null "arguments" both mean the tool was called without any.
+	if len(raw) == 0 || string(raw) == "null" {
+		return map[string]any{}, nil
+	}
+
+	var arguments map[string]any
+	if err := json.Unmarshal(raw, &arguments); err != nil {
+		return nil, &jsonrpc.Error{
+			Code:    jsonrpc.CodeInvalidParams,
+			Message: fmt.Sprintf("invalid tool arguments: %v", err),
+		}
+	}
+	return arguments, nil
+}
+
+func internalError(err error) error {
+	return &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: err.Error()}
 }
 
 // warnUnmatched logs the names present in allowlist but absent from known,

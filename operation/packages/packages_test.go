@@ -11,7 +11,7 @@ import (
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestPackageReadList(t *testing.T) {
@@ -37,13 +37,12 @@ func TestPackageReadList(t *testing.T) {
 	ctx := context.WithValue(context.Background(), mcpContext.TokenContextKey, "test-token")
 
 	t.Run("basic list", func(t *testing.T) {
-		req := mcp.CallToolRequest{}
-		req.Params.Arguments = map[string]any{
+		args := map[string]any{
 			"method": "list",
 			"owner":  "test-org",
 		}
 
-		result, err := packageReadFn(ctx, req)
+		result, err := packageReadFn(ctx, args)
 		if err != nil {
 			t.Fatalf("packageReadFn() error: %v", err)
 		}
@@ -51,7 +50,7 @@ func TestPackageReadList(t *testing.T) {
 			t.Fatal("packageReadFn() returned error result")
 		}
 
-		text := result.Content[0].(mcp.TextContent).Text
+		text := result.Content[0].(*mcp.TextContent).Text
 		var packages []map[string]any
 		if err := json.Unmarshal([]byte(text), &packages); err != nil {
 			t.Fatalf("failed to unmarshal result: %v", err)
@@ -68,15 +67,14 @@ func TestPackageReadList(t *testing.T) {
 	})
 
 	t.Run("with type and query filters", func(t *testing.T) {
-		req := mcp.CallToolRequest{}
-		req.Params.Arguments = map[string]any{
+		args := map[string]any{
 			"method": "list",
 			"owner":  "test-org",
 			"type":   "container",
 			"q":      "myimage",
 		}
 
-		_, err := packageReadFn(ctx, req)
+		_, err := packageReadFn(ctx, args)
 		if err != nil {
 			t.Fatalf("packageReadFn() error: %v", err)
 		}
@@ -92,15 +90,14 @@ func TestPackageReadList(t *testing.T) {
 	})
 
 	t.Run("with pagination", func(t *testing.T) {
-		req := mcp.CallToolRequest{}
-		req.Params.Arguments = map[string]any{
+		args := map[string]any{
 			"method":   "list",
 			"owner":    "test-org",
 			"page":     float64(2),
 			"per_page": float64(10),
 		}
 
-		_, err := packageReadFn(ctx, req)
+		_, err := packageReadFn(ctx, args)
 		if err != nil {
 			t.Fatalf("packageReadFn() error: %v", err)
 		}
@@ -148,15 +145,14 @@ func TestPackageReadListVersions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			req := mcp.CallToolRequest{}
-			req.Params.Arguments = map[string]any{
+			args := map[string]any{
 				"method": "list_versions",
 				"owner":  "test-org",
 				"type":   "container",
 				"name":   tt.name,
 			}
 
-			result, err := packageReadFn(ctx, req)
+			result, err := packageReadFn(ctx, args)
 			if err != nil {
 				t.Fatalf("packageReadFn() error: %v", err)
 			}
@@ -171,7 +167,7 @@ func TestPackageReadListVersions(t *testing.T) {
 			}
 			mu.Unlock()
 
-			text := result.Content[0].(mcp.TextContent).Text
+			text := result.Content[0].(*mcp.TextContent).Text
 			var versions []map[string]any
 			if err := json.Unmarshal([]byte(text), &versions); err != nil {
 				t.Fatalf("failed to unmarshal result: %v", err)
@@ -215,8 +211,7 @@ func TestPackageReadGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			req := mcp.CallToolRequest{}
-			req.Params.Arguments = map[string]any{
+			args := map[string]any{
 				"method":  "get",
 				"owner":   "test-org",
 				"type":    "container",
@@ -224,7 +219,7 @@ func TestPackageReadGet(t *testing.T) {
 				"version": "v1.0.0",
 			}
 
-			result, err := packageReadFn(ctx, req)
+			result, err := packageReadFn(ctx, args)
 			if err != nil {
 				t.Fatalf("packageReadFn() error: %v", err)
 			}
@@ -239,7 +234,7 @@ func TestPackageReadGet(t *testing.T) {
 			}
 			mu.Unlock()
 
-			text := result.Content[0].(mcp.TextContent).Text
+			text := result.Content[0].(*mcp.TextContent).Text
 			var pkg map[string]any
 			if err := json.Unmarshal([]byte(text), &pkg); err != nil {
 				t.Fatalf("failed to unmarshal result: %v", err)
@@ -277,8 +272,7 @@ func TestPackageWriteDelete(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), mcpContext.TokenContextKey, "test-token")
 
-	req := mcp.CallToolRequest{}
-	req.Params.Arguments = map[string]any{
+	args := map[string]any{
 		"method":  "delete",
 		"owner":   "test-org",
 		"type":    "container",
@@ -286,7 +280,7 @@ func TestPackageWriteDelete(t *testing.T) {
 		"version": "v1.0.0",
 	}
 
-	result, err := packageWriteFn(ctx, req)
+	result, err := packageWriteFn(ctx, args)
 	if err != nil {
 		t.Fatalf("packageWriteFn() error: %v", err)
 	}
@@ -307,24 +301,22 @@ func TestPackageWriteDelete(t *testing.T) {
 
 func TestPackageReadUnknownMethod(t *testing.T) {
 	ctx := context.Background()
-	req := mcp.CallToolRequest{}
-	req.Params.Arguments = map[string]any{
+	args := map[string]any{
 		"method": "bogus",
 		"owner":  "test-org",
 	}
-	if _, err := packageReadFn(ctx, req); err == nil {
+	if _, err := packageReadFn(ctx, args); err == nil {
 		t.Fatal("expected error for unknown method")
 	}
 }
 
 func TestPackageWriteUnknownMethod(t *testing.T) {
 	ctx := context.Background()
-	req := mcp.CallToolRequest{}
-	req.Params.Arguments = map[string]any{
+	args := map[string]any{
 		"method": "bogus",
 		"owner":  "test-org",
 	}
-	if _, err := packageWriteFn(ctx, req); err == nil {
+	if _, err := packageWriteFn(ctx, args); err == nil {
 		t.Fatal("expected error for unknown method")
 	}
 }

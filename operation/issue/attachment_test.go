@@ -1,7 +1,9 @@
 package issue
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +16,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestAttachmentFilename(t *testing.T) {
@@ -79,13 +81,13 @@ func TestAttachmentReadListIssueAttachments(t *testing.T) {
 	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
 	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
 
-	res, err := attachmentReadFn(context.Background(), mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	res, err := attachmentReadFn(context.Background(), map[string]any{
 		"method": "list", "owner": owner, "repo": repo, "issue_number": float64(42),
-	}}})
+	})
 	if err != nil {
 		t.Fatalf("attachmentReadFn() error = %v", err)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(body, `"mime_type":"image/png"`) || !strings.Contains(body, `"uuid":"uuid-1"`) {
 		t.Fatalf("unexpected body: %s", body)
 	}
@@ -158,13 +160,13 @@ func TestAttachmentReadDownloadSavesLargeAttachmentToDefaultFile(t *testing.T) {
 		flag.Host, flag.Token, flag.Version, flag.MaxInlineAttachmentBytes = origHost, origToken, origVersion, origInline
 	}()
 
-	res, err := attachmentReadFn(context.Background(), mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
+	res, err := attachmentReadFn(context.Background(), map[string]any{
 		"method": "download", "owner": owner, "repo": repo, "issue_number": float64(42), "attachment_id": float64(1),
-	}}})
+	})
 	if err != nil {
 		t.Fatalf("attachmentReadFn() error = %v", err)
 	}
-	body := res.Content[0].(mcp.TextContent).Text
+	body := res.Content[0].(*mcp.TextContent).Text
 	wantPath := filepath.Join(home, ".gitea-mcp", "attachments", owner, repo, "large-uuid-1.bin")
 	if !strings.Contains(body, wantPath) {
 		t.Fatalf("result missing path %q: %s", wantPath, body)
@@ -178,5 +180,62 @@ func TestAttachmentReadDownloadSavesLargeAttachmentToDefaultFile(t *testing.T) {
 	}
 	if !strings.Contains(body, `"bytes":32`) {
 		t.Fatalf("result missing bytes: %s", body)
+	}
+}
+
+func TestAttachmentReadDownloadReturnsRawImageContent(t *testing.T) {
+	const uuid = "uuid-1"
+	payload := []byte{0, 1, 2, 250}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/attachments/"+uuid {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write(payload)
+	}))
+	defer server.Close()
+
+	originalHost := flag.Host
+	originalLimit := flag.MaxInlineAttachmentBytes
+	flag.Host = server.URL
+	flag.MaxInlineAttachmentBytes = len(payload)
+	defer func() {
+		flag.Host = originalHost
+		flag.MaxInlineAttachmentBytes = originalLimit
+	}()
+
+	result, err := attachmentReadFn(context.Background(), map[string]any{
+		"method":          "download",
+		"owner":           "octo",
+		"repo":            "demo",
+		"attachment_uuid": uuid,
+	})
+	if err != nil {
+		t.Fatalf("attachmentReadFn() error = %v", err)
+	}
+	if len(result.Content) != 2 {
+		t.Fatalf("content count = %d, want 2", len(result.Content))
+	}
+	if _, ok := result.Content[0].(*mcp.TextContent); !ok {
+		t.Fatalf("first content type = %T, want *mcp.TextContent", result.Content[0])
+	}
+	image, ok := result.Content[1].(*mcp.ImageContent)
+	if !ok {
+		t.Fatalf("second content type = %T, want *mcp.ImageContent", result.Content[1])
+	}
+	if image.MIMEType != "image/png" {
+		t.Errorf("image MIME type = %q, want image/png", image.MIMEType)
+	}
+	if !bytes.Equal(image.Data, payload) {
+		t.Errorf("image data = %v, want raw payload %v", image.Data, payload)
+	}
+	wire, err := json.Marshal(image)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	wantBase64 := base64.StdEncoding.EncodeToString(payload)
+	if !strings.Contains(string(wire), `"data":"`+wantBase64+`"`) {
+		t.Errorf("wire image = %s, want base64 data %q", wire, wantBase64)
 	}
 }

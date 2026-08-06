@@ -15,8 +15,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // FileTool holds the file-related tools (scope "file").
@@ -30,68 +29,68 @@ const (
 )
 
 var (
-	GetFileContentTool = mcp.NewTool(
+	GetFileContentTool = tool.NewDefinition(
 		GetFileToolName,
-		mcp.WithDescription("Get file content and metadata"),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get file content")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("ref", mcp.Required(), mcp.Description("branch, tag, or commit SHA")),
-		mcp.WithString("path", mcp.Required()),
-		mcp.WithBoolean("withLines", mcp.Description("return numbered lines")),
+		"Get file content and metadata",
+		annotation.ReadOnly("Get file content"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("ref", tool.Required(), tool.Description("branch, tag, or commit SHA")),
+		tool.String("path", tool.Required()),
+		tool.Boolean("withLines", tool.Description("return numbered lines")),
 	)
 
-	GetDirContentTool = mcp.NewTool(
+	GetDirContentTool = tool.NewDefinition(
 		GetDirToolName,
-		mcp.WithDescription("List the entries (files and subdirectories) in a repository directory at a given ref (branch, tag, or commit SHA)."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get directory contents")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("ref", mcp.Required(), mcp.Description("branch, tag, or commit SHA")),
-		mcp.WithString("path", mcp.Required()),
+		"List the entries (files and subdirectories) in a repository directory at a given ref (branch, tag, or commit SHA).",
+		annotation.ReadOnly("Get directory contents"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("ref", tool.Required(), tool.Description("branch, tag, or commit SHA")),
+		tool.String("path", tool.Required()),
 	)
 
-	CreateOrUpdateFileTool = mcp.NewTool(
+	CreateOrUpdateFileTool = tool.NewDefinition(
 		CreateOrUpdateFileToolName,
-		mcp.WithDescription("Create or update a file (provide sha to update an existing file)."),
-		mcp.WithToolAnnotation(annotation.Write("Create or update a file")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("path", mcp.Required()),
-		mcp.WithString("content", mcp.Required()),
-		mcp.WithString("message", mcp.Required(), mcp.Description("commit message")),
-		mcp.WithString("branch_name", mcp.Required()),
-		mcp.WithString("sha", mcp.Description("existing file SHA (omit to create)")),
-		mcp.WithString("new_branch_name", mcp.Description("new branch (create only)")),
+		"Create or update a file (provide sha to update an existing file).",
+		annotation.Write("Create or update a file"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("path", tool.Required()),
+		tool.String("content", tool.Required()),
+		tool.String("message", tool.Required(), tool.Description("commit message")),
+		tool.String("branch_name", tool.Required()),
+		tool.String("sha", tool.Description("existing file SHA (omit to create)")),
+		tool.String("new_branch_name", tool.Description("new branch (create only)")),
 	)
 
-	DeleteFileTool = mcp.NewTool(
+	DeleteFileTool = tool.NewDefinition(
 		DeleteFileToolName,
-		mcp.WithDescription("Delete a file from a repository by committing the removal to a branch. Requires the file's current SHA and a commit message."),
-		mcp.WithToolAnnotation(annotation.Destructive("Delete a file")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("path", mcp.Required()),
-		mcp.WithString("message", mcp.Required(), mcp.Description("commit message")),
-		mcp.WithString("branch_name", mcp.Required()),
-		mcp.WithString("sha", mcp.Required()),
+		"Delete a file from a repository by committing the removal to a branch. Requires the file's current SHA and a commit message.",
+		annotation.Destructive("Delete a file"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("path", tool.Required()),
+		tool.String("message", tool.Required(), tool.Description("commit message")),
+		tool.String("branch_name", tool.Required()),
+		tool.String("sha", tool.Required()),
 	)
 )
 
 func init() {
-	FileTool.RegisterRead(server.ServerTool{
+	FileTool.RegisterRead(tool.ServerTool{
 		Tool:    GetFileContentTool,
 		Handler: GetFileContentFn,
 	})
-	FileTool.RegisterRead(server.ServerTool{
+	FileTool.RegisterRead(tool.ServerTool{
 		Tool:    GetDirContentTool,
 		Handler: GetDirContentFn,
 	})
-	FileTool.RegisterWrite(server.ServerTool{
+	FileTool.RegisterWrite(tool.ServerTool{
 		Tool:    CreateOrUpdateFileTool,
 		Handler: CreateOrUpdateFileFn,
 	})
-	FileTool.RegisterWrite(server.ServerTool{
+	FileTool.RegisterWrite(tool.ServerTool{
 		Tool:    DeleteFileTool,
 		Handler: DeleteFileFn,
 	})
@@ -102,8 +101,7 @@ type ContentLine struct {
 	Content    string `json:"content"`
 }
 
-func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetFileContentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -165,8 +163,7 @@ func GetFileContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTo
 	return to.TextResult(slimContents(content))
 }
 
-func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetDirContentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -191,8 +188,7 @@ func GetDirContentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult(slimDirEntries(content))
 }
 
-func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -250,8 +246,7 @@ func CreateOrUpdateFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return to.TextResult("Create file success")
 }
 
-func DeleteFileFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func DeleteFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

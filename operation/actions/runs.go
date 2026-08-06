@@ -14,9 +14,9 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
@@ -25,94 +25,94 @@ const (
 )
 
 var (
-	ActionsRunReadTool = mcp.NewTool(
+	ActionsRunReadTool = tool.NewDefinition(
 		ActionsRunReadToolName,
-		mcp.WithDescription("Read Actions workflows, runs, jobs, logs, and artifacts."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read Actions workflow, run, job, and artifact data")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job", "get_job_log_preview", "download_job_log", "list_artifacts", "list_run_artifacts", "get_artifact", "download_artifact")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("workflow_id", mcp.Description("ID or filename (for 'get_workflow')")),
-		mcp.WithNumber("run_id", mcp.Description("for 'get_run'/'list_run_jobs'/'list_run_artifacts'")),
-		mcp.WithNumber("job_id", mcp.Description("for 'get_job'/log methods")),
-		mcp.WithNumber("artifact_id", mcp.Description("for 'get_artifact'/'download_artifact'")),
-		mcp.WithString("artifact_name", mcp.Description("name filter for 'list_artifacts'/'list_run_artifacts'")),
-		mcp.WithString("status", mcp.Description("filter for 'list_runs'/'list_jobs'")),
-		mcp.WithNumber("tail_lines", mcp.Description("log tail lines"), mcp.DefaultNumber(200), mcp.Min(1)),
-		mcp.WithNumber("max_bytes", mcp.Description("max log bytes"), mcp.DefaultNumber(65536), mcp.Min(1024)),
-		mcp.WithString("output_path", mcp.Description("for 'download_job_log'/'download_artifact'")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
+		"Read Actions workflows, runs, jobs, logs, and artifacts.",
+		annotation.ReadOnly("Read Actions workflow, run, job, and artifact data"),
+		tool.String("method", tool.Required(), tool.Enum("list_workflows", "get_workflow", "list_runs", "get_run", "list_jobs", "list_run_jobs", "get_job", "get_job_log_preview", "download_job_log", "list_artifacts", "list_run_artifacts", "get_artifact", "download_artifact")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("workflow_id", tool.Description("ID or filename (for 'get_workflow')")),
+		tool.Number("run_id", tool.Description("for 'get_run'/'list_run_jobs'/'list_run_artifacts'")),
+		tool.Number("job_id", tool.Description("for 'get_job'/log methods")),
+		tool.Number("artifact_id", tool.Description("for 'get_artifact'/'download_artifact'")),
+		tool.String("artifact_name", tool.Description("name filter for 'list_artifacts'/'list_run_artifacts'")),
+		tool.String("status", tool.Description("filter for 'list_runs'/'list_jobs'")),
+		tool.Number("tail_lines", tool.Description("log tail lines"), tool.Default(200), tool.Minimum(1)),
+		tool.Number("max_bytes", tool.Description("max log bytes"), tool.Default(65536), tool.Minimum(1024)),
+		tool.String("output_path", tool.Description("for 'download_job_log'/'download_artifact'")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30), tool.Minimum(1)),
 	)
 
-	ActionsRunWriteTool = mcp.NewTool(
+	ActionsRunWriteTool = tool.NewDefinition(
 		ActionsRunWriteToolName,
-		mcp.WithDescription("Write Actions runs: dispatch, cancel, rerun."),
-		mcp.WithToolAnnotation(annotation.Write("Trigger, cancel, or rerun Actions workflows")),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("dispatch_workflow", "cancel_run", "rerun_run")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("workflow_id", mcp.Description("ID or filename (for 'dispatch_workflow')")),
-		mcp.WithString("ref", mcp.Description("branch or tag (for 'dispatch_workflow')")),
-		mcp.WithObject("inputs", mcp.Description("for 'dispatch_workflow'")),
-		mcp.WithNumber("run_id", mcp.Description("for 'cancel_run'/'rerun_run'")),
+		"Write Actions runs: dispatch, cancel, rerun.",
+		annotation.Write("Trigger, cancel, or rerun Actions workflows"),
+		tool.String("method", tool.Required(), tool.Enum("dispatch_workflow", "cancel_run", "rerun_run")),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("workflow_id", tool.Description("ID or filename (for 'dispatch_workflow')")),
+		tool.String("ref", tool.Description("branch or tag (for 'dispatch_workflow')")),
+		tool.Object("inputs", tool.Description("for 'dispatch_workflow'")),
+		tool.Number("run_id", tool.Description("for 'cancel_run'/'rerun_run'")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: ActionsRunReadTool, Handler: runReadFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: ActionsRunWriteTool, Handler: runWriteFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: ActionsRunReadTool, Handler: runReadFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: ActionsRunWriteTool, Handler: runWriteFn})
 }
 
-func runReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func runReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list_workflows":
-		return listRepoActionWorkflowsFn(ctx, req)
+		return listRepoActionWorkflowsFn(ctx, args)
 	case "get_workflow":
-		return getRepoActionWorkflowFn(ctx, req)
+		return getRepoActionWorkflowFn(ctx, args)
 	case "list_runs":
-		return listRepoActionRunsFn(ctx, req)
+		return listRepoActionRunsFn(ctx, args)
 	case "get_run":
-		return getRepoActionRunFn(ctx, req)
+		return getRepoActionRunFn(ctx, args)
 	case "list_jobs":
-		return listRepoActionJobsFn(ctx, req)
+		return listRepoActionJobsFn(ctx, args)
 	case "list_run_jobs":
-		return listRepoActionRunJobsFn(ctx, req)
+		return listRepoActionRunJobsFn(ctx, args)
 	case "get_job":
-		return getRepoActionJobFn(ctx, req)
+		return getRepoActionJobFn(ctx, args)
 	case "get_job_log_preview":
-		return getRepoActionJobLogPreviewFn(ctx, req)
+		return getRepoActionJobLogPreviewFn(ctx, args)
 	case "download_job_log":
-		return downloadRepoActionJobLogFn(ctx, req)
+		return downloadRepoActionJobLogFn(ctx, args)
 	case "list_artifacts":
-		return listRepoActionArtifactsFn(ctx, req)
+		return listRepoActionArtifactsFn(ctx, args)
 	case "list_run_artifacts":
-		return listRepoActionRunArtifactsFn(ctx, req)
+		return listRepoActionRunArtifactsFn(ctx, args)
 	case "get_artifact":
-		return getRepoActionArtifactFn(ctx, req)
+		return getRepoActionArtifactFn(ctx, args)
 	case "download_artifact":
-		return downloadRepoActionArtifactFn(ctx, req)
+		return downloadRepoActionArtifactFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func runWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func runWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "dispatch_workflow":
-		return dispatchRepoActionWorkflowFn(ctx, req)
+		return dispatchRepoActionWorkflowFn(ctx, args)
 	case "cancel_run":
-		return cancelRepoActionRunFn(ctx, req)
+		return cancelRepoActionRunFn(ctx, args)
 	case "rerun_run":
-		return rerunRepoActionRunFn(ctx, req)
+		return rerunRepoActionRunFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -135,16 +135,16 @@ func doJSONWithFallback(ctx context.Context, method string, paths []string, quer
 	return lastErr
 }
 
-func listRepoActionWorkflowsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionWorkflowsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
 	query.Set("limit", strconv.Itoa(pageSize))
@@ -162,16 +162,16 @@ func listRepoActionWorkflowsFn(ctx context.Context, req mcp.CallToolRequest) (*m
 	return to.TextResult(slimActionWorkflows(result))
 }
 
-func getRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionWorkflowFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	workflowID, err := params.GetString(req.GetArguments(), "workflow_id")
+	workflowID, err := params.GetString(args, "workflow_id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -189,26 +189,26 @@ func getRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(slimActionWorkflow(result))
 }
 
-func dispatchRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func dispatchRepoActionWorkflowFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	workflowID, err := params.GetString(req.GetArguments(), "workflow_id")
+	workflowID, err := params.GetString(args, "workflow_id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	ref, err := params.GetString(req.GetArguments(), "ref")
+	ref, err := params.GetString(args, "ref")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 
 	var inputs map[string]any
-	if raw, exists := req.GetArguments()["inputs"]; exists {
+	if raw, exists := args["inputs"]; exists {
 		if m, ok := raw.(map[string]any); ok {
 			inputs = m
 		}
@@ -238,17 +238,17 @@ func dispatchRepoActionWorkflowFn(ctx context.Context, req mcp.CallToolRequest) 
 	return to.TextResult(map[string]any{"message": "workflow dispatched"})
 }
 
-func listRepoActionRunsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionRunsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
-	statusFilter, _ := req.GetArguments()["status"].(string)
+	page, pageSize := params.GetPagination(args, 30)
+	statusFilter, _ := args["status"].(string)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
@@ -270,16 +270,16 @@ func listRepoActionRunsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return to.TextResult(slimActionRuns(result))
 }
 
-func getRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionRunFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	runID, err := params.GetIndex(req.GetArguments(), "run_id")
+	runID, err := params.GetIndex(args, "run_id")
 	if err != nil || runID <= 0 {
 		return to.ErrorResult(errors.New("run_id is required"))
 	}
@@ -297,16 +297,16 @@ func getRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(slimActionRun(result))
 }
 
-func cancelRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func cancelRepoActionRunFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	runID, err := params.GetIndex(req.GetArguments(), "run_id")
+	runID, err := params.GetIndex(args, "run_id")
 	if err != nil || runID <= 0 {
 		return to.ErrorResult(errors.New("run_id is required"))
 	}
@@ -323,16 +323,16 @@ func cancelRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	return to.TextResult(map[string]any{"message": "run cancellation requested"})
 }
 
-func rerunRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func rerunRepoActionRunFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	runID, err := params.GetIndex(req.GetArguments(), "run_id")
+	runID, err := params.GetIndex(args, "run_id")
 	if err != nil || runID <= 0 {
 		return to.ErrorResult(errors.New("run_id is required"))
 	}
@@ -354,17 +354,17 @@ func rerunRepoActionRunFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return to.TextResult(map[string]any{"message": "run rerun requested"})
 }
 
-func listRepoActionJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionJobsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
-	statusFilter, _ := req.GetArguments()["status"].(string)
+	page, pageSize := params.GetPagination(args, 30)
+	statusFilter, _ := args["status"].(string)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
@@ -386,20 +386,20 @@ func listRepoActionJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	return to.TextResult(slimActionJobs(result))
 }
 
-func listRepoActionRunJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func listRepoActionRunJobsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	runID, err := params.GetIndex(req.GetArguments(), "run_id")
+	runID, err := params.GetIndex(args, "run_id")
 	if err != nil || runID <= 0 {
 		return to.ErrorResult(errors.New("run_id is required"))
 	}
-	page, pageSize := params.GetPagination(req.GetArguments(), 30)
+	page, pageSize := params.GetPagination(args, 30)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
@@ -418,16 +418,16 @@ func listRepoActionRunJobsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	return to.TextResult(slimActionJobs(result))
 }
 
-func getRepoActionJobFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionJobFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	jobID, err := params.GetIndex(req.GetArguments(), "job_id")
+	jobID, err := params.GetIndex(args, "job_id")
 	if err != nil || jobID <= 0 {
 		return to.ErrorResult(errors.New("job_id is required"))
 	}
@@ -503,21 +503,21 @@ func limitBytes(data []byte, maxBytes int) ([]byte, bool) {
 	return data[len(data)-maxBytes:], true
 }
 
-func getRepoActionJobLogPreviewFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func getRepoActionJobLogPreviewFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	jobID, err := params.GetIndex(req.GetArguments(), "job_id")
+	jobID, err := params.GetIndex(args, "job_id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	tailLines := int(params.GetOptionalInt(req.GetArguments(), "tail_lines", 200))
-	maxBytes := int(params.GetOptionalInt(req.GetArguments(), "max_bytes", 65536))
+	tailLines := int(params.GetOptionalInt(args, "tail_lines", 200))
+	maxBytes := int(params.GetOptionalInt(args, "max_bytes", 65536))
 	raw, usedPath, err := fetchJobLogBytes(ctx, owner, repo, jobID)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get job log err: %v", err))
@@ -537,20 +537,20 @@ func getRepoActionJobLogPreviewFn(ctx context.Context, req mcp.CallToolRequest) 
 	})
 }
 
-func downloadRepoActionJobLogFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func downloadRepoActionJobLogFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	jobID, err := params.GetIndex(req.GetArguments(), "job_id")
+	jobID, err := params.GetIndex(args, "job_id")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	outputPath, _ := req.GetArguments()["output_path"].(string)
+	outputPath, _ := args["output_path"].(string)
 
 	raw, usedPath, err := fetchJobLogBytes(ctx, owner, repo, jobID)
 	if err != nil {

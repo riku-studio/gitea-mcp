@@ -13,8 +13,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 var Tool = tool.New("packages")
@@ -25,70 +24,68 @@ const (
 )
 
 var (
-	PackageReadTool = mcp.NewTool(
+	PackageReadTool = tool.NewDefinition(
 		PackageReadToolName,
-		mcp.WithToolAnnotation(annotation.ReadOnly("Read package registry")),
-		mcp.WithDescription("Read package registry: list packages (one entry per version, filter via 'q'/'type'), list versions, or get a version."),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("list", "list_versions", "get")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("user or org")),
-		mcp.WithString("type", mcp.Description("container/npm/maven/pypi/cargo/generic; required except 'list'")),
-		mcp.WithString("name", mcp.Description("slashes auto-encoded; required except 'list'")),
-		mcp.WithString("version", mcp.Description("for 'get'")),
-		mcp.WithString("q", mcp.Description("search query")),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(30), mcp.Min(1)),
+		"Read package registry: list packages (one entry per version, filter via 'q'/'type'), list versions, or get a version.",
+		annotation.ReadOnly("Read package registry"),
+		tool.String("method", tool.Required(), tool.Enum("list", "list_versions", "get")),
+		tool.String("owner", tool.Required(), tool.Description("user or org")),
+		tool.String("type", tool.Description("container/npm/maven/pypi/cargo/generic; required except 'list'")),
+		tool.String("name", tool.Description("slashes auto-encoded; required except 'list'")),
+		tool.String("version", tool.Description("for 'get'")),
+		tool.String("q", tool.Description("search query")),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30), tool.Minimum(1)),
 	)
 
-	PackageWriteTool = mcp.NewTool(
+	PackageWriteTool = tool.NewDefinition(
 		PackageWriteToolName,
-		mcp.WithToolAnnotation(annotation.Destructive("Delete a package version")),
-		mcp.WithDescription("Delete a package version (irreversible)."),
-		mcp.WithString("method", mcp.Required(), mcp.Enum("delete")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description("user or org")),
-		mcp.WithString("type", mcp.Required(), mcp.Description("container/npm/maven/pypi/cargo/generic")),
-		mcp.WithString("name", mcp.Required(), mcp.Description("slashes auto-encoded")),
-		mcp.WithString("version", mcp.Required()),
+		"Delete a package version (irreversible).",
+		annotation.Destructive("Delete a package version"),
+		tool.String("method", tool.Required(), tool.Enum("delete")),
+		tool.String("owner", tool.Required(), tool.Description("user or org")),
+		tool.String("type", tool.Required(), tool.Description("container/npm/maven/pypi/cargo/generic")),
+		tool.String("name", tool.Required(), tool.Description("slashes auto-encoded")),
+		tool.String("version", tool.Required()),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{
+	Tool.RegisterRead(tool.ServerTool{
 		Tool:    PackageReadTool,
 		Handler: packageReadFn,
 	})
-	Tool.RegisterWrite(server.ServerTool{
+	Tool.RegisterWrite(tool.ServerTool{
 		Tool:    PackageWriteTool,
 		Handler: packageWriteFn,
 	})
 }
 
-func packageReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func packageReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list":
-		return listPackagesFn(ctx, req)
+		return listPackagesFn(ctx, args)
 	case "list_versions":
-		return listPackageVersionsFn(ctx, req)
+		return listPackageVersionsFn(ctx, args)
 	case "get":
-		return getPackageFn(ctx, req)
+		return getPackageFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func packageWriteFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func packageWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "delete":
-		return deletePackageVersionFn(ctx, req)
+		return deletePackageVersionFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -108,8 +105,7 @@ func escapePackageName(name string) string {
 	return url.PathEscape(name)
 }
 
-func listPackagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listPackagesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -135,8 +131,7 @@ func listPackagesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	return to.TextResult(slimPackages(result))
 }
 
-func listPackageVersionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func listPackageVersionsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -164,8 +159,7 @@ func listPackageVersionsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	return to.TextResult(slimPackages(result))
 }
 
-func getPackageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func getPackageFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -192,8 +186,7 @@ func getPackageFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	return to.TextResult(slimPackage(result))
 }
 
-func deletePackageVersionFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func deletePackageVersionFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

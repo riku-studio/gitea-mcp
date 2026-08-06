@@ -11,8 +11,6 @@ import (
 
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
-
-	"github.com/mark3labs/mcp-go/mcp"
 )
 
 func TestWikiWriteBase64Encoding(t *testing.T) {
@@ -54,10 +52,7 @@ func TestWikiWriteBase64Encoding(t *testing.T) {
 				"title":    "TestPage",
 			}
 
-			req := mcp.CallToolRequest{}
-			req.Params.Arguments = args
-
-			result, err := wikiWriteFn(ctx, req)
+			result, err := wikiWriteFn(ctx, args)
 			if err != nil {
 				t.Fatalf("wikiWriteFn() error: %v", err)
 			}

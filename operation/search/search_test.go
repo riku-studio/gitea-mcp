@@ -4,13 +4,13 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestSearchToolsRequiredFields(t *testing.T) {
 	tests := []struct {
 		name     string
-		tool     mcp.Tool
+		tool     *mcp.Tool
 		required []string
 	}{
 		{
@@ -32,9 +32,11 @@ func TestSearchToolsRequiredFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			inputSchema := tt.tool.InputSchema.(map[string]any)
+			required, _ := inputSchema["required"].([]string)
 			for _, field := range tt.required {
-				if !slices.Contains(tt.tool.InputSchema.Required, field) {
-					t.Errorf("tool %s: expected %q to be required, got required=%v", tt.name, field, tt.tool.InputSchema.Required)
+				if !slices.Contains(required, field) {
+					t.Errorf("tool %s: expected %q to be required, got required=%v", tt.name, field, required)
 				}
 			}
 		})

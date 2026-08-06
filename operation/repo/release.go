@@ -11,8 +11,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // ReleaseTool holds the release-related tools (scope "release").
@@ -27,84 +26,83 @@ const (
 )
 
 var (
-	CreateReleaseTool = mcp.NewTool(
+	CreateReleaseTool = tool.NewDefinition(
 		CreateReleaseToolName,
-		mcp.WithDescription("Create a new release in a repository from a tag, optionally marking it as a draft or pre-release."),
-		mcp.WithToolAnnotation(annotation.Write("Create a release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithString("tag_name", mcp.Required()),
-		mcp.WithString("target", mcp.Required(), mcp.Description("commitish")),
-		mcp.WithString("title", mcp.Required()),
-		mcp.WithBoolean("is_draft"),
-		mcp.WithBoolean("is_pre_release"),
-		mcp.WithString("body"),
+		"Create a new release in a repository from a tag, optionally marking it as a draft or pre-release.",
+		annotation.Write("Create a release"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.String("tag_name", tool.Required()),
+		tool.String("target", tool.Required(), tool.Description("commitish")),
+		tool.String("title", tool.Required()),
+		tool.Boolean("is_draft"),
+		tool.Boolean("is_pre_release"),
+		tool.String("body"),
 	)
 
-	DeleteReleaseTool = mcp.NewTool(
+	DeleteReleaseTool = tool.NewDefinition(
 		DeleteReleaseToolName,
-		mcp.WithDescription("Delete a release from a repository by its numeric ID. This action is destructive and cannot be undone."),
-		mcp.WithToolAnnotation(annotation.Destructive("Delete a release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("id", mcp.Required()),
+		"Delete a release from a repository by its numeric ID. This action is destructive and cannot be undone.",
+		annotation.Destructive("Delete a release"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("id", tool.Required()),
 	)
 
-	GetReleaseTool = mcp.NewTool(
+	GetReleaseTool = tool.NewDefinition(
 		GetReleaseToolName,
-		mcp.WithDescription("Get a release by ID"),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get release details")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithNumber("id", mcp.Required()),
+		"Get a release by ID",
+		annotation.ReadOnly("Get release details"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Number("id", tool.Required()),
 	)
 
-	GetLatestReleaseTool = mcp.NewTool(
+	GetLatestReleaseTool = tool.NewDefinition(
 		GetLatestReleaseToolName,
-		mcp.WithDescription("Get the most recent published (non-draft) release in a repository."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Get latest release")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
+		"Get the most recent published (non-draft) release in a repository.",
+		annotation.ReadOnly("Get latest release"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 	)
 
-	ListReleasesTool = mcp.NewTool(
+	ListReleasesTool = tool.NewDefinition(
 		ListReleasesToolName,
-		mcp.WithDescription("List releases in a repository, optionally filtered to drafts or pre-releases."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("List releases")),
-		mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-		mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-		mcp.WithBoolean("is_draft"),
-		mcp.WithBoolean("is_pre_release"),
-		mcp.WithNumber("page", mcp.Description(params.PageDesc), mcp.DefaultNumber(1), mcp.Min(1)),
-		mcp.WithNumber("per_page", mcp.Description(params.PaginationDesc), mcp.DefaultNumber(20), mcp.Min(1)),
+		"List releases in a repository, optionally filtered to drafts or pre-releases.",
+		annotation.ReadOnly("List releases"),
+		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+		tool.Boolean("is_draft"),
+		tool.Boolean("is_pre_release"),
+		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1), tool.Minimum(1)),
+		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(20), tool.Minimum(1)),
 	)
 )
 
 func init() {
-	ReleaseTool.RegisterWrite(server.ServerTool{
+	ReleaseTool.RegisterWrite(tool.ServerTool{
 		Tool:    CreateReleaseTool,
 		Handler: CreateReleaseFn,
 	})
-	ReleaseTool.RegisterWrite(server.ServerTool{
+	ReleaseTool.RegisterWrite(tool.ServerTool{
 		Tool:    DeleteReleaseTool,
 		Handler: DeleteReleaseFn,
 	})
-	ReleaseTool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(tool.ServerTool{
 		Tool:    GetReleaseTool,
 		Handler: GetReleaseFn,
 	})
-	ReleaseTool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(tool.ServerTool{
 		Tool:    GetLatestReleaseTool,
 		Handler: GetLatestReleaseFn,
 	})
-	ReleaseTool.RegisterRead(server.ServerTool{
+	ReleaseTool.RegisterRead(tool.ServerTool{
 		Tool:    ListReleasesTool,
 		Handler: ListReleasesFn,
 	})
 }
 
-func CreateReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func CreateReleaseFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -148,8 +146,7 @@ func CreateReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult("Release Created")
 }
 
-func DeleteReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func DeleteReleaseFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -175,8 +172,7 @@ func DeleteReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	return to.TextResult("Release deleted successfully")
 }
 
-func GetReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetReleaseFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -202,8 +198,7 @@ func GetReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	return to.TextResult(slimRelease(release))
 }
 
-func GetLatestReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func GetLatestReleaseFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -225,8 +220,7 @@ func GetLatestReleaseFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Call
 	return to.TextResult(slimRelease(release))
 }
 
-func ListReleasesFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := req.GetArguments()
+func ListReleasesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)

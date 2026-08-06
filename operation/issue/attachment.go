@@ -3,7 +3,6 @@ package issue
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -17,51 +16,51 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/params"
 	"gitea.com/gitea/gitea-mcp/pkg/to"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	gitea_sdk "gitea.dev/sdk"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const AttachmentReadToolName = "attachment_read"
 
-var AttachmentReadTool = mcp.NewTool(
+var AttachmentReadTool = tool.NewDefinition(
 	AttachmentReadToolName,
-	mcp.WithDescription("Read issue/comment attachments: list metadata, get metadata, or download content."),
-	mcp.WithToolAnnotation(annotation.ReadOnly("Read issue or comment attachments")),
-	mcp.WithString("method", mcp.Required(), mcp.Enum("list", "get", "download")),
-	mcp.WithString("owner", mcp.Required(), mcp.Description(params.OwnerDesc)),
-	mcp.WithString("repo", mcp.Required(), mcp.Description(params.RepoDesc)),
-	mcp.WithNumber("issue_number", mcp.Description("required for issue attachment list/get or issue-scoped metadata lookup")),
-	mcp.WithNumber("comment_id", mcp.Description("required for comment attachment list/get or comment-scoped metadata lookup")),
-	mcp.WithNumber("attachment_id", mcp.Description("required for get and for download when attachment_uuid is not provided")),
-	mcp.WithString("attachment_uuid", mcp.Description("attachment UUID for direct download path lookup")),
-	mcp.WithString("output_path", mcp.Description("write the attachment to this exact path")),
+	"Read issue/comment attachments: list metadata, get metadata, or download content.",
+	annotation.ReadOnly("Read issue or comment attachments"),
+	tool.String("method", tool.Required(), tool.Enum("list", "get", "download")),
+	tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
+	tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
+	tool.Number("issue_number", tool.Description("required for issue attachment list/get or issue-scoped metadata lookup")),
+	tool.Number("comment_id", tool.Description("required for comment attachment list/get or comment-scoped metadata lookup")),
+	tool.Number("attachment_id", tool.Description("required for get and for download when attachment_uuid is not provided")),
+	tool.String("attachment_uuid", tool.Description("attachment UUID for direct download path lookup")),
+	tool.String("output_path", tool.Description("write the attachment to this exact path")),
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: AttachmentReadTool, Handler: attachmentReadFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: AttachmentReadTool, Handler: attachmentReadFn})
 }
 
-func attachmentReadFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	method, err := params.GetString(req.GetArguments(), "method")
+func attachmentReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	method, err := params.GetString(args, "method")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	switch method {
 	case "list":
-		return listAttachmentsFn(ctx, req)
+		return listAttachmentsFn(ctx, args)
 	case "get":
-		return getAttachmentFn(ctx, req)
+		return getAttachmentFn(ctx, args)
 	case "download":
-		return downloadAttachmentFn(ctx, req)
+		return downloadAttachmentFn(ctx, args)
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
 }
 
-func listAttachmentsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, repo, issueNumber, commentID, err := attachmentScopeArgs(req)
+func listAttachmentsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, repo, issueNumber, commentID, err := attachmentScopeArgs(args)
 	if err != nil {
 		return to.ErrorResult(err)
 	}
@@ -81,29 +80,29 @@ func listAttachmentsFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallT
 	return to.TextResult(slimAttachments(attachments))
 }
 
-func getAttachmentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	att, err := lookupAttachment(ctx, req)
+func getAttachmentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	att, err := lookupAttachment(ctx, args)
 	if err != nil {
 		return to.ErrorResult(err)
 	}
 	return to.TextResult(slimAttachment(att))
 }
 
-func downloadAttachmentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	owner, err := params.GetString(req.GetArguments(), "owner")
+func downloadAttachmentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	repo, err := params.GetString(req.GetArguments(), "repo")
+	repo, err := params.GetString(args, "repo")
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	explicitOutputPath := params.GetOptionalString(req.GetArguments(), "output_path", "")
-	attachmentUUID := strings.TrimSpace(params.GetOptionalString(req.GetArguments(), "attachment_uuid", ""))
+	explicitOutputPath := params.GetOptionalString(args, "output_path", "")
+	attachmentUUID := strings.TrimSpace(params.GetOptionalString(args, "attachment_uuid", ""))
 
 	var att *gitea_sdk.Attachment
 	if attachmentUUID == "" {
-		att, err = lookupAttachment(ctx, req)
+		att, err = lookupAttachment(ctx, args)
 		if err != nil {
 			return to.ErrorResult(err)
 		}
@@ -132,7 +131,10 @@ func downloadAttachmentFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 		}
 		if len(limited) <= flag.MaxInlineAttachmentBytes {
 			text := fmt.Sprintf("attachment %s (%s, %d bytes, %s)", name, attachmentUUID, len(limited), mimeType)
-			return mcp.NewToolResultImage(text, base64.StdEncoding.EncodeToString(limited), mimeType), nil
+			return &mcp.CallToolResult{Content: []mcp.Content{
+				&mcp.TextContent{Text: text},
+				&mcp.ImageContent{Data: limited, MIMEType: mimeType},
+			}}, nil
 		}
 		outputPath := defaultAttachmentPath(owner, repo, name, attachmentUUID)
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o700); err != nil {
@@ -185,29 +187,29 @@ func attachmentFileResult(att *gitea_sdk.Attachment, outputPath string, written 
 	return to.TextResult(res)
 }
 
-func attachmentScopeArgs(req mcp.CallToolRequest) (owner, repo string, issueNumber, commentID int64, err error) {
-	owner, err = params.GetString(req.GetArguments(), "owner")
+func attachmentScopeArgs(args map[string]any) (owner, repo string, issueNumber, commentID int64, err error) {
+	owner, err = params.GetString(args, "owner")
 	if err != nil {
 		return "", "", 0, 0, err
 	}
-	repo, err = params.GetString(req.GetArguments(), "repo")
+	repo, err = params.GetString(args, "repo")
 	if err != nil {
 		return "", "", 0, 0, err
 	}
-	issueNumber = params.GetOptionalInt(req.GetArguments(), "issue_number", 0)
-	commentID = params.GetOptionalInt(req.GetArguments(), "comment_id", 0)
+	issueNumber = params.GetOptionalInt(args, "issue_number", 0)
+	commentID = params.GetOptionalInt(args, "comment_id", 0)
 	if (issueNumber > 0) == (commentID > 0) {
 		return "", "", 0, 0, errors.New("exactly one of issue_number or comment_id is required")
 	}
 	return owner, repo, issueNumber, commentID, nil
 }
 
-func lookupAttachment(ctx context.Context, req mcp.CallToolRequest) (*gitea_sdk.Attachment, error) {
-	owner, repo, issueNumber, commentID, err := attachmentScopeArgs(req)
+func lookupAttachment(ctx context.Context, args map[string]any) (*gitea_sdk.Attachment, error) {
+	owner, repo, issueNumber, commentID, err := attachmentScopeArgs(args)
 	if err != nil {
 		return nil, err
 	}
-	attachmentID := params.GetOptionalInt(req.GetArguments(), "attachment_id", 0)
+	attachmentID := params.GetOptionalInt(args, "attachment_id", 0)
 	if attachmentID <= 0 {
 		return nil, errors.New("attachment_id is required")
 	}

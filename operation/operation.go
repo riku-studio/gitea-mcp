@@ -29,11 +29,23 @@ import (
 	"gitea.com/gitea/gitea-mcp/pkg/log"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// maxRequestBodyBytes raises the SDK's 4 MiB default, which is too tight for the
+// base64 file content create_or_update_file accepts.
+const maxRequestBodyBytes = 32 << 20
+
+// sessionTimeout expires idle sessions, which the SDK otherwise keeps for the
+// process lifetime: a client that goes away without DELETE /mcp leaks its
+// session, and initialize takes no token. Clients re-initialize on the 404.
+const sessionTimeout = 30 * time.Minute
+
+// httpReadHeaderTimeout bounds slow header reads without limiting SSE writes.
+const httpReadHeaderTimeout = 10 * time.Second
+
 var (
-	mcpServer *server.MCPServer
+	mcpServer *mcp.Server
 
 	domainTools = []*tool.Tool{
 		user.Tool, actions.Tool, repo.Tool, notification.Tool, issue.Tool,
@@ -43,9 +55,11 @@ var (
 	}
 )
 
-func RegisterTool(s *server.MCPServer) {
+func RegisterTool(s *mcp.Server) {
 	for _, t := range domainTools {
-		s.AddTools(t.Tools()...)
+		for _, registeredTool := range t.Tools() {
+			s.AddTool(registeredTool.Tool, registeredTool.MCPHandler())
+		}
 	}
 	tool.WarnUnmatchedAllowedTools(domainTools...)
 	tool.WarnUnmatchedAllowedScopes(domainTools...)
@@ -71,8 +85,7 @@ func parseAuthToken(authHeader string) (string, bool) {
 	return "", false
 }
 
-func getContextWithToken(ctx context.Context, r *http.Request) context.Context {
-	authHeader := r.Header.Get("Authorization")
+func getContextWithToken(ctx context.Context, authHeader string) context.Context {
 	if authHeader == "" {
 		return ctx
 	}
@@ -85,23 +98,43 @@ func getContextWithToken(ctx context.Context, r *http.Request) context.Context {
 	return context.WithValue(ctx, mcpContext.TokenContextKey, token)
 }
 
+func authTokenMiddleware(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if extra := req.GetExtra(); extra != nil {
+			ctx = getContextWithToken(ctx, extra.Header.Get("Authorization"))
+		}
+		return next(ctx, method, req)
+	}
+}
+
+func newHTTPServer(addr string, s *mcp.Server) *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", mcp.NewStreamableHTTPHandler(
+		func(*http.Request) *mcp.Server { return s },
+		&mcp.StreamableHTTPOptions{
+			Logger:              log.Slog(),
+			MaxRequestBodyBytes: maxRequestBodyBytes,
+			Stateless:           false, // SessionTimeout requires stateful sessions.
+			SessionTimeout:      sessionTimeout,
+		},
+	))
+	return &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: httpReadHeaderTimeout,
+	}
+}
+
 func Run() error {
 	mcpServer = newMCPServer(flag.Version)
 	RegisterTool(mcpServer)
 	switch flag.Mode {
 	case "stdio":
-		if err := server.ServeStdio(
-			mcpServer,
-		); err != nil {
+		if err := mcpServer.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 			return err
 		}
 	case "http":
-		httpServer := server.NewStreamableHTTPServer(
-			mcpServer,
-			server.WithStreamableHTTPLogger(log.Slog()),
-			server.WithHeartbeatInterval(30*time.Second),
-			server.WithHTTPContextFunc(getContextWithToken),
-		)
+		httpServer := newHTTPServer(fmt.Sprintf(":%d", flag.Port), mcpServer)
 		log.Infof("Gitea MCP HTTP server listening on :%d", flag.Port)
 
 		// Graceful shutdown setup
@@ -120,7 +153,7 @@ func Run() error {
 			close(shutdownDone)
 		}()
 
-		if err := httpServer.Start(fmt.Sprintf(":%d", flag.Port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
 		<-shutdownDone // Wait for shutdown to finish
@@ -130,12 +163,16 @@ func Run() error {
 	return nil
 }
 
-func newMCPServer(version string) *server.MCPServer {
-	return server.NewMCPServer(
-		"Gitea MCP Server",
-		version,
-		server.WithToolCapabilities(true),
-		server.WithLogging(),
-		server.WithRecovery(),
+func newMCPServer(version string) *mcp.Server {
+	// SDK keepalives send MCP ping requests and disconnect clients without a
+	// server-to-client channel, so KeepAlive stays disabled.
+	s := mcp.NewServer(
+		&mcp.Implementation{
+			Name:    "Gitea MCP Server",
+			Version: version,
+		},
+		&mcp.ServerOptions{Logger: log.Slog()},
 	)
+	s.AddReceivingMiddleware(authTokenMiddleware)
+	return s
 }
