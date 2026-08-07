@@ -68,27 +68,36 @@ func TestMCPHandlerAcceptsAbsentArguments(t *testing.T) {
 	}
 }
 
-func TestMCPHandlerConvertsErrorsAndRecoversPanics(t *testing.T) {
+func TestMCPHandlerErrorClassification(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		handler Handler
+		name     string
+		handler  Handler
+		wantCode int64
 	}{
 		{
-			name: "handler error",
-			handler: func(context.Context, map[string]any) (*mcp.CallToolResult, error) {
-				return nil, errors.New("failed")
-			},
+			name:     "server error",
+			handler:  func(context.Context, map[string]any) (*mcp.CallToolResult, error) { return nil, errors.New("failed") },
+			wantCode: jsonrpc.CodeInternalError,
 		},
 		{
-			name: "panic",
+			name: "protocol error",
 			handler: func(context.Context, map[string]any) (*mcp.CallToolResult, error) {
-				panic("failed")
+				return nil, &jsonrpc.Error{Code: jsonrpc.CodeInvalidParams, Message: "failed"}
 			},
+			wantCode: jsonrpc.CodeInvalidParams,
+		},
+		{
+			name:     "panic",
+			handler:  func(context.Context, map[string]any) (*mcp.CallToolResult, error) { panic("failed") },
+			wantCode: jsonrpc.CodeInternalError,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := callTool(test.handler, nil)
-			assertProtocolErrorCode(t, err, jsonrpc.CodeInternalError)
+			result, err := callTool(test.handler, nil)
+			if result != nil {
+				t.Errorf("result = %#v, want nil", result)
+			}
+			assertProtocolErrorCode(t, err, test.wantCode)
 		})
 	}
 }

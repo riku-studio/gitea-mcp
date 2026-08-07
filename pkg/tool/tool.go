@@ -107,8 +107,7 @@ func (s ServerTool) MCPHandler() mcp.ToolHandler {
 			if errors.As(err, &protocolErr) {
 				return nil, err
 			}
-			// Preserve mcp-go behavior; tool-result errors are a separate change.
-			return nil, internalError(err)
+			return nil, internalError(err) // Expected failures never reach here, handlers use CallToolResult.
 		}
 		return result, nil
 	}

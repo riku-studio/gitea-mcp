@@ -25,5 +25,7 @@ func TextResult(v any) (*mcp.CallToolResult, error) {
 
 func ErrorResult(err error) (*mcp.CallToolResult, error) {
 	log.Errorf("%s", err.Error())
-	return nil, err
+	var result mcp.CallToolResult
+	result.SetError(err)
+	return &result, nil
 }

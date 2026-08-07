@@ -299,25 +299,20 @@ func TestPackageWriteDelete(t *testing.T) {
 	}
 }
 
-func TestPackageReadUnknownMethod(t *testing.T) {
-	ctx := context.Background()
-	args := map[string]any{
-		"method": "bogus",
-		"owner":  "test-org",
-	}
-	if _, err := packageReadFn(ctx, args); err == nil {
-		t.Fatal("expected error for unknown method")
-	}
-}
-
-func TestPackageWriteUnknownMethod(t *testing.T) {
-	ctx := context.Background()
-	args := map[string]any{
-		"method": "bogus",
-		"owner":  "test-org",
-	}
-	if _, err := packageWriteFn(ctx, args); err == nil {
-		t.Fatal("expected error for unknown method")
+func TestPackageUnknownMethod(t *testing.T) {
+	for name, fn := range map[string]func(context.Context, map[string]any) (*mcp.CallToolResult, error){
+		"packageReadFn":  packageReadFn,
+		"packageWriteFn": packageWriteFn,
+	} {
+		t.Run(name, func(t *testing.T) {
+			result, err := fn(context.Background(), map[string]any{"method": "bogus", "owner": "test-org"})
+			if err != nil {
+				t.Fatalf("%s() error = %v", name, err)
+			}
+			if result == nil || !result.IsError {
+				t.Fatalf("%s() result = %#v, want an error result", name, result)
+			}
+		})
 	}
 }
 

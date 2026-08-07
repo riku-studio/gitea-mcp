@@ -2,6 +2,7 @@ package flag
 
 var (
 	Host    string
+	Bind    string
 	Port    int
 	Token   string
 	Version string

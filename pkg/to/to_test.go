@@ -27,7 +27,16 @@ func TestTextResult(t *testing.T) {
 func TestErrorResult(t *testing.T) {
 	want := errors.New("failed")
 	result, err := ErrorResult(want)
-	if result != nil || !errors.Is(err, want) {
-		t.Errorf("ErrorResult() = (%#v, %v), want (nil, %v)", result, err, want)
+	if err != nil {
+		t.Fatalf("ErrorResult() error = %v", err)
+	}
+	if !result.IsError {
+		t.Error("IsError = false, want true")
+	}
+	if len(result.Content) != 1 {
+		t.Fatalf("len(Content) = %d, want 1", len(result.Content))
+	}
+	if content, ok := result.Content[0].(*mcp.TextContent); !ok || content.Text != want.Error() {
+		t.Errorf("Content[0] = %#v, want text %q", result.Content[0], want)
 	}
 }

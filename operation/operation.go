@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -35,11 +37,6 @@ import (
 // maxRequestBodyBytes raises the SDK's 4 MiB default, which is too tight for the
 // base64 file content create_or_update_file accepts.
 const maxRequestBodyBytes = 32 << 20
-
-// sessionTimeout expires idle sessions, which the SDK otherwise keeps for the
-// process lifetime: a client that goes away without DELETE /mcp leaks its
-// session, and initialize takes no token. Clients re-initialize on the 404.
-const sessionTimeout = 30 * time.Minute
 
 // httpReadHeaderTimeout bounds slow header reads without limiting SSE writes.
 const httpReadHeaderTimeout = 10 * time.Second
@@ -107,17 +104,35 @@ func authTokenMiddleware(next mcp.MethodHandler) mcp.MethodHandler {
 	}
 }
 
+func protectMCPOrigin(next http.Handler) http.Handler {
+	protection := http.NewCrossOriginProtection()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check exempts safe methods, but MCP requires Origin validation on every request.
+		checkRequest := r
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			checkRequest = r.Clone(r.Context())
+			checkRequest.Method = http.MethodPost
+		}
+		if err := protection.Check(checkRequest); err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func newHTTPServer(addr string, s *mcp.Server) *http.Server {
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", mcp.NewStreamableHTTPHandler(
+	mux.Handle("/mcp", protectMCPOrigin(mcp.NewStreamableHTTPHandler(
 		func(*http.Request) *mcp.Server { return s },
 		&mcp.StreamableHTTPOptions{
-			Logger:              log.Slog(),
-			MaxRequestBodyBytes: maxRequestBodyBytes,
-			Stateless:           false, // SessionTimeout requires stateful sessions.
-			SessionTimeout:      sessionTimeout,
+			Logger:                       log.Slog(),
+			MaxRequestBodyBytes:          maxRequestBodyBytes,
+			Stateless:                    true,
+			PropagateRequestCancellation: true,
 		},
-	))
+	)))
 	return &http.Server{
 		Addr:              addr,
 		Handler:           mux,
@@ -134,8 +149,9 @@ func Run() error {
 			return err
 		}
 	case "http":
-		httpServer := newHTTPServer(fmt.Sprintf(":%d", flag.Port), mcpServer)
-		log.Infof("Gitea MCP HTTP server listening on :%d", flag.Port)
+		addr := net.JoinHostPort(flag.Bind, strconv.Itoa(flag.Port))
+		httpServer := newHTTPServer(addr, mcpServer)
+		log.Infof("Gitea MCP HTTP server listening on %s (stateless, protocol up to 2026-07-28)", addr)
 
 		// Graceful shutdown setup
 		sigCh := make(chan os.Signal, 1)
@@ -171,7 +187,12 @@ func newMCPServer(version string) *mcp.Server {
 			Name:    "Gitea MCP Server",
 			Version: version,
 		},
-		&mcp.ServerOptions{Logger: log.Slog()},
+		&mcp.ServerOptions{
+			Logger: log.Slog(),
+			Capabilities: &mcp.ServerCapabilities{
+				Tools: &mcp.ToolCapabilities{},
+			},
+		},
 	)
 	s.AddReceivingMiddleware(authTokenMiddleware)
 	return s

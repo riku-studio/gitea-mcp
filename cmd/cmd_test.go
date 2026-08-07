@@ -10,6 +10,27 @@ import (
 	flagPkg "gitea.com/gitea/gitea-mcp/pkg/flag"
 )
 
+func TestInitFlagSetBind(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "default is empty, meaning all interfaces", args: []string{}},
+		{name: "-b sets the address", args: []string{"-b", "127.0.0.1"}, want: "127.0.0.1"},
+		{name: "-bind sets an IPv6 literal", args: []string{"-bind", "::1"}, want: "::1"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(func() { flagPkg.Bind = "" })
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			initFlagSet(fs, test.args, func(string) string { return "" }, func(string) ([]byte, error) { return nil, nil }, &bytes.Buffer{})
+			if flagPkg.Bind != test.want {
+				t.Errorf("Bind = %q, want %q", flagPkg.Bind, test.want)
+			}
+		})
+	}
+}
+
 func TestInitFlagSetScopes(t *testing.T) {
 	tests := []struct {
 		name string

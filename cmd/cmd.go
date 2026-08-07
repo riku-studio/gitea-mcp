@@ -17,6 +17,7 @@ import (
 
 var (
 	host                            string
+	bind                            string
 	port                            int
 	token                           string
 	tools                           string
@@ -32,6 +33,8 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	fs.StringVar(&flagPkg.Mode, "transport", "stdio", "")
 	fs.StringVar(&host, "H", getenv("GITEA_HOST"), "")
 	fs.StringVar(&host, "host", getenv("GITEA_HOST"), "")
+	fs.StringVar(&bind, "b", "", "")
+	fs.StringVar(&bind, "bind", "", "")
 	fs.IntVar(&port, "p", 8080, "")
 	fs.IntVar(&port, "port", 8080, "")
 	fs.StringVar(&token, "T", "", "")
@@ -68,6 +71,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintln(stderr, "Options:")
 		fmt.Fprintf(w, "  -t, -transport <type>\tTransport type: stdio or http (default: stdio)\n")
 		fmt.Fprintf(w, "  -H, -host <url>\tGitea host URL (default: https://gitea.com)\n")
+		fmt.Fprintf(w, "  -b, -bind <address>\tHTTP listen address, e.g. 127.0.0.1 (default: all interfaces)\n")
 		fmt.Fprintf(w, "  -p, -port <number>\tHTTP server port (default: 8080)\n")
 		fmt.Fprintf(w, "  -T, -token <token>\tPersonal access token\n")
 		fmt.Fprintf(w, "  -r, -read-only\tExpose only read-only tools\n")
@@ -99,6 +103,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		flagPkg.Host = "https://gitea.com"
 	}
 
+	flagPkg.Bind = bind
 	flagPkg.Port = port
 	flagPkg.MaxInlineAttachmentBytes = maxInlineAttachmentBytes
 
