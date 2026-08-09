@@ -3,6 +3,7 @@ package repo
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -61,7 +62,7 @@ var (
 		tool.String("message", tool.Required(), tool.Description("commit message")),
 		tool.String("branch_name", tool.Required()),
 		tool.String("sha", tool.Description("existing file SHA (omit to create)")),
-		tool.String("new_branch_name", tool.Description("new branch (create only)")),
+		tool.String("new_branch_name", tool.Description("branch to create from branch_name and commit to")),
 	)
 
 	DeleteFileTool = tool.NewDefinition(
@@ -204,6 +205,7 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 	content, _ := args["content"].(string)
 	message, _ := args["message"].(string)
 	branchName, _ := args["branch_name"].(string)
+	newBranchName, _ := args["new_branch_name"].(string)
 	sha, _ := args["sha"].(string)
 
 	client, err := gitea.ClientFromContext(ctx)
@@ -211,39 +213,37 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 
+	fileOpt := gitea_sdk.FileOptions{
+		Message:       message,
+		BranchName:    branchName,
+		NewBranchName: newBranchName,
+	}
+	targetBranch := cmp.Or(newBranchName, branchName)
+
 	if sha != "" {
 		// Update existing file
 		opt := gitea_sdk.UpdateFileOptions{
-			SHA:     sha,
-			Content: base64.StdEncoding.EncodeToString([]byte(content)),
-			FileOptions: gitea_sdk.FileOptions{
-				Message:    message,
-				BranchName: branchName,
-			},
+			SHA:         sha,
+			Content:     base64.StdEncoding.EncodeToString([]byte(content)),
+			FileOptions: fileOpt,
 		}
 		_, _, err = client.Repositories.UpdateFile(ctx, owner, repo, filePath, opt)
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("update file err: %v", err))
 		}
-		return to.TextResult("Update file success")
+		return to.TextResult("Update file success on branch " + targetBranch)
 	}
 
 	// Create new file
 	opt := gitea_sdk.CreateFileOptions{
-		Content: base64.StdEncoding.EncodeToString([]byte(content)),
-		FileOptions: gitea_sdk.FileOptions{
-			Message:    message,
-			BranchName: branchName,
-		},
-	}
-	if newBranch, ok := args["new_branch_name"].(string); ok && newBranch != "" {
-		opt.NewBranchName = newBranch
+		Content:     base64.StdEncoding.EncodeToString([]byte(content)),
+		FileOptions: fileOpt,
 	}
 	_, _, err = client.Repositories.CreateFile(ctx, owner, repo, filePath, opt)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("create file err: %v", err))
 	}
-	return to.TextResult("Create file success")
+	return to.TextResult("Create file success on branch " + targetBranch)
 }
 
 func DeleteFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
