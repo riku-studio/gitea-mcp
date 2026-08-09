@@ -233,6 +233,24 @@ func rpcErrorCode(t *testing.T, response rawRPCResponse) int {
 	return wire.Error.Code
 }
 
+// Regression test for https://gitea.com/gitea/gitea-mcp/issues/229
+func callMissingRequiredArgument(ctx context.Context, t *testing.T, session *mcp.ClientSession) {
+	t.Helper()
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "search_issues",
+		Arguments: map[string]any{"state": "open"},
+	})
+	if err != nil {
+		t.Fatalf("CallTool() error = %v, want a tool result", err)
+	}
+	if !result.IsError {
+		t.Errorf("IsError = false, want true for a call without the required query")
+	}
+	if got := textContent(t, result); !strings.Contains(got, "query is required") {
+		t.Errorf("result = %q, want it to name the missing argument", got)
+	}
+}
+
 func TestOfficialSDKInMemory(t *testing.T) {
 	exposeAllTools(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -256,6 +274,7 @@ func TestOfficialSDKInMemory(t *testing.T) {
 	}
 	assertToolsOnlyCapabilities(t, session.InitializeResult().Capabilities)
 	listAndCallVersion(ctx, t, session, testServerVersion)
+	callMissingRequiredArgument(ctx, t, session)
 	if err := session.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
 	}

@@ -10,6 +10,7 @@ import (
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
+	"gitea.com/gitea/gitea-mcp/pkg/to"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -90,9 +91,7 @@ func (s ServerTool) MCPHandler() mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				panicErr := fmt.Errorf("panic recovered in %s tool handler: %v", s.Tool.Name, recovered)
-				log.Errorf("%s", panicErr)
-				err = internalError(panicErr)
+				result, err = to.ErrorResult(fmt.Errorf("panic recovered in %s tool handler: %v", s.Tool.Name, recovered))
 			}
 		}()
 
@@ -107,7 +106,7 @@ func (s ServerTool) MCPHandler() mcp.ToolHandler {
 			if errors.As(err, &protocolErr) {
 				return nil, err
 			}
-			return nil, internalError(err) // Expected failures never reach here, handlers use CallToolResult.
+			return to.ErrorResult(err)
 		}
 		return result, nil
 	}
@@ -127,10 +126,6 @@ func decodeArguments(raw json.RawMessage) (map[string]any, error) {
 		}
 	}
 	return arguments, nil
-}
-
-func internalError(err error) error {
-	return &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: err.Error()}
 }
 
 // warnUnmatched logs the names present in allowlist but absent from known,

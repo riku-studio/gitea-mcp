@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -72,12 +73,11 @@ func TestMCPHandlerErrorClassification(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		handler  Handler
-		wantCode int64
+		wantCode int64 // zero when the failure belongs in a tool result rather than a protocol error
 	}{
 		{
-			name:     "server error",
-			handler:  func(context.Context, map[string]any) (*mcp.CallToolResult, error) { return nil, errors.New("failed") },
-			wantCode: jsonrpc.CodeInternalError,
+			name:    "server error",
+			handler: func(context.Context, map[string]any) (*mcp.CallToolResult, error) { return nil, errors.New("failed") },
 		},
 		{
 			name: "protocol error",
@@ -87,17 +87,28 @@ func TestMCPHandlerErrorClassification(t *testing.T) {
 			wantCode: jsonrpc.CodeInvalidParams,
 		},
 		{
-			name:     "panic",
-			handler:  func(context.Context, map[string]any) (*mcp.CallToolResult, error) { panic("failed") },
-			wantCode: jsonrpc.CodeInternalError,
+			name:    "panic",
+			handler: func(context.Context, map[string]any) (*mcp.CallToolResult, error) { panic("failed") },
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := callTool(test.handler, nil)
-			if result != nil {
-				t.Errorf("result = %#v, want nil", result)
+			if test.wantCode != 0 {
+				if result != nil {
+					t.Errorf("result = %#v, want nil", result)
+				}
+				assertProtocolErrorCode(t, err, test.wantCode)
+				return
 			}
-			assertProtocolErrorCode(t, err, test.wantCode)
+			if err != nil {
+				t.Fatalf("MCPHandler() error = %v, want nil", err)
+			}
+			if !result.IsError {
+				t.Error("IsError = false, want true")
+			}
+			if content, ok := result.Content[0].(*mcp.TextContent); !ok || !strings.Contains(content.Text, "failed") {
+				t.Errorf("Content[0] = %#v, want text naming the failure", result.Content[0])
+			}
 		})
 	}
 }
