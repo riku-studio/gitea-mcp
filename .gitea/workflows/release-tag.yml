@@ -13,6 +13,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      # The R2 upload only runs after goreleaser has already published
+      # the Gitea release, so fail early instead if the secrets are
+      # missing.
+      - name: Check R2 configuration
+        run: sh scripts/upload-r2.sh --check-config
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
@@ -25,6 +35,21 @@ jobs:
         env:
           GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_FORCE_TOKEN: "gitea"
+      # goreleaser `publishers:` is a Pro-only feature, so the release
+      # artifacts are mirrored to Cloudflare R2 here instead.
+      - name: Upload binaries to Cloudflare R2
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          for f in dist/*.tar.gz dist/*.zip dist/checksums.txt; do
+            [ -f "$f" ] || continue
+            echo "uploading $f"
+            sh scripts/upload-r2.sh "$f" "gitea-mcp/${VERSION#v}/$(basename "$f")"
+          done
 
   release-image:
     runs-on: ubuntu-latest
