@@ -74,7 +74,7 @@ linters:
           arguments:
             - [] # AllowList - do not remove as args for the rule are positional and won't work without lists first
             - [] # DenyList
-            - - skip-package-name-checks: true
+            - - skip-initialism-name-checks: true
     staticcheck:
       checks:
         - all
@@ -110,7 +110,8 @@ formatters:
         - blank
         - default
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
   exclusions:
     generated: lax
 run:

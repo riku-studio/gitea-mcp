@@ -102,11 +102,9 @@ func UsersFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, err
 	}
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.SearchUsersOption{
-		KeyWord: keyword,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		KeyWord:  keyword,
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -133,10 +131,8 @@ func OrgTeamsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, 
 	opt := gitea_sdk.SearchTeamsOptions{
 		Query:              query,
 		IncludeDescription: includeDescription,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:               page,
+		PageSize:           pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -168,10 +164,8 @@ func ReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, err
 		IsArchived:           params.GetOptionalBoolPtr(args, "isArchived"),
 		Sort:                 sort,
 		Order:                order,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:                 page,
+		PageSize:             pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -192,11 +186,9 @@ func IssuesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, er
 	page, pageSize := params.GetPagination(args, 30)
 
 	opt := gitea_sdk.ListIssueOption{
-		KeyWord: query,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		KeyWord:  query,
+		Page:     page,
+		PageSize: pageSize,
 	}
 	if state, ok := args["state"].(string); ok {
 		opt.State = gitea_sdk.StateType(state)

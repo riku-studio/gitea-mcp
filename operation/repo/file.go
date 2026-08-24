@@ -266,11 +266,9 @@ func DeleteFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult
 		return to.ErrorResult(err)
 	}
 	opt := gitea_sdk.DeleteFileOptions{
-		FileOptions: gitea_sdk.FileOptions{
-			Message:    message,
-			BranchName: branchName,
-		},
-		SHA: sha,
+		Message:    message,
+		BranchName: branchName,
+		SHA:        sha,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

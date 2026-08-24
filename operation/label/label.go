@@ -116,10 +116,8 @@ func listRepoLabelsFn(ctx context.Context, args map[string]any) (*mcp.CallToolRe
 	page, pageSize := params.GetPagination(args, 30)
 
 	opt := gitea_sdk.ListLabelsOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -261,10 +259,8 @@ func listOrgLabelsFn(ctx context.Context, args map[string]any) (*mcp.CallToolRes
 	page, pageSize := params.GetPagination(args, 30)
 
 	opt := gitea_sdk.ListOrgLabelsOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

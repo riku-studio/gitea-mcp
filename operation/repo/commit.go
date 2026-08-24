@@ -69,12 +69,10 @@ func ListRepoCommitsFn(ctx context.Context, args map[string]any) (*mcp.CallToolR
 	sha, _ := args["sha"].(string)
 	path, _ := args["path"].(string)
 	opt := gitea_sdk.ListCommitOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
-		SHA:  sha,
-		Path: path,
+		Page:     page,
+		PageSize: pageSize,
+		SHA:      sha,
+		Path:     path,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

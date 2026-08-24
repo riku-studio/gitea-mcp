@@ -59,10 +59,8 @@ func GetUserOrgsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResul
 	page, pageSize := params.GetPagination(args, 30)
 
 	opt := gitea_sdk.ListOrgsOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

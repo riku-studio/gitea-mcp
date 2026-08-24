@@ -349,10 +349,8 @@ func listRepoPullRequestsFn(ctx context.Context, args map[string]any) (*mcp.Call
 		State:     gitea_sdk.StateType(state),
 		Sort:      sort,
 		Milestone: milestone,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:      page,
+		PageSize:  pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -509,10 +507,8 @@ func listPullRequestReviewsFn(ctx context.Context, args map[string]any) (*mcp.Ca
 	}
 
 	reviews, _, err := client.PullRequests.ListPullReviews(ctx, owner, repo, index, gitea_sdk.ListPullReviewsOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list reviews for %v/%v/pr/%v err: %v", owner, repo, index, err))
@@ -578,7 +574,7 @@ func listPullRequestReviewCommentsFn(ctx context.Context, args map[string]any) (
 	} else {
 		page, pageSize := params.GetPagination(args, 30)
 		reviews, _, err := client.PullRequests.ListPullReviews(ctx, owner, repo, index, gitea_sdk.ListPullReviewsOptions{
-			ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+			Page: page, PageSize: pageSize,
 		})
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("list reviews for %v/%v/pr/%v err: %v", owner, repo, index, err))
@@ -1049,7 +1045,7 @@ func getPullRequestFilesFn(ctx context.Context, args map[string]any) (*mcp.CallT
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	files, _, err := client.PullRequests.ListPullRequestFiles(ctx, owner, repo, index, gitea_sdk.ListPullRequestFilesOptions{
-		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+		Page: page, PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v files err: %v", owner, repo, index, err))

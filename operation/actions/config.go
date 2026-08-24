@@ -148,7 +148,7 @@ func listRepoActionSecretsFn(ctx context.Context, args map[string]any) (*mcp.Cal
 	}
 
 	secrets, _, err := client.Actions.ListRepoSecrets(ctx, owner, repo, gitea_sdk.ListRepoActionsSecretOption{
-		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+		Page: page, PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list repo action secrets err: %v", err))
@@ -228,7 +228,7 @@ func listOrgActionSecretsFn(ctx context.Context, args map[string]any) (*mcp.Call
 	}
 
 	secrets, _, err := client.Actions.ListOrgSecrets(ctx, org, gitea_sdk.ListOrgActionsSecretOption{
-		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+		Page: page, PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list org action secrets err: %v", err))
@@ -428,7 +428,7 @@ func listOrgActionVariablesFn(ctx context.Context, args map[string]any) (*mcp.Ca
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	variables, _, err := client.Actions.ListOrgVariables(ctx, org, gitea_sdk.ListOrgActionsVariableOption{
-		ListOptions: gitea_sdk.ListOptions{Page: page, PageSize: pageSize},
+		Page: page, PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list org action variables err: %v", err))

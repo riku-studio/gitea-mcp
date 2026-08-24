@@ -102,8 +102,7 @@ func (s ServerTool) MCPHandler() mcp.ToolHandler {
 
 		result, err = s.Handler(ctx, arguments)
 		if err != nil {
-			var protocolErr *jsonrpc.Error
-			if errors.As(err, &protocolErr) {
+			if _, ok := errors.AsType[*jsonrpc.Error](err); ok {
 				return nil, err
 			}
 			return to.ErrorResult(err)

@@ -187,10 +187,8 @@ func listRepoIssuesFn(ctx context.Context, args map[string]any) (*mcp.CallToolRe
 		State:      gitea_sdk.StateType(state),
 		Labels:     labels,
 		Milestones: milestones,
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:       page,
+		PageSize:   pageSize,
 	}
 	switch args["type"] {
 	case "issues":

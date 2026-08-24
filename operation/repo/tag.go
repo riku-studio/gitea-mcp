@@ -185,10 +185,8 @@ func ListTagsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, 
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	tags, _, err := client.Repositories.ListRepoTags(ctx, owner, repo, gitea_sdk.ListRepoTagsOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     int(page),
-			PageSize: int(pageSize),
-		},
+		Page:     int(page),
+		PageSize: int(pageSize),
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list tags error: %v", err))

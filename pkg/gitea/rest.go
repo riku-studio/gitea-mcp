@@ -236,8 +236,7 @@ func OpenAttachment(ctx context.Context, attachmentPath, accept string) (*Attach
 func DownloadAttachment(ctx context.Context, attachmentPath, accept string) ([]byte, string, int, error) {
 	resp, err := OpenAttachment(ctx, attachmentPath, accept)
 	if err != nil {
-		var httpErr *HTTPError
-		if errors.As(err, &httpErr) {
+		if httpErr, ok := errors.AsType[*HTTPError](err); ok {
 			return nil, "", httpErr.StatusCode, err
 		}
 		return nil, "", 0, err

@@ -8,7 +8,7 @@
 
 ## Installation
 
-Download a binary from the [releases page](https://gitea.com/gitea/gitea-mcp/releases) and put it in your `PATH`, use the `docker.gitea.com/gitea-mcp-server` image, or build from source into `$GOPATH/bin` with `make` and Go 1.26 or later:
+Download a binary from the [releases page](https://gitea.com/gitea/gitea-mcp/releases) and put it in your `PATH`, use the `docker.gitea.com/gitea-mcp-server` image, or build from source into `$GOPATH/bin` with `make` and Go 1.27 or later:
 
 ```bash
 git clone https://gitea.com/gitea/gitea-mcp.git

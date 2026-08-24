@@ -236,10 +236,8 @@ func ListReleasesFn(ctx context.Context, args map[string]any) (*mcp.CallToolResu
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	releases, _, err := client.Releases.ListReleases(ctx, owner, repo, gitea_sdk.ListReleasesOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:         page,
+		PageSize:     pageSize,
 		IsDraft:      params.GetOptionalBoolPtr(args, "is_draft"),
 		IsPreRelease: params.GetOptionalBoolPtr(args, "is_pre_release"),
 	})

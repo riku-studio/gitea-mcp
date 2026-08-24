@@ -8,7 +8,7 @@
 
 ## 安裝
 
-可從 [發布頁面](https://gitea.com/gitea/gitea-mcp/releases) 下載二進位檔並放入 `PATH`，或使用 `docker.gitea.com/gitea-mcp-server` 映像檔，也可用 `make` 與 Go 1.26 以上從原始碼建置到 `$GOPATH/bin`：
+可從 [發布頁面](https://gitea.com/gitea/gitea-mcp/releases) 下載二進位檔並放入 `PATH`，或使用 `docker.gitea.com/gitea-mcp-server` 映像檔，也可用 `make` 與 Go 1.27 以上從原始碼建置到 `$GOPATH/bin`：
 
 ```bash
 git clone https://gitea.com/gitea/gitea-mcp.git

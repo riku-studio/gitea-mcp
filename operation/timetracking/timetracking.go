@@ -200,10 +200,8 @@ func listTrackedTimesFn(ctx context.Context, args map[string]any) (*mcp.CallTool
 	}
 
 	times, _, err := client.Issues.ListIssueTrackedTimes(ctx, owner, repo, index, gitea_sdk.ListTrackedTimesOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list tracked times for %s/%s#%d err: %v", owner, repo, index, err))
@@ -290,10 +288,8 @@ func listRepoTimesFn(ctx context.Context, args map[string]any) (*mcp.CallToolRes
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	times, _, err := client.Issues.ListRepoTrackedTimes(ctx, owner, repo, gitea_sdk.ListTrackedTimesOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	})
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("list repo tracked times for %s/%s err: %v", owner, repo, err))

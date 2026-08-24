@@ -170,10 +170,8 @@ func ForkRepoFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, 
 func ListMyReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListReposOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
@@ -194,10 +192,8 @@ func ListOrgReposFn(ctx context.Context, args map[string]any) (*mcp.CallToolResu
 	}
 	page, pageSize := params.GetPagination(args, 100)
 	opt := gitea_sdk.ListOrgReposOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {

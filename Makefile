@@ -3,8 +3,8 @@ EXECUTABLE := gitea-mcp
 VERSION ?= $(shell git describe --tags --always | sed 's/-/+/' | sed 's/^v//')
 LDFLAGS := -X "main.Version=$(VERSION)"
 
-GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 # renovate: datasource=go
-GOVULNCHECK_PACKAGE ?= golang.org/x/vuln/cmd/govulncheck@v1.6.0 # renovate: datasource=go
+GOLANGCI_LINT_PACKAGE ?= github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1 # renovate: datasource=go
+GOVULNCHECK_PACKAGE ?= golang.org/x/vuln/cmd/govulncheck@v1.7.0 # renovate: datasource=go
 
 GOTEST_FLAGS ?= -race -timeout 20m
 

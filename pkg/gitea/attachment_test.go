@@ -191,8 +191,7 @@ func TestDownloadAttachmentErrorsOnNon2xx(t *testing.T) {
 	if status != http.StatusForbidden {
 		t.Fatalf("status = %d, want %d", status, http.StatusForbidden)
 	}
-	var httpErr *HTTPError
-	if !errors.As(err, &httpErr) {
+	if _, ok := errors.AsType[*HTTPError](err); !ok {
 		t.Fatalf("expected HTTPError, got %T", err)
 	}
 }

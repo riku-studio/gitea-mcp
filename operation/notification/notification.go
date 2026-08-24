@@ -95,10 +95,8 @@ func notificationWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToo
 func listNotificationsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListNotificationOptions{
-		ListOptions: gitea_sdk.ListOptions{
-			Page:     page,
-			PageSize: pageSize,
-		},
+		Page:     page,
+		PageSize: pageSize,
 	}
 	if status, ok := args["status"].(string); ok {
 		opt.Status = []gitea_sdk.NotificationStatus{gitea_sdk.NotificationStatus(status)}
