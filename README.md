@@ -180,6 +180,7 @@ Once configured, try `list all my repositories` in the chat box.
 | create_branch                | branch       | Write  | Create a new branch |
 | delete_branch                | branch       | Write  | Delete a branch |
 | list_branches                | branch       | Read   | List repository branches |
+| rename_branch                | branch       | Write  | Rename a branch |
 | create_tag                   | tag          | Write  | Create a tag |
 | delete_tag                   | tag          | Write  | Delete a tag |
 | get_tag                      | tag          | Read   | Get tag details |

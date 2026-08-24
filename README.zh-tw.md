@@ -180,6 +180,7 @@ Cursor 等客戶端可使用 stdio 命令：
 | create_branch                | branch       | 寫入 | 創建新分支 |
 | delete_branch                | branch       | 寫入 | 刪除分支 |
 | list_branches                | branch       | 讀取 | 列出倉庫分支 |
+| rename_branch                | branch       | 寫入 | 重新命名分支 |
 | create_tag                   | tag          | 寫入 | 創建標籤 |
 | delete_tag                   | tag          | 寫入 | 刪除標籤 |
 | get_tag                      | tag          | 讀取 | 取得標籤詳情 |
