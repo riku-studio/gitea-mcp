@@ -133,11 +133,18 @@ func newHTTPServer(addr string, s *mcp.Server) *http.Server {
 			PropagateRequestCancellation: true,
 		},
 	)))
+	mux.HandleFunc("/healthz", handleHealthz)
 	return &http.Server{
 		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: httpReadHeaderTimeout,
 	}
+}
+
+func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok\n"))
 }
 
 func Run() error {

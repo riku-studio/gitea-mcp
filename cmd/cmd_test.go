@@ -95,3 +95,12 @@ func TestInitFlagSetScopes(t *testing.T) {
 		})
 	}
 }
+
+func TestInitFlagSetHealthcheck(t *testing.T) {
+	t.Cleanup(func() { healthcheck = false })
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	initFlagSet(fs, []string{"-healthcheck"}, func(string) string { return "" }, func(string) ([]byte, error) { return nil, nil }, &bytes.Buffer{})
+	if !healthcheck {
+		t.Error("healthcheck = false, want true")
+	}
+}

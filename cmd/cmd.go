@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -23,9 +24,11 @@ var (
 	tools                           string
 	scopes                          string
 	version                         bool
+	healthcheck                     bool
 	maxInlineAttachmentBytes        int
 	maxInlineAttachmentBytesFlagSet bool
 	osExit                          = os.Exit
+	healthcheckClient               = http.DefaultClient
 )
 
 func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, readFile func(string) ([]byte, error), stderr io.Writer) {
@@ -53,6 +56,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	fs.BoolVar(&flagPkg.Insecure, "insecure", false, "")
 	fs.BoolVar(&version, "v", false, "")
 	fs.BoolVar(&version, "version", false, "")
+	fs.BoolVar(&healthcheck, "healthcheck", false, "")
 	maxInlineAttachmentBytes = 5 * 1024 * 1024
 	fs.Func("max-inline-attachment-bytes", "", func(val string) error {
 		parsed, err := strconv.Atoi(val)
@@ -81,6 +85,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  -k, -insecure\tIgnore TLS certificate errors\n")
 		fmt.Fprintf(w, "  -max-inline-attachment-bytes <bytes>\tInline image attachments up to this size (default: 5242880)\n")
 		fmt.Fprintf(w, "  -v, -version\tPrint version and exit\n")
+		fmt.Fprintf(w, "  -healthcheck\tCheck a running HTTP server's /healthz endpoint and exit\n")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Environment variables:")
 		fmt.Fprintf(w, "  GITEA_ACCESS_TOKEN\tProvide access token\n")
@@ -181,6 +186,14 @@ func Execute() {
 	initFlagSet(flag.CommandLine, os.Args[1:], os.Getenv, os.ReadFile, os.Stderr)
 	if version {
 		fmt.Fprintln(os.Stdout, flagPkg.Version)
+		return
+	}
+	if healthcheck {
+		if runHealthcheck(healthcheckClient, flagPkg.Port, os.Stdout, os.Stderr) {
+			osExit(0)
+		} else {
+			osExit(1)
+		}
 		return
 	}
 	if err := operation.Run(); err != nil {

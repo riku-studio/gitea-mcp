@@ -32,4 +32,7 @@ USER nonroot:nonroot
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.source="https://gitea.com/gitea/gitea-mcp"
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["/app/gitea-mcp", "-healthcheck"] || exit 1
+
 CMD ["/app/gitea-mcp"]

@@ -1,6 +1,10 @@
 package operation
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestNewHTTPServerConfig(t *testing.T) {
 	server := newHTTPServer(":12345", newMCPServer("test"))
@@ -15,6 +19,21 @@ func TestNewHTTPServerConfig(t *testing.T) {
 	}
 	if server.WriteTimeout != 0 {
 		t.Errorf("WriteTimeout = %v, want zero for SSE", server.WriteTimeout)
+	}
+}
+
+func TestHealthzEndpoint(t *testing.T) {
+	server := newHTTPServer(":0", newMCPServer("test"))
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if body := rec.Body.String(); body == "" {
+		t.Error("body is empty, want a non-empty health message")
 	}
 }
 

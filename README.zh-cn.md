@@ -26,6 +26,8 @@ Gitea 主机和访问令牌可通过命令行参数或环境变量提供，命�
 
 HTTP 传输固定为无状态：`/mcp` 仅接受 POST，没有 `Mcp-Session-Id`、独立 SSE 和 `Last-Event-ID` 断点续传。服务器会验证来源，反向代理必须原样转发 `Mcp-Protocol-Version`、`Mcp-Method` 和 `Mcp-Name`。`Authorization: Bearer <令牌>` 和 `Authorization: token <令牌>` 会在每个请求中传递 Gitea 凭据，这是凭据透传，而不是 MCP OAuth。
 
+HTTP 模式还提供 `/healthz` 端点，服务器正常运行时返回 `200 OK`。Docker 镜像内置的 `HEALTHCHECK` 会运行 `gitea-mcp -healthcheck`，它使用与 `-p`/`-port` 相同的端口（默认 `8080`）请求 `http://127.0.0.1:<端口>/healthz`，成功时退出码为 `0`，失败时为 `1`。stdio 部署不提供 `/healthz`，因此在 stdio 模式下运行时应覆盖或禁用镜像自带的 `HEALTHCHECK`。
+
 ### Claude Code
 
 通过 `go run` 运行服务器，需要安装 [Go](https://go.dev)：
