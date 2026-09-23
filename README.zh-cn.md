@@ -172,6 +172,8 @@ Cursor 等客户端可使用 stdio 命令：
 | timetracking_write           | timetracking | 写入 | 写入时间跟踪：计时器和记录条目 |
 | package_read                 | packages     | 读取 | 读取软件包注册表：列出软件包、列出版本或获取某个版本 |
 | package_write                | packages     | 写入 | 删除软件包版本（不可恢复） |
+| project_read                 | project      | 读取 | 读取项目、列及列中的议题 |
+| project_write                | project      | 写入 | 写入项目、列及议题所在列 |
 | list_issues                  | issue        | 读取 | 列出仓库问题 |
 | attachment_read              | issue        | 读取 | 读取问题/评论附件：列出元数据、获取元数据或下载内容 |
 | issue_read                   | issue        | 读取 | 读取问题：详情、评论或标签 |

@@ -11,6 +11,7 @@ func slimIssue(i *gitea_sdk.Issue) map[string]any {
 		return nil
 	}
 	m := map[string]any{
+		"id":         i.ID,
 		"number":     i.Index,
 		"title":      i.Title,
 		"body":       i.Body,
@@ -51,6 +52,7 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 			continue
 		}
 		m := map[string]any{
+			"id":         i.ID,
 			"number":     i.Index,
 			"title":      i.Title,
 			"state":      i.State,

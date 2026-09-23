@@ -172,6 +172,8 @@ Once configured, try `list all my repositories` in the chat box.
 | timetracking_write           | timetracking | Write  | Write time tracking: stopwatches and entries |
 | package_read                 | packages     | Read   | Read package registry: list packages, list versions, or get a version |
 | package_write                | packages     | Write  | Delete a package version (irreversible) |
+| project_read                 | project      | Read   | Read projects, columns and column issues |
+| project_write                | project      | Write  | Write projects, columns and issue placement |
 | list_issues                  | issue        | Read   | List repository issues |
 | attachment_read              | issue        | Read   | Read issue/comment attachments: list metadata, get metadata, or download content |
 | issue_read                   | issue        | Read   | Read issue: details, comments, or labels |

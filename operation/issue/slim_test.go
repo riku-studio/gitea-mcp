@@ -8,6 +8,7 @@ import (
 
 func TestSlimIssue(t *testing.T) {
 	i := &gitea_sdk.Issue{
+		ID:      99,
 		Index:   42,
 		Title:   "Bug report",
 		Body:    "Something is broken",
@@ -24,8 +25,8 @@ func TestSlimIssue(t *testing.T) {
 
 	m := slimIssue(i)
 
-	if m["number"] != int64(42) {
-		t.Errorf("expected number 42, got %v", m["number"])
+	if m["id"] != int64(99) || m["number"] != int64(42) {
+		t.Errorf("expected id 99 and number 42, got %v and %v", m["id"], m["number"])
 	}
 	if m["body"] != "Something is broken" {
 		t.Errorf("expected body, got %v", m["body"])
@@ -42,6 +43,7 @@ func TestSlimIssue(t *testing.T) {
 
 func TestSlimIssues_ListIsSlimmer(t *testing.T) {
 	i := &gitea_sdk.Issue{
+		ID:     5,
 		Index:  1,
 		Title:  "Issue",
 		State:  "open",
@@ -57,8 +59,8 @@ func TestSlimIssues_ListIsSlimmer(t *testing.T) {
 	if _, ok := single["body"]; !ok {
 		t.Error("single issue should have body")
 	}
-	if _, ok := list[0]["body"]; ok {
-		t.Error("list issue should not have body")
+	if _, ok := list[0]["body"]; ok || list[0]["id"] != int64(5) {
+		t.Errorf("list issue should have id and no body, got %v", list[0])
 	}
 }
 

@@ -172,6 +172,8 @@ Cursor 等客戶端可使用 stdio 命令：
 | timetracking_write           | timetracking | 寫入 | 寫入時間追蹤：計時器和記錄項目 |
 | package_read                 | packages     | 讀取 | 讀取軟體套件註冊表：列出套件、列出版本或取得某個版本 |
 | package_write                | packages     | 寫入 | 刪除軟體套件版本（不可復原） |
+| project_read                 | project      | 讀取 | 讀取專案、欄及欄中的議題 |
+| project_write                | project      | 寫入 | 寫入專案、欄及議題所在欄 |
 | list_issues                  | issue        | 讀取 | 列出倉庫問題 |
 | attachment_read              | issue        | 讀取 | 讀取問題/評論附件：列出中繼資料、取得中繼資料或下載內容 |
 | issue_read                   | issue        | 讀取 | 讀取問題：詳情、評論或標籤 |

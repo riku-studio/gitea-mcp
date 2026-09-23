@@ -18,6 +18,7 @@ import (
 	"gitea.com/gitea/gitea-mcp/operation/milestone"
 	"gitea.com/gitea/gitea-mcp/operation/notification"
 	"gitea.com/gitea/gitea-mcp/operation/packages"
+	"gitea.com/gitea/gitea-mcp/operation/project"
 	"gitea.com/gitea/gitea-mcp/operation/pull"
 	"gitea.com/gitea/gitea-mcp/operation/repo"
 	"gitea.com/gitea/gitea-mcp/operation/search"
@@ -49,7 +50,7 @@ var (
 	domainTools = []*tool.Tool{
 		user.Tool, actions.Tool, repo.Tool, notification.Tool, issue.Tool,
 		label.Tool, milestone.Tool, packages.Tool, pull.Tool, search.Tool,
-		version.Tool, wiki.Tool, timetracking.Tool,
+		project.Tool, version.Tool, wiki.Tool, timetracking.Tool,
 		repo.FileTool, repo.BranchTool, repo.TagTool, repo.CommitTool, repo.ReleaseTool,
 	}
 )

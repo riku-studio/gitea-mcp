@@ -10,6 +10,7 @@ import (
 func TestSlimIssues(t *testing.T) {
 	issues := []*gitea_sdk.Issue{
 		{
+			ID:          7,
 			Index:       1,
 			Title:       "Bug report",
 			State:       gitea_sdk.StateOpen,
@@ -33,8 +34,8 @@ func TestSlimIssues(t *testing.T) {
 	if len(result) != 2 {
 		t.Fatalf("expected 2 issues, got %d", len(result))
 	}
-	if result[0]["repository"] != "org/repo" {
-		t.Errorf("expected repository org/repo, got %v", result[0]["repository"])
+	if result[0]["repository"] != "org/repo" || result[0]["id"] != int64(7) {
+		t.Errorf("expected repository org/repo and id 7, got %v and %v", result[0]["repository"], result[0]["id"])
 	}
 	if result[0]["labels"].([]string)[0] != "bug" {
 		t.Errorf("expected label bug, got %v", result[0]["labels"])
