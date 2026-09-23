@@ -1,13 +1,15 @@
 package repo
 
 import (
-	"bufio"
 	"bytes"
 	"cmp"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
@@ -30,6 +32,17 @@ const (
 )
 
 var (
+	fileEditSchema = map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"old_string":  map[string]any{"type": "string"},
+			"new_string":  map[string]any{"type": "string"},
+			"replace_all": map[string]any{"type": "boolean"},
+		},
+		"required":             []string{"old_string", "new_string"},
+		"additionalProperties": false,
+	}
+
 	GetFileContentTool = tool.NewDefinition(
 		GetFileToolName,
 		"Get file content and metadata",
@@ -39,6 +52,8 @@ var (
 		tool.String("ref", tool.Required(), tool.Description("branch, tag, or commit SHA")),
 		tool.String("path", tool.Required()),
 		tool.Boolean("withLines", tool.Description("return numbered lines")),
+		tool.Number("start_line", tool.Minimum(1)),
+		tool.Number("end_line", tool.Minimum(1)),
 	)
 
 	GetDirContentTool = tool.NewDefinition(
@@ -53,16 +68,28 @@ var (
 
 	CreateOrUpdateFileTool = tool.NewDefinition(
 		CreateOrUpdateFileToolName,
-		"Create or update a file (provide sha to update an existing file).",
+		"Create or update files in one commit",
 		annotation.Write("Create or update a file"),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
-		tool.String("path", tool.Required()),
-		tool.String("content", tool.Required()),
+		tool.String("path"),
+		tool.String("content"),
 		tool.String("message", tool.Required(), tool.Description("commit message")),
 		tool.String("branch_name", tool.Required()),
 		tool.String("sha", tool.Description("existing file SHA (omit to create)")),
 		tool.String("new_branch_name", tool.Description("branch to create from branch_name and commit to")),
+		tool.Array("edits", tool.Items(fileEditSchema)),
+		tool.Array("files", tool.Items(map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"path":    map[string]any{"type": "string"},
+				"content": map[string]any{"type": "string"},
+				"edits":   map[string]any{"type": "array", "items": fileEditSchema},
+				"sha":     map[string]any{"type": "string"},
+			},
+			"required":             []string{"path"},
+			"additionalProperties": false,
+		})),
 	)
 
 	DeleteFileTool = tool.NewDefinition(
@@ -102,6 +129,51 @@ type ContentLine struct {
 	Content    string `json:"content"`
 }
 
+type lineSelection struct {
+	Bytes              []byte
+	First, Last, Total int
+}
+
+// selectLines returns lines start..end (1-based, 0 means unbounded) as a sub-slice of raw, counting lines like git.
+func selectLines(raw []byte, start, end int) (lineSelection, error) {
+	total := bytes.Count(raw, []byte{'\n'})
+	if len(raw) > 0 && raw[len(raw)-1] != '\n' {
+		total++
+	}
+	if total == 0 {
+		return lineSelection{First: 1}, nil
+	}
+	first, last := max(start, 1), total
+	if end > 0 {
+		last = min(end, total)
+	}
+	if first > total {
+		return lineSelection{}, fmt.Errorf("start_line %d is past the end of the file (%d lines)", first, total)
+	}
+	if last < first {
+		return lineSelection{}, fmt.Errorf("end_line %d is before start_line %d", last, first)
+	}
+
+	begin := 0
+	for range first - 1 {
+		begin += bytes.IndexByte(raw[begin:], '\n') + 1
+	}
+	stop := begin
+	for range last - first + 1 {
+		newline := bytes.IndexByte(raw[stop:], '\n')
+		if newline < 0 {
+			stop = len(raw)
+			break
+		}
+		stop += newline + 1
+	}
+	selected := raw[begin:stop]
+	if trimmed, ok := bytes.CutSuffix(selected, []byte("\n")); ok {
+		selected = bytes.TrimSuffix(trimmed, []byte("\r"))
+	}
+	return lineSelection{Bytes: selected, First: first, Last: last, Total: total}, nil
+}
+
 func GetFileContentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
@@ -124,44 +196,63 @@ func GetFileContentFn(ctx context.Context, args map[string]any) (*mcp.CallToolRe
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get file err: %v", err))
 	}
+
 	withLines, _ := args["withLines"].(bool)
-	if withLines {
-		rawContent, err := base64.StdEncoding.DecodeString(*content.Content)
-		if err != nil {
-			return to.ErrorResult(fmt.Errorf("decode base64 content err: %v", err))
+	startLine := int(params.GetOptionalInt(args, "start_line", 0))
+	endLine := int(params.GetOptionalInt(args, "end_line", 0))
+	rangeRequested := startLine > 0 || endLine > 0
+	if !withLines && !rangeRequested {
+		return to.TextResult(slimContents(content))
+	}
+
+	raw, err := decodeContent(content)
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	selection, err := selectLines(raw, startLine, endLine)
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+
+	text, encoding := string(selection.Bytes), "utf-8"
+	if !utf8.Valid(selection.Bytes) {
+		text, encoding = base64.StdEncoding.EncodeToString(selection.Bytes), "base64"
+	}
+	if withLines && encoding == "utf-8" {
+		contentLines := make([]ContentLine, 0, selection.Last-selection.First+1)
+		if selection.Total > 0 {
+			for line := range strings.SplitSeq(text, "\n") {
+				contentLines = append(contentLines, ContentLine{LineNumber: selection.First + len(contentLines), Content: strings.TrimSuffix(line, "\r")})
+			}
 		}
-
-		contentLines := make([]ContentLine, 0)
-		line := 0
-
-		scanner := bufio.NewScanner(bytes.NewReader(rawContent))
-
-		for scanner.Scan() {
-			line++
-
-			contentLines = append(contentLines, ContentLine{
-				LineNumber: line,
-				Content:    scanner.Text(),
-			})
-		}
-		if err := scanner.Err(); err != nil {
-			return to.ErrorResult(fmt.Errorf("scan content err: %v", err))
-		}
-
-		// remove the last blank line if exists
-		// git does not consider the last line as a new line
-		if len(contentLines) > 0 && contentLines[len(contentLines)-1].Content == "" {
-			contentLines = contentLines[:len(contentLines)-1]
-		}
-
 		contentBytes, err := json.MarshalIndent(contentLines, "", "  ")
 		if err != nil {
 			return to.ErrorResult(fmt.Errorf("marshal content lines err: %v", err))
 		}
-		contentStr := string(contentBytes)
-		content.Content = &contentStr
+		text = string(contentBytes)
 	}
-	return to.TextResult(slimContents(content))
+	content.Content = &text
+	content.Encoding = &encoding
+
+	result := slimContents(content)
+	result["total_lines"] = selection.Total
+	if rangeRequested {
+		result["start_line"] = selection.First
+		result["end_line"] = selection.Last
+		result["truncated"] = selection.First > 1 || selection.Last < selection.Total
+	}
+	return to.TextResult(result)
+}
+
+func decodeContent(content *gitea_sdk.ContentsResponse) ([]byte, error) {
+	if content.Content == nil {
+		return nil, fmt.Errorf("%s has no inline content, it may be a directory, submodule or too large", content.Path)
+	}
+	raw, err := base64.StdEncoding.DecodeString(*content.Content)
+	if err != nil {
+		return nil, fmt.Errorf("decode base64 content err: %v", err)
+	}
+	return raw, nil
 }
 
 func GetDirContentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
@@ -198,52 +289,102 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	filePath, err := params.GetString(args, "path")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
-	content, _ := args["content"].(string)
 	message, _ := args["message"].(string)
 	branchName, _ := args["branch_name"].(string)
 	newBranchName, _ := args["new_branch_name"].(string)
-	sha, _ := args["sha"].(string)
+
+	files, _ := args["files"].([]any)
+	if params.GetOptionalString(args, "path", "") != "" {
+		files = append([]any{args}, files...)
+	}
+	if len(files) == 0 {
+		return to.ErrorResult(errors.New("path or files is required"))
+	}
 
 	client, err := gitea.ClientFromContext(ctx)
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-
-	fileOpt := gitea_sdk.FileOptions{
-		Message:       message,
-		BranchName:    branchName,
-		NewBranchName: newBranchName,
-	}
-	targetBranch := cmp.Or(newBranchName, branchName)
-
-	if sha != "" {
-		// Update existing file
-		opt := gitea_sdk.UpdateFileOptions{
-			SHA:         sha,
-			Content:     base64.StdEncoding.EncodeToString([]byte(content)),
-			FileOptions: fileOpt,
-		}
-		_, _, err = client.Repositories.UpdateFile(ctx, owner, repo, filePath, opt)
+	operations := make([]*gitea_sdk.ChangeFileOperation, 0, len(files))
+	for _, file := range files {
+		fileArgs, _ := file.(map[string]any)
+		operation, err := changeFileOperation(ctx, client, owner, repo, branchName, fileArgs)
 		if err != nil {
-			return to.ErrorResult(fmt.Errorf("update file err: %v", err))
+			return to.ErrorResult(err)
 		}
-		return to.TextResult("Update file success on branch " + targetBranch)
+		operations = append(operations, operation)
 	}
 
-	// Create new file
-	opt := gitea_sdk.CreateFileOptions{
-		Content:     base64.StdEncoding.EncodeToString([]byte(content)),
-		FileOptions: fileOpt,
-	}
-	_, _, err = client.Repositories.CreateFile(ctx, owner, repo, filePath, opt)
+	_, _, err = client.Repositories.ChangeFiles(ctx, owner, repo, gitea_sdk.ChangeFilesOptions{
+		Files:     operations,
+		Message:   message,
+		Branch:    branchName,
+		NewBranch: newBranchName,
+	})
 	if err != nil {
-		return to.ErrorResult(fmt.Errorf("create file err: %v", err))
+		return to.ErrorResult(fmt.Errorf("change files err: %v", err))
 	}
-	return to.TextResult("Create file success on branch " + targetBranch)
+	return to.TextResult(fmt.Sprintf("Committed %d file(s) to branch %s", len(operations), cmp.Or(newBranchName, branchName)))
+}
+
+// changeFileOperation resolves edits against the file at ref, whose SHA then guards the write.
+func changeFileOperation(ctx context.Context, client *gitea_sdk.Client, owner, repo, ref string, file map[string]any) (*gitea_sdk.ChangeFileOperation, error) {
+	filePath, err := params.GetString(file, "path")
+	if err != nil {
+		return nil, err
+	}
+	content, hasContent := file["content"].(string)
+	sha, _ := file["sha"].(string)
+	if edits, _ := file["edits"].([]any); len(edits) > 0 {
+		if hasContent {
+			return nil, fmt.Errorf("%s: content and edits are mutually exclusive", filePath)
+		}
+		current, _, err := client.Repositories.GetContents(ctx, owner, repo, ref, filePath)
+		if err != nil {
+			return nil, fmt.Errorf("get %s err: %v", filePath, err)
+		}
+		raw, err := decodeContent(current)
+		if err != nil {
+			return nil, err
+		}
+		if content, err = applyEdits(string(raw), edits); err != nil {
+			return nil, fmt.Errorf("%s: %w", filePath, err)
+		}
+		sha = cmp.Or(sha, current.SHA)
+	} else if !hasContent {
+		return nil, fmt.Errorf("%s: content or edits is required", filePath)
+	}
+
+	operation := "create"
+	if sha != "" {
+		operation = "update"
+	}
+	return &gitea_sdk.ChangeFileOperation{
+		Operation: operation,
+		Path:      filePath,
+		Content:   base64.StdEncoding.EncodeToString([]byte(content)),
+		SHA:       sha,
+	}, nil
+}
+
+func applyEdits(text string, edits []any) (string, error) {
+	for i, raw := range edits {
+		edit, _ := raw.(map[string]any)
+		oldString, _ := edit["old_string"].(string)
+		newString, hasNewString := edit["new_string"].(string)
+		replaceAll, _ := edit["replace_all"].(bool)
+		if oldString == "" || !hasNewString {
+			return "", fmt.Errorf("edit %d: old_string and new_string are required", i+1)
+		}
+		switch count := strings.Count(text, oldString); {
+		case count == 0:
+			return "", fmt.Errorf("edit %d: old_string not found, it must match exactly", i+1)
+		case count > 1 && !replaceAll:
+			return "", fmt.Errorf("edit %d: old_string occurs %d times, add context or set replace_all", i+1, count)
+		}
+		text = strings.ReplaceAll(text, oldString, newString)
+	}
+	return text, nil
 }
 
 func DeleteFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {

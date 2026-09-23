@@ -177,7 +177,7 @@ Cursor 等客户端可使用 stdio 命令：
 | get_repository_tree          | repository   | 读取 | 获取仓库文件树 |
 | get_file_contents            | file         | 读取 | 获取文件内容和元数据 |
 | get_dir_contents             | file         | 读取 | 获取目录中的条目 |
-| create_or_update_file        | file         | 写入 | 创建或更新文件（提供 sha 以更新现有文件） |
+| create_or_update_file        | file         | 写入 | 在单次提交中创建或更新文件 |
 | delete_file                  | file         | 写入 | 删除文件 |
 | create_branch                | branch       | 写入 | 创建新分支 |
 | delete_branch                | branch       | 写入 | 删除分支 |
