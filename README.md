@@ -18,7 +18,7 @@ make install
 
 ## Configuration
 
-Pass the Gitea host and access token as command-line flags or environment variables, flags take precedence. Run `gitea-mcp --help` for the full list of flags and environment variables. Logs are written to `$HOME/.gitea-mcp/gitea-mcp.log`, add `-d` for debug logging.
+Pass the Gitea host and access token as command-line flags or environment variables, flags take precedence. Run `gitea-mcp --help` for the full list of flags and environment variables. Logs are written to `$HOME/.gitea-mcp/gitea-mcp.log`, add `-d` for debug logging. To reach a Gitea listening on a Unix socket, pass `-gitea-unix-socket <path>`, the host then defaults to `http://unix/`.
 
 ### MCP protocol and HTTP transport
 

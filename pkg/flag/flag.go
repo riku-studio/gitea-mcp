@@ -8,6 +8,8 @@ var (
 	Version string
 	Mode    string
 
+	GiteaUnixSocket string
+
 	MaxInlineAttachmentBytes int
 
 	OAuth          bool

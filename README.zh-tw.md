@@ -18,7 +18,7 @@ make install
 
 ## 設定
 
-Gitea 主機與存取令牌可透過命令列參數或環境變數提供，命令列參數優先。執行 `gitea-mcp --help` 可查看完整的參數與環境變數列表。日誌寫入 `$HOME/.gitea-mcp/gitea-mcp.log`，加上 `-d` 可啟用除錯日誌。
+Gitea 主機與存取令牌可透過命令列參數或環境變數提供，命令列參數優先。執行 `gitea-mcp --help` 可查看完整的參數與環境變數列表。日誌寫入 `$HOME/.gitea-mcp/gitea-mcp.log`，加上 `-d` 可啟用除錯日誌。若 Gitea 監聽 Unix socket，傳入 `-gitea-unix-socket <path>`，主機將預設為 `http://unix/`。
 
 ### MCP 協定與 HTTP 傳輸
 

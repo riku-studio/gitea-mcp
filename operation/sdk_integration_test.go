@@ -68,7 +68,7 @@ func stdioCommandEnvironment() []string {
 	for _, entry := range environment {
 		name, _, _ := strings.Cut(entry, "=")
 		switch name {
-		case "GITEA_READONLY", "GITEA_SCOPES", "GITEA_TOOLS", "MCP_MODE":
+		case "GITEA_READONLY", "GITEA_SCOPES", "GITEA_TOOLS", "GITEA_UNIX_SOCKET", "MCP_MODE":
 			continue
 		}
 		filtered = append(filtered, entry)

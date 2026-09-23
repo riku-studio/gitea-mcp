@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 
@@ -22,12 +23,23 @@ var (
 
 func sharedTransport() *http.Transport {
 	sharedTransOnce.Do(func() {
-		sharedTrans = http.DefaultTransport.(*http.Transport).Clone()
-		if flag.Insecure {
-			sharedTrans.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-requested insecure mode
-		}
+		sharedTrans = newHTTPTransport(flag.Insecure, flag.GiteaUnixSocket)
 	})
 	return sharedTrans
+}
+
+func newHTTPTransport(insecure bool, unixSocket string) *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if insecure {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // user-requested insecure mode
+	}
+	if unixSocket != "" {
+		transport.Proxy = nil
+		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) { // ignores addr so redirects can't leave the socket
+			return (&net.Dialer{}).DialContext(ctx, "unix", unixSocket)
+		}
+	}
+	return transport
 }
 
 // NewClient returns a cached *gitea.Client keyed by host+token. The SDK's per-client

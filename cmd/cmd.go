@@ -38,6 +38,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	fs.StringVar(&flagPkg.Mode, "transport", "stdio", "")
 	fs.StringVar(&host, "H", getenv("GITEA_HOST"), "")
 	fs.StringVar(&host, "host", getenv("GITEA_HOST"), "")
+	fs.StringVar(&flagPkg.GiteaUnixSocket, "gitea-unix-socket", getenv("GITEA_UNIX_SOCKET"), "")
 	fs.StringVar(&bind, "b", "", "")
 	fs.StringVar(&bind, "bind", "", "")
 	fs.IntVar(&port, "p", 8080, "")
@@ -79,6 +80,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintln(stderr, "Options:")
 		fmt.Fprintf(w, "  -t, -transport <type>\tTransport type: stdio or http (default: stdio)\n")
 		fmt.Fprintf(w, "  -H, -host <url>\tGitea host URL (default: https://gitea.com)\n")
+		fmt.Fprintf(w, "  -gitea-unix-socket <path>\tConnect to Gitea through a Unix socket\n")
 		fmt.Fprintf(w, "  -b, -bind <address>\tHTTP listen address, e.g. 127.0.0.1 (default: all interfaces)\n")
 		fmt.Fprintf(w, "  -p, -port <number>\tHTTP server port (default: 8080)\n")
 		fmt.Fprintf(w, "  -T, -token <token>\tPersonal access token\n")
@@ -98,6 +100,7 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  GITEA_ACCESS_TOKEN_FILE\tPath to a file containing the access token (e.g. a Docker secret)\n")
 		fmt.Fprintf(w, "  GITEA_DEBUG\tSet to 'true' for debug mode\n")
 		fmt.Fprintf(w, "  GITEA_HOST\tOverride Gitea host URL\n")
+		fmt.Fprintf(w, "  GITEA_UNIX_SOCKET\tConnect to Gitea through a Unix socket\n")
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
 		fmt.Fprintf(w, "  GITEA_MAX_INLINE_ATTACHMENT_BYTES\tOverride inline image attachment size limit in bytes\n")
 		fmt.Fprintf(w, "  GITEA_MCP_OAUTH\tSet to 'true' to enable OAuth\n")
@@ -111,9 +114,19 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 
 	_ = fs.Parse(args)
 
-	flagPkg.Host = host
-	if flagPkg.Host == "" {
+	switch {
+	case host != "":
+		flagPkg.Host = host
+	case flagPkg.GiteaUnixSocket != "":
+		flagPkg.Host = "http://unix/"
+	default:
 		flagPkg.Host = "https://gitea.com"
+	}
+	if flagPkg.GiteaUnixSocket != "" {
+		if parsed, err := url.Parse(flagPkg.Host); err != nil || parsed.Scheme != "http" || parsed.Host == "" {
+			fmt.Fprintf(stderr, "-gitea-unix-socket requires an http:// host, got %q\n", flagPkg.Host)
+			osExit(1)
+		}
 	}
 
 	flagPkg.Bind = bind
@@ -177,6 +190,10 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		flagPkg.OAuthPublicURL = strings.TrimSuffix(oauthPublicURL, "/")
 		if flagPkg.Mode != "http" {
 			fmt.Fprintf(stderr, "-oauth requires -transport http\n")
+			osExit(1)
+		}
+		if flagPkg.GiteaUnixSocket != "" {
+			fmt.Fprintf(stderr, "-oauth cannot be combined with -gitea-unix-socket\n")
 			osExit(1)
 		}
 		if flagPkg.OAuthPublicURL == "" {

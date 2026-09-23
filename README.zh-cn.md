@@ -18,7 +18,7 @@ make install
 
 ## 配置
 
-Gitea 主机和访问令牌可通过命令行参数或环境变量提供，命令行参数优先。运行 `gitea-mcp --help` 可查看完整的参数与环境变量列表。日志写入 `$HOME/.gitea-mcp/gitea-mcp.log`，加上 `-d` 可启用调试日志。
+Gitea 主机和访问令牌可通过命令行参数或环境变量提供，命令行参数优先。运行 `gitea-mcp --help` 可查看完整的参数与环境变量列表。日志写入 `$HOME/.gitea-mcp/gitea-mcp.log`，加上 `-d` 可启用调试日志。若 Gitea 监听 Unix socket，传入 `-gitea-unix-socket <path>`，主机将默认为 `http://unix/`。
 
 ### MCP 协议与 HTTP 传输
 

@@ -162,3 +162,58 @@ func TestInitFlagSetHealthcheck(t *testing.T) {
 		t.Error("healthcheck = false, want true")
 	}
 }
+
+func TestInitFlagSetGiteaUnixSocket(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		args       []string
+		env        map[string]string
+		wantHost   string
+		wantSocket string
+		wantExit   bool
+	}{
+		{name: "no socket keeps the default host", wantHost: "https://gitea.com"},
+		{
+			name:       "env sets the socket and defaults the host",
+			env:        map[string]string{"GITEA_UNIX_SOCKET": "/run/gitea/gitea.sock"},
+			wantHost:   "http://unix/",
+			wantSocket: "/run/gitea/gitea.sock",
+		},
+		{
+			name:       "flag keeps an explicit http host with a sub-path",
+			args:       []string{"-gitea-unix-socket", "/run/gitea/gitea.sock", "-host", "http://gitea.local/git"},
+			wantHost:   "http://gitea.local/git",
+			wantSocket: "/run/gitea/gitea.sock",
+		},
+		{name: "https host is rejected", args: []string{"-gitea-unix-socket", "/run/gitea/gitea.sock", "-host", "https://gitea.com"}, wantExit: true},
+		{name: "socket path as host is rejected", args: []string{"-gitea-unix-socket", "/run/gitea/gitea.sock", "-host", "http:///run/gitea/gitea.sock"}, wantExit: true},
+		{
+			name:     "oauth is rejected",
+			args:     []string{"-gitea-unix-socket", "/run/gitea/gitea.sock", "-t", "http", "-oauth", "-oauth-public-url", "https://mcp.example.com"},
+			wantExit: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			origExit := osExit
+			t.Cleanup(func() {
+				osExit = origExit
+				flagPkg.Host, flagPkg.GiteaUnixSocket, flagPkg.OAuth, flagPkg.OAuthPublicURL = "", "", false, ""
+			})
+			var exits int
+			osExit = func(int) { exits++ }
+
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			initFlagSet(fs, test.args, func(key string) string { return test.env[key] }, func(string) ([]byte, error) { return nil, nil }, &bytes.Buffer{})
+
+			if (exits > 0) != test.wantExit {
+				t.Fatalf("exits = %d, want exit %v", exits, test.wantExit)
+			}
+			if test.wantExit {
+				return
+			}
+			if flagPkg.Host != test.wantHost || flagPkg.GiteaUnixSocket != test.wantSocket {
+				t.Errorf("Host, GiteaUnixSocket = %q, %q, want %q, %q", flagPkg.Host, flagPkg.GiteaUnixSocket, test.wantHost, test.wantSocket)
+			}
+		})
+	}
+}
