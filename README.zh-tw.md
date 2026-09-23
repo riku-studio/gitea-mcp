@@ -191,7 +191,7 @@ Cursor 等客戶端可使用 stdio 命令：
 | get_repository_tree          | repository   | 讀取 | 取得倉庫檔案樹 |
 | get_file_contents            | file         | 讀取 | 取得檔案內容與中繼資料 |
 | get_dir_contents             | file         | 讀取 | 取得目錄中的項目 |
-| create_or_update_file        | file         | 寫入 | 在單次提交中創建或更新檔案 |
+| create_or_update_file        | file         | 寫入 | 在單次提交中寫入檔案：創建、更新、重新命名、刪除 |
 | delete_file                  | file         | 寫入 | 刪除檔案 |
 | create_branch                | branch       | 寫入 | 創建新分支 |
 | delete_branch                | branch       | 寫入 | 刪除分支 |

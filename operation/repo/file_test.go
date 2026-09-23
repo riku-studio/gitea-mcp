@@ -85,8 +85,31 @@ func TestCreateOrUpdateFileFn(t *testing.T) {
 				map[string]any{"operation": "update", "path": "b.txt", "content": encoded("hello gitea\n"), "sha": "sha-b.txt"},
 			},
 		},
+		{
+			name: "rename and delete in one commit",
+			args: map[string]any{"files": []any{
+				map[string]any{"path": "c.txt", "from_path": "b.txt", "edits": []any{map[string]any{"old_string": "world", "new_string": "gitea"}}},
+				map[string]any{"path": "d.txt", "from_path": "e.txt", "sha": "sha-e"},
+				map[string]any{"path": "f.txt", "delete": true, "sha": "sha-f"},
+			}},
+			wantFiles: []any{
+				map[string]any{"operation": "update", "path": "c.txt", "from_path": "b.txt", "content": encoded("hello gitea\n"), "sha": "sha-b.txt"},
+				map[string]any{"operation": "rename", "path": "d.txt", "from_path": "e.txt", "content": "", "sha": "sha-e"},
+				map[string]any{"operation": "delete", "path": "f.txt", "content": "", "sha": "sha-f"},
+			},
+		},
 		{name: "no file", args: map[string]any{}, wantErr: "path or files is required"},
-		{name: "no content", args: map[string]any{"path": "a.txt"}, wantErr: "content or edits is required"},
+		{name: "no content", args: map[string]any{"path": "a.txt"}, wantErr: "content, edits, from_path or delete is required"},
+		{name: "from_path without sha", args: map[string]any{"files": []any{map[string]any{"path": "c.txt", "from_path": "b.txt", "content": "x"}}}, wantErr: "c.txt: sha is required"},
+		{name: "delete with content", args: map[string]any{"files": []any{map[string]any{"path": "a.txt", "delete": true, "content": "x"}}}, wantErr: "delete excludes"},
+		{
+			name: "path in two entries",
+			args: map[string]any{"files": []any{
+				map[string]any{"path": "b.txt", "content": "x", "sha": "sha-b.txt"},
+				map[string]any{"path": "c.txt", "from_path": "b.txt", "sha": "sha-b.txt"},
+			}},
+			wantErr: "b.txt: appears in more than one file entry",
+		},
 		{
 			name:    "content and edits",
 			args:    map[string]any{"path": "b.txt", "content": "x", "edits": []any{map[string]any{"old_string": "a", "new_string": "b"}}},

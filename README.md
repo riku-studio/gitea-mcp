@@ -191,7 +191,7 @@ Once configured, try `list all my repositories` in the chat box.
 | get_repository_tree          | repository   | Read   | Get the repository file tree |
 | get_file_contents            | file         | Read   | Get file content and metadata |
 | get_dir_contents             | file         | Read   | Get the entries in a directory |
-| create_or_update_file        | file         | Write  | Create or update files in one commit |
+| create_or_update_file        | file         | Write  | Write files in one commit: create, update, rename, delete |
 | delete_file                  | file         | Write  | Delete a file |
 | create_branch                | branch       | Write  | Create a new branch |
 | delete_branch                | branch       | Write  | Delete a branch |

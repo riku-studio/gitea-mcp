@@ -68,8 +68,8 @@ var (
 
 	CreateOrUpdateFileTool = tool.NewDefinition(
 		CreateOrUpdateFileToolName,
-		"Create or update files in one commit",
-		annotation.Write("Create or update a file"),
+		"Write files in one commit: create, update, rename, delete.",
+		annotation.Write("Create, update, rename, or delete files"),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.String("path"),
@@ -82,10 +82,12 @@ var (
 		tool.Array("files", tool.Items(map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"path":    map[string]any{"type": "string"},
-				"content": map[string]any{"type": "string"},
-				"edits":   map[string]any{"type": "array", "items": fileEditSchema},
-				"sha":     map[string]any{"type": "string"},
+				"path":      map[string]any{"type": "string"},
+				"content":   map[string]any{"type": "string"},
+				"edits":     map[string]any{"type": "array", "items": fileEditSchema},
+				"sha":       map[string]any{"type": "string", "description": "existing file SHA, of from_path when renaming (omit to create)"},
+				"from_path": map[string]any{"type": "string", "description": "rename source"},
+				"delete":    map[string]any{"type": "boolean"},
 			},
 			"required":             []string{"path"},
 			"additionalProperties": false,
@@ -306,11 +308,18 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
 	operations := make([]*gitea_sdk.ChangeFileOperation, 0, len(files))
+	touched := make(map[string]bool, len(files))
 	for _, file := range files {
 		fileArgs, _ := file.(map[string]any)
 		operation, err := changeFileOperation(ctx, client, owner, repo, branchName, fileArgs)
 		if err != nil {
 			return to.ErrorResult(err)
+		}
+		for _, touchedPath := range []string{operation.Path, operation.FromPath} {
+			if touched[touchedPath] {
+				return to.ErrorResult(fmt.Errorf("%s: appears in more than one file entry", touchedPath))
+			}
+			touched[touchedPath] = touchedPath != ""
 		}
 		operations = append(operations, operation)
 	}
@@ -327,7 +336,6 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 	return to.TextResult(fmt.Sprintf("Committed %d file(s) to branch %s", len(operations), cmp.Or(newBranchName, branchName)))
 }
 
-// changeFileOperation resolves edits against the file at ref, whose SHA then guards the write.
 func changeFileOperation(ctx context.Context, client *gitea_sdk.Client, owner, repo, ref string, file map[string]any) (*gitea_sdk.ChangeFileOperation, error) {
 	filePath, err := params.GetString(file, "path")
 	if err != nil {
@@ -335,13 +343,23 @@ func changeFileOperation(ctx context.Context, client *gitea_sdk.Client, owner, r
 	}
 	content, hasContent := file["content"].(string)
 	sha, _ := file["sha"].(string)
-	if edits, _ := file["edits"].([]any); len(edits) > 0 {
+	fromPath, _ := file["from_path"].(string)
+	edits, _ := file["edits"].([]any)
+	operation := "update"
+	switch deleteFile, _ := file["delete"].(bool); {
+	case deleteFile:
+		if hasContent || len(edits) > 0 || fromPath != "" {
+			return nil, fmt.Errorf("%s: delete excludes content, edits and from_path", filePath)
+		}
+		operation = "delete"
+	case len(edits) > 0:
 		if hasContent {
 			return nil, fmt.Errorf("%s: content and edits are mutually exclusive", filePath)
 		}
-		current, _, err := client.Repositories.GetContents(ctx, owner, repo, ref, filePath)
+		sourcePath := cmp.Or(fromPath, filePath)
+		current, _, err := client.Repositories.GetContents(ctx, owner, repo, ref, sourcePath)
 		if err != nil {
-			return nil, fmt.Errorf("get %s err: %v", filePath, err)
+			return nil, fmt.Errorf("get %s err: %v", sourcePath, err)
 		}
 		raw, err := decodeContent(current)
 		if err != nil {
@@ -351,19 +369,25 @@ func changeFileOperation(ctx context.Context, client *gitea_sdk.Client, owner, r
 			return nil, fmt.Errorf("%s: %w", filePath, err)
 		}
 		sha = cmp.Or(sha, current.SHA)
-	} else if !hasContent {
-		return nil, fmt.Errorf("%s: content or edits is required", filePath)
+	case hasContent:
+		if sha == "" && fromPath == "" {
+			operation = "create"
+		}
+	case fromPath != "":
+		operation = "rename"
+	default:
+		return nil, fmt.Errorf("%s: content, edits, from_path or delete is required", filePath)
+	}
+	if sha == "" && operation != "create" { // Gitea skips its SHA check when none is given
+		return nil, fmt.Errorf("%s: sha is required", filePath)
 	}
 
-	operation := "create"
-	if sha != "" {
-		operation = "update"
-	}
 	return &gitea_sdk.ChangeFileOperation{
 		Operation: operation,
 		Path:      filePath,
 		Content:   base64.StdEncoding.EncodeToString([]byte(content)),
 		SHA:       sha,
+		FromPath:  fromPath,
 	}, nil
 }
 
