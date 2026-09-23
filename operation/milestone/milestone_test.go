@@ -1,84 +1,103 @@
 package milestone
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"maps"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"sync"
+	"strings"
 	"testing"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func Test_milestoneWriteFn_dueOn(t *testing.T) {
+func TestMilestoneRequestsAndSlimResults(t *testing.T) {
 	const (
-		owner = "octo"
-		repo  = "demo"
-		id    = 42
-		due   = "2026-05-18T23:59:59Z"
+		due           = "2026-05-18T23:59:59Z"
+		milestone     = `{"id":42,"title":"v1","description":"d","state":"open","open_issues":1,"closed_issues":2,"due_on":"` + due + `","url":"u"}`
+		slimMilestone = `{"closed_issues":2,"description":"d","due_on":"` + due + `","id":42,"open_issues":1,"state":"open","title":"v1"}`
 	)
-
-	var (
-		mu     sync.Mutex
-		bodies = map[string]map[string]any{}
-	)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/v1/version":
-			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
-		case fmt.Sprintf("/api/v1/repos/%s/%s/milestones", owner, repo),
-			fmt.Sprintf("/api/v1/repos/%s/%s/milestones/%d", owner, repo, id):
-			mu.Lock()
-			var body map[string]any
-			_ = json.NewDecoder(r.Body).Decode(&body)
-			bodies[r.Method] = body
-			mu.Unlock()
-			_, _ = w.Write(fmt.Appendf(nil, `{"id":%d,"title":"v1","due_on":%q}`, id, due))
-		default:
-			http.NotFound(w, r)
-		}
-	})
-
-	server := httptest.NewServer(handler)
+	var gotRequest, response string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		gotRequest = strings.TrimSpace(r.Method + " " + r.URL.RequestURI() + " " + string(body))
+		_, _ = w.Write([]byte(response))
+	}))
 	defer server.Close()
+	defer func(host string) { flag.Host = host }(flag.Host)
+	flag.Host = server.URL
 
-	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
-	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
-	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
-
-	args := map[string]any{"owner": owner, "repo": repo, "due_on": due}
-
-	cases := []struct {
-		name   string
-		fn     func(context.Context, map[string]any) (*mcp.CallToolResult, error)
-		method string
-		extra  map[string]any
+	tested := map[string]bool{}
+	for _, tt := range []struct {
+		handler                           tool.Handler
+		args                              map[string]any
+		response, wantRequest, wantResult string
 	}{
-		{"create", createMilestoneFn, http.MethodPost, map[string]any{"title": "v1"}},
-		{"edit", editMilestoneFn, http.MethodPatch, map[string]any{"id": float64(id)}},
+		{
+			handler:     milestoneReadFn,
+			args:        map[string]any{"method": "get", "owner": "o", "repo": "r", "id": 42.0},
+			response:    milestone,
+			wantRequest: "GET /api/v1/repos/o/r/milestones/42",
+			wantResult:  slimMilestone,
+		},
+		{
+			handler:     milestoneReadFn,
+			args:        map[string]any{"method": "list", "owner": "o", "repo": "r", "name": "v1"},
+			response:    "[" + milestone + "]",
+			wantRequest: "GET /api/v1/repos/o/r/milestones?limit=30&name=v1&page=1&state=all",
+			wantResult:  "[" + slimMilestone + "]",
+		},
+		{
+			handler:     milestoneWriteFn,
+			args:        map[string]any{"method": "create", "owner": "o", "repo": "r", "title": "v1", "description": "d", "due_on": due},
+			response:    milestone,
+			wantRequest: `POST /api/v1/repos/o/r/milestones {"title":"v1","description":"d","state":"","due_on":"` + due + `"}`,
+			wantResult:  slimMilestone,
+		},
+		{
+			handler:     milestoneWriteFn,
+			args:        map[string]any{"method": "edit", "owner": "o", "repo": "r", "id": 42.0, "state": "closed", "due_on": due},
+			response:    milestone,
+			wantRequest: `PATCH /api/v1/repos/o/r/milestones/42 {"title":"","description":null,"state":"closed","due_on":"` + due + `"}`,
+			wantResult:  slimMilestone,
+		},
+		{
+			handler:     milestoneWriteFn,
+			args:        map[string]any{"method": "update", "owner": "o", "repo": "r", "id": 42.0, "title": "v2", "description": ""},
+			response:    milestone,
+			wantRequest: `PATCH /api/v1/repos/o/r/milestones/42 {"title":"v2","description":"","state":null,"due_on":null}`,
+			wantResult:  slimMilestone,
+		},
+		{
+			handler:     milestoneWriteFn,
+			args:        map[string]any{"method": "delete", "owner": "o", "repo": "r", "id": 42.0},
+			wantRequest: "DELETE /api/v1/repos/o/r/milestones/42",
+			wantResult:  `"Milestone deleted successfully"`,
+		},
+		{
+			handler:    milestoneWriteFn,
+			args:       map[string]any{"method": "create", "owner": "o", "repo": "r"},
+			wantResult: "title is required",
+		},
+	} {
+		tested[tt.args["method"].(string)] = true
+		gotRequest, response = "", tt.response
+		result, err := tt.handler(t.Context(), tt.args)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := result.Content[0].(*mcp.TextContent).Text; gotRequest != tt.wantRequest || got != tt.wantResult {
+			t.Errorf("%v: request %q, result %s, want %q, %s", tt.args, gotRequest, got, tt.wantRequest, tt.wantResult)
+		}
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			a := map[string]any{}
-			maps.Copy(a, args)
-			maps.Copy(a, tc.extra)
-			res, err := tc.fn(context.Background(), a)
-			if err != nil || res.IsError {
-				t.Fatalf("%s err=%v result=%v", tc.name, err, res)
+	for _, definition := range []*mcp.Tool{MilestoneReadTool, MilestoneWriteTool} {
+		for _, method := range definition.InputSchema.(map[string]any)["properties"].(map[string]any)["method"].(map[string]any)["enum"].([]string) {
+			if !tested[method] {
+				t.Errorf("%s method %q has no case", definition.Name, method)
 			}
-			mu.Lock()
-			body := bodies[tc.method]
-			mu.Unlock()
-			if got, _ := body["due_on"].(string); got != due {
-				t.Fatalf("%s: expected due_on=%q, got %v (body: %v)", tc.name, due, got, body)
-			}
-		})
+		}
 	}
 }
