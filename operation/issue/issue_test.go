@@ -189,7 +189,6 @@ func Test_createIssueFn_labels(t *testing.T) {
 		"owner":    owner,
 		"repo":     repo,
 		"title":    "test issue",
-		"body":     "body",
 		"labels":   []any{float64(10), float64(20)},
 		"deadline": "2026-06-01T00:00:00Z",
 	}

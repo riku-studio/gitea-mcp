@@ -378,7 +378,6 @@ func Test_createPullRequestFn_labels(t *testing.T) {
 		"owner":    owner,
 		"repo":     repo,
 		"title":    "test",
-		"body":     "body",
 		"head":     "feature",
 		"base":     "main",
 		"labels":   []any{float64(1), float64(2)},

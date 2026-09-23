@@ -64,7 +64,7 @@ var (
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.Number("pull_number", tool.Description("required except for 'create'")),
 		tool.String("title", tool.Description("required for 'create'; optional for 'update'/'merge'")),
-		tool.String("body", tool.Description("required for 'create'; optional for 'update'")),
+		tool.String("body"),
 		tool.String("head", tool.Description("head branch (required for 'create')")),
 		tool.String("base", tool.Description("base branch (required for 'create')")),
 		tool.String("assignee", tool.Description("for 'update'")),
@@ -399,10 +399,6 @@ func createPullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	body, err := params.GetString(args, "body")
-	if err != nil {
-		return to.ErrorResult(err)
-	}
 	head, err := params.GetString(args, "head")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -422,7 +418,7 @@ func createPullRequestFn(ctx context.Context, args map[string]any) (*mcp.CallToo
 	}
 	opt := gitea_sdk.CreatePullRequestOption{
 		Title: title,
-		Body:  body,
+		Body:  params.GetOptionalString(args, "body", ""),
 		Head:  head,
 		Base:  base,
 	}
