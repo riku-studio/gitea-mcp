@@ -28,6 +28,20 @@ HTTP 传输固定为无状态：`/mcp` 仅接受 POST，没有 `Mcp-Session-Id`�
 
 HTTP 模式还提供 `/healthz` 端点，服务器正常运行时返回 `200 OK`。Docker 镜像内置的 `HEALTHCHECK` 会运行 `gitea-mcp -healthcheck`，它使用与 `-p`/`-port` 相同的端口（默认 `8080`）请求 `http://127.0.0.1:<端口>/healthz`，成功时退出码为 `0`，失败时为 `1`。stdio 部署不提供 `/healthz`，因此在 stdio 模式下运行时应覆盖或禁用镜像自带的 `HEALTHCHECK`。
 
+### 面向远程客户端的 OAuth
+
+无法提供令牌的客户端，例如网页版和移动版 Claude.ai，需要 MCP 授权规范中的 OAuth 2.1 流程，其中 `-oauth-public-url` 是客户端访问服务器的公网源：
+
+```bash
+gitea-mcp -t http -oauth -oauth-public-url https://mcp.example.com -H https://gitea.example.com
+```
+
+服务器随后会提供 `/.well-known/oauth-protected-resource`，将 Gitea 实例声明为授权服务器，并对未认证的 `/mcp` 请求返回 `401` 质询。用户使用自己的 Gitea 账号操作，而不是共用一个静态令牌，`-r` 会把请求的权限范围收窄为只读。
+
+Gitea 不支持动态客户端注册，因此需要在 **设置 → 应用 → 创建 OAuth2 应用** 中注册一次，并且不要勾选 **机密客户端**，这样流程使用 PKCE。重定向 URI 填 `https://claude.ai/api/mcp/auth_callback`，适用于网页版、桌面版和移动版 Claude；为 Claude Code 再添加 `http://127.0.0.1/callback`，Gitea 对任意端口都能匹配。用户在添加连接器时把 client ID 填入 **高级设置**。
+
+服务器和 Gitea 都必须能通过 HTTPS 从客户端所在网络访问，对托管版 Claude 而言即 Anthropic 的[出口地址段](https://platform.claude.com/docs/en/api/ip-addresses)。在反向代理之后，`/mcp` 只接受 `-oauth-public-url` 中的主机或回环主机，因此请原样转发 `Host`，或保留代理的默认值。
+
 ### Claude Code
 
 通过 `go run` 运行服务器，需要安装 [Go](https://go.dev)：

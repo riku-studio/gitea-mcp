@@ -28,6 +28,20 @@ HTTP is always stateless: `/mcp` accepts POST only, without `Mcp-Session-Id`, st
 
 HTTP mode also serves `/healthz`, which returns `200 OK` when the server is up. The Docker image's built-in `HEALTHCHECK` runs `gitea-mcp -healthcheck`, which dials `http://127.0.0.1:<port>/healthz` using the same `-p`/`-port` value (or `8080` by default) and exits `0` on success or `1` on failure. Stdio deployments do not serve `/healthz`, so override or disable the image's `HEALTHCHECK` when running in stdio mode.
 
+### OAuth for remote clients
+
+Clients that cannot be given a token, such as Claude.ai on web and mobile, need the OAuth 2.1 flow from the MCP authorization spec, where `-oauth-public-url` is the public origin clients reach the server at:
+
+```bash
+gitea-mcp -t http -oauth -oauth-public-url https://mcp.example.com -H https://gitea.example.com
+```
+
+The server then serves `/.well-known/oauth-protected-resource`, naming the Gitea instance as the authorization server, and answers unauthenticated `/mcp` requests with a `401` challenge. Users act with their own Gitea account instead of a shared static token, and `-r` narrows the requested scopes to read-only.
+
+Gitea has no dynamic client registration, so register the application once under **Settings → Applications → Create OAuth2 Application**, leaving **Confidential Client** unchecked so the flow uses PKCE. Set the redirect URI to `https://claude.ai/api/mcp/auth_callback` for Claude on web, desktop and mobile, adding `http://127.0.0.1/callback` for Claude Code, which Gitea matches on any port. Users enter the client ID under **Advanced settings** when adding the connector.
+
+Both the server and Gitea have to be reachable over HTTPS from the client's network, for hosted Claude that is Anthropic's [egress range](https://platform.claude.com/docs/en/api/ip-addresses). Behind a reverse proxy, `/mcp` only accepts the host from `-oauth-public-url` or a loopback host, so forward `Host` unchanged or leave it as the proxy default.
+
 ### Claude Code
 
 Runs the server through `go run` and requires [Go](https://go.dev):

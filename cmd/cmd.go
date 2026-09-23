@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -23,6 +24,7 @@ var (
 	token                           string
 	tools                           string
 	scopes                          string
+	oauthPublicURL                  string
 	version                         bool
 	healthcheck                     bool
 	maxInlineAttachmentBytes        int
@@ -54,6 +56,8 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	fs.BoolVar(&flagPkg.Debug, "debug", false, "")
 	fs.BoolVar(&flagPkg.Insecure, "k", false, "")
 	fs.BoolVar(&flagPkg.Insecure, "insecure", false, "")
+	fs.BoolVar(&flagPkg.OAuth, "oauth", false, "")
+	fs.StringVar(&oauthPublicURL, "oauth-public-url", "", "")
 	fs.BoolVar(&version, "v", false, "")
 	fs.BoolVar(&version, "version", false, "")
 	fs.BoolVar(&healthcheck, "healthcheck", false, "")
@@ -83,6 +87,8 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  -S, -scope <names>\tComma-separated list of tool scopes to expose\n")
 		fmt.Fprintf(w, "  -d, -debug\tEnable debug mode\n")
 		fmt.Fprintf(w, "  -k, -insecure\tIgnore TLS certificate errors\n")
+		fmt.Fprintf(w, "  -oauth\tLet clients authorize against Gitea instead of using a static token (http only)\n")
+		fmt.Fprintf(w, "  -oauth-public-url <url>\tPublic origin of this server, required with -oauth\n")
 		fmt.Fprintf(w, "  -max-inline-attachment-bytes <bytes>\tInline image attachments up to this size (default: 5242880)\n")
 		fmt.Fprintf(w, "  -v, -version\tPrint version and exit\n")
 		fmt.Fprintf(w, "  -healthcheck\tCheck a running HTTP server's /healthz endpoint and exit\n")
@@ -94,6 +100,8 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 		fmt.Fprintf(w, "  GITEA_HOST\tOverride Gitea host URL\n")
 		fmt.Fprintf(w, "  GITEA_INSECURE\tSet to 'true' to ignore TLS errors\n")
 		fmt.Fprintf(w, "  GITEA_MAX_INLINE_ATTACHMENT_BYTES\tOverride inline image attachment size limit in bytes\n")
+		fmt.Fprintf(w, "  GITEA_MCP_OAUTH\tSet to 'true' to enable OAuth\n")
+		fmt.Fprintf(w, "  GITEA_MCP_PUBLIC_URL\tPublic origin of this server\n")
 		fmt.Fprintf(w, "  GITEA_READONLY\tSet to 'true' for read-only mode\n")
 		fmt.Fprintf(w, "  GITEA_SCOPES\tComma-separated list of tool scopes to expose\n")
 		fmt.Fprintf(w, "  GITEA_TOOLS\tComma-separated list of tool names to expose\n")
@@ -159,6 +167,27 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 	if getenv("GITEA_INSECURE") == "true" {
 		flagPkg.Insecure = true
 	}
+	if getenv("GITEA_MCP_OAUTH") == "true" {
+		flagPkg.OAuth = true
+	}
+	if flagPkg.OAuth {
+		if oauthPublicURL == "" {
+			oauthPublicURL = getenv("GITEA_MCP_PUBLIC_URL")
+		}
+		flagPkg.OAuthPublicURL = strings.TrimSuffix(oauthPublicURL, "/")
+		if flagPkg.Mode != "http" {
+			fmt.Fprintf(stderr, "-oauth requires -transport http\n")
+			osExit(1)
+		}
+		if flagPkg.OAuthPublicURL == "" {
+			fmt.Fprintf(stderr, "-oauth requires -oauth-public-url or GITEA_MCP_PUBLIC_URL\n")
+			osExit(1)
+		} else if !isOrigin(flagPkg.OAuthPublicURL) {
+			fmt.Fprintf(stderr, "invalid -oauth-public-url: %q must be an origin like https://mcp.example.com\n", flagPkg.OAuthPublicURL)
+			osExit(1)
+		}
+		flagPkg.Token = "" // every request carries its own token, a static one would let a caller act as the operator
+	}
 	if !maxInlineAttachmentBytesFlagSet {
 		if val := getenv("GITEA_MAX_INLINE_ATTACHMENT_BYTES"); val != "" {
 			parsed, err := strconv.Atoi(val)
@@ -169,6 +198,14 @@ func initFlagSet(fs *flag.FlagSet, args []string, getenv func(string) string, re
 			flagPkg.MaxInlineAttachmentBytes = parsed
 		}
 	}
+}
+
+// isOrigin reports whether raw is a bare origin, required because the discovery
+// document is served from the root.
+func isOrigin(raw string) bool {
+	parsed, err := url.Parse(raw)
+	return err == nil && (parsed.Scheme == "https" || parsed.Scheme == "http") &&
+		parsed.Host != "" && parsed.Path == "" && parsed.RawQuery == "" && parsed.Fragment == ""
 }
 
 // normalizeScope trims whitespace, lowercases, and converts internal spaces

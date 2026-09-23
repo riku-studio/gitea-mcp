@@ -31,6 +31,64 @@ func TestInitFlagSetBind(t *testing.T) {
 	}
 }
 
+func TestInitFlagSetOAuth(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		args     []string
+		env      map[string]string
+		want     bool
+		wantURL  string
+		wantExit bool
+	}{
+		{name: "off by default"},
+		{
+			name:    "flags enable it and drop the static token",
+			args:    []string{"-t", "http", "-oauth", "-oauth-public-url", "https://mcp.example.com", "-T", "statictoken"},
+			want:    true,
+			wantURL: "https://mcp.example.com",
+		},
+		{
+			name:    "env enables it and trims the trailing slash",
+			args:    []string{"-t", "http"},
+			env:     map[string]string{"GITEA_MCP_OAUTH": "true", "GITEA_MCP_PUBLIC_URL": "https://mcp.example.com/"},
+			want:    true,
+			wantURL: "https://mcp.example.com",
+		},
+		{name: "public URL is required", args: []string{"-t", "http", "-oauth"}, wantExit: true},
+		{name: "public URL must not have a path", args: []string{"-t", "http", "-oauth", "-oauth-public-url", "https://mcp.example.com/base"}, wantExit: true},
+		{name: "stdio transport is rejected", args: []string{"-oauth", "-oauth-public-url", "https://mcp.example.com"}, wantExit: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			origExit := osExit
+			t.Cleanup(func() {
+				osExit = origExit
+				flagPkg.OAuth, flagPkg.OAuthPublicURL, flagPkg.Token = false, "", ""
+			})
+			var exits int
+			osExit = func(int) { exits++ }
+
+			fs := flag.NewFlagSet("test", flag.ContinueOnError)
+			initFlagSet(fs, test.args, func(key string) string { return test.env[key] }, func(string) ([]byte, error) { return nil, nil }, &bytes.Buffer{})
+
+			if (exits > 0) != test.wantExit {
+				t.Fatalf("exits = %d, want exit %v", exits, test.wantExit)
+			}
+			if test.wantExit {
+				return // state after a rejected flag set is not reached in the real binary
+			}
+			if flagPkg.OAuth != test.want {
+				t.Errorf("OAuth = %v, want %v", flagPkg.OAuth, test.want)
+			}
+			if flagPkg.OAuthPublicURL != test.wantURL {
+				t.Errorf("OAuthPublicURL = %q, want %q", flagPkg.OAuthPublicURL, test.wantURL)
+			}
+			if test.want && flagPkg.Token != "" {
+				t.Errorf("Token = %q, want it dropped in OAuth mode", flagPkg.Token)
+			}
+		})
+	}
+}
+
 func TestInitFlagSetScopes(t *testing.T) {
 	tests := []struct {
 		name string

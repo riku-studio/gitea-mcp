@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	mcpContext "gitea.com/gitea/gitea-mcp/pkg/context"
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
+	"gitea.com/gitea/gitea-mcp/pkg/oauth"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -40,6 +40,8 @@ const maxRequestBodyBytes = 32 << 20
 
 // httpReadHeaderTimeout bounds slow header reads without limiting SSE writes.
 const httpReadHeaderTimeout = 10 * time.Second
+
+const mcpPath = "/mcp"
 
 var (
 	mcpServer *mcp.Server
@@ -62,43 +64,12 @@ func RegisterTool(s *mcp.Server) {
 	tool.WarnUnmatchedAllowedScopes(domainTools...)
 }
 
-// parseAuthToken extracts the token from an Authorization header.
-// Supports "Bearer <token>" (case-insensitive per RFC 7235) and
-// Gitea-style "token <token>" formats.
-// Returns the token and true if valid, empty string and false otherwise.
-func parseAuthToken(authHeader string) (string, bool) {
-	if len(authHeader) > 7 && strings.EqualFold(authHeader[:7], "Bearer ") {
-		token := strings.TrimSpace(authHeader[7:])
-		if token != "" {
-			return token, true
-		}
-	}
-	if len(authHeader) > 6 && strings.EqualFold(authHeader[:6], "token ") {
-		token := strings.TrimSpace(authHeader[6:])
-		if token != "" {
-			return token, true
-		}
-	}
-	return "", false
-}
-
-func getContextWithToken(ctx context.Context, authHeader string) context.Context {
-	if authHeader == "" {
-		return ctx
-	}
-
-	token, ok := parseAuthToken(authHeader)
-	if !ok {
-		return ctx
-	}
-
-	return context.WithValue(ctx, mcpContext.TokenContextKey, token)
-}
-
 func authTokenMiddleware(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		if extra := req.GetExtra(); extra != nil {
-			ctx = getContextWithToken(ctx, extra.Header.Get("Authorization"))
+			if token, ok := oauth.ParseToken(extra.Header.Get("Authorization")); ok {
+				ctx = context.WithValue(ctx, mcpContext.TokenContextKey, token)
+			}
 		}
 		return next(ctx, method, req)
 	}
@@ -124,15 +95,28 @@ func protectMCPOrigin(next http.Handler) http.Handler {
 
 func newHTTPServer(addr string, s *mcp.Server) *http.Server {
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", protectMCPOrigin(mcp.NewStreamableHTTPHandler(
+	var handler http.Handler = mcp.NewStreamableHTTPHandler(
 		func(*http.Request) *mcp.Server { return s },
 		&mcp.StreamableHTTPOptions{
 			Logger:                       log.Slog(),
 			MaxRequestBodyBytes:          maxRequestBodyBytes,
 			Stateless:                    true,
 			PropagateRequestCancellation: true,
+			// The SDK 403s a proxied non-loopback Host, and Protect validates it instead.
+			DisableLocalhostProtection: flag.OAuth,
 		},
-	)))
+	)
+	if flag.OAuth {
+		provider := oauth.New(oauth.Config{
+			BaseURL:  flag.OAuthPublicURL,
+			MCPPath:  mcpPath,
+			GiteaURL: flag.Host,
+			ReadOnly: flag.ReadOnly,
+		})
+		provider.RegisterRoutes(mux)
+		handler = provider.Protect(handler)
+	}
+	mux.Handle(mcpPath, protectMCPOrigin(handler))
 	mux.HandleFunc("/healthz", handleHealthz)
 	return &http.Server{
 		Addr:              addr,
@@ -159,6 +143,9 @@ func Run() error {
 		addr := net.JoinHostPort(flag.Bind, strconv.Itoa(flag.Port))
 		httpServer := newHTTPServer(addr, mcpServer)
 		log.Infof("Gitea MCP HTTP server listening on %s (stateless, protocol up to 2026-07-28)", addr)
+		if flag.OAuth {
+			log.Infof("OAuth enabled, clients authorize against %s and connect to %s%s", flag.Host, flag.OAuthPublicURL, mcpPath)
+		}
 
 		// Graceful shutdown setup
 		sigCh := make(chan os.Signal, 1)
