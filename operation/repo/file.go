@@ -50,7 +50,7 @@ var (
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.String("ref", tool.Required(), tool.Description("branch, tag, or commit SHA")),
-		tool.String("path", tool.Required()),
+		tool.String("path", tool.Required(), tool.Description(params.PathDesc)),
 		tool.Boolean("withLines", tool.Description("return numbered lines")),
 		tool.Number("start_line", tool.Minimum(1)),
 		tool.Number("end_line", tool.Minimum(1)),
@@ -63,7 +63,7 @@ var (
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.String("ref", tool.Required(), tool.Description("branch, tag, or commit SHA")),
-		tool.String("path", tool.Required()),
+		tool.String("path", tool.Required(), tool.Description(params.PathDesc)),
 	)
 
 	CreateOrUpdateFileTool = tool.NewDefinition(
@@ -72,18 +72,18 @@ var (
 		annotation.Write("Create, update, rename, or delete files"),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
-		tool.String("path"),
-		tool.String("content"),
+		tool.String("path", tool.Description(params.PathDesc)),
+		tool.String("content", tool.Description(params.FileContentDesc)),
 		tool.String("message", tool.Required(), tool.Description("commit message")),
-		tool.String("branch_name", tool.Required()),
+		tool.String("branch_name", tool.Required(), tool.Description("branch to commit to")),
 		tool.String("sha", tool.Description("existing file SHA (omit to create)")),
 		tool.String("new_branch_name", tool.Description("branch to create from branch_name and commit to")),
 		tool.Array("edits", tool.Items(fileEditSchema)),
 		tool.Array("files", tool.Items(map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"path":      map[string]any{"type": "string"},
-				"content":   map[string]any{"type": "string"},
+				"path":      map[string]any{"type": "string", "description": params.PathDesc},
+				"content":   map[string]any{"type": "string", "description": params.FileContentDesc},
 				"edits":     map[string]any{"type": "array", "items": fileEditSchema},
 				"sha":       map[string]any{"type": "string", "description": "existing file SHA, of from_path when renaming (omit to create)"},
 				"from_path": map[string]any{"type": "string", "description": "rename source"},
@@ -100,10 +100,10 @@ var (
 		annotation.Destructive("Delete a file"),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
-		tool.String("path", tool.Required()),
+		tool.String("path", tool.Required(), tool.Description(params.PathDesc)),
 		tool.String("message", tool.Required(), tool.Description("commit message")),
-		tool.String("branch_name", tool.Required()),
-		tool.String("sha", tool.Required()),
+		tool.String("branch_name", tool.Required(), tool.Description("branch to commit to")),
+		tool.String("sha", tool.Required(), tool.Description("existing file SHA")),
 	)
 )
 

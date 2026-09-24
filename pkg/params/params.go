@@ -10,10 +10,12 @@ import (
 // repeating the same boilerplate in every tool schema (saves tokens in the
 // tool list sent to MCP clients).
 const (
-	OwnerDesc      = "repo owner"
-	RepoDesc       = "repo name"
-	PageDesc       = "page"
-	PaginationDesc = "results per page"
+	OwnerDesc       = "repo owner"
+	RepoDesc        = "repo name"
+	PageDesc        = "page"
+	PaginationDesc  = "results per page"
+	PathDesc        = "path relative to repo root"
+	FileContentDesc = "literal file text, not base64"
 )
 
 // GetString extracts a required string parameter. Empty strings are treated as missing.
