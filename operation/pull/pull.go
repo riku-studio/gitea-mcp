@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
+	"gitea.com/gitea/gitea-mcp/operation/issue"
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
 	"gitea.com/gitea/gitea-mcp/pkg/log"
@@ -19,6 +21,10 @@ import (
 )
 
 var Tool = tool.New("pull_request")
+
+var statusPollInterval = 5 * time.Second
+
+const maxStatusWaitSeconds = 45 // stays under the 60s default request timeout of common MCP clients
 
 const (
 	ListRepoPullRequestsToolName   = "list_pull_requests"
@@ -43,13 +49,14 @@ var (
 
 	PullRequestReadTool = tool.NewDefinition(
 		PullRequestReadToolName,
-		"Read pull request: details, diff, changed files, head commit status, reviews, review comments.",
+		"Read pull request: details, diff, changed files, head commit status, reviews, review comments, discussion comments.",
 		annotation.ReadOnly("Read pull request details"),
-		tool.String("method", tool.Required(), tool.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments")),
+		tool.String("method", tool.Required(), tool.Enum("get", "get_diff", "get_files", "get_status", "get_reviews", "get_review", "get_review_comments", "get_comments")),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.Number("pull_number", tool.Required()),
 		tool.Number("review_id", tool.Description("for 'get_review'; optional for 'get_review_comments', omit to list all")),
+		tool.Number("wait_seconds", tool.Description(fmt.Sprintf("for 'get_status': seconds to wait while pending, max %d", maxStatusWaitSeconds))),
 		tool.Boolean("binary", tool.Description("include binary diff")),
 		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
 		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
@@ -151,6 +158,8 @@ func pullRequestReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolR
 		return getPullRequestReviewFn(ctx, args)
 	case "get_review_comments":
 		return listPullRequestReviewCommentsFn(ctx, args)
+	case "get_comments":
+		return issue.ListComments(ctx, args, "pull_number")
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -1066,17 +1075,26 @@ func getPullRequestStatusFn(ctx context.Context, args map[string]any) (*mcp.Call
 	if err != nil {
 		return to.ErrorResult(fmt.Errorf("get gitea client err: %v", err))
 	}
-	pr, _, err := client.PullRequests.GetPullRequest(ctx, owner, repo, index)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
+	deadline := time.Now().Add(time.Duration(max(0, min(params.GetOptionalInt(args, "wait_seconds", 0), maxStatusWaitSeconds))) * time.Second)
+	for {
+		pr, _, err := client.PullRequests.GetPullRequest(ctx, owner, repo, index)
+		if err != nil {
+			return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v err: %v", owner, repo, index, err))
+		}
+		if pr.Head == nil || pr.Head.Sha == "" {
+			return to.ErrorResult(fmt.Errorf("pr %v/%v/%v has no head SHA", owner, repo, index))
+		}
+		status, _, err := client.Repositories.GetCombinedStatus(ctx, owner, repo, pr.Head.Sha)
+		if err != nil {
+			return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v status err: %v", owner, repo, index, err))
+		}
+		if (status.State != "" && status.State != gitea_sdk.StatusPending) || !time.Now().Before(deadline) {
+			return to.TextResult(status)
+		}
+		select {
+		case <-ctx.Done():
+			return to.ErrorResult(ctx.Err())
+		case <-time.After(min(statusPollInterval, time.Until(deadline))):
+		}
 	}
-	if pr.Head == nil || pr.Head.Sha == "" {
-		return to.ErrorResult(fmt.Errorf("pr %v/%v/%v has no head SHA", owner, repo, index))
-	}
-
-	status, _, err := client.Repositories.GetCombinedStatus(ctx, owner, repo, pr.Head.Sha)
-	if err != nil {
-		return to.ErrorResult(fmt.Errorf("get %v/%v/pr/%v status err: %v", owner, repo, index, err))
-	}
-	return to.TextResult(status)
 }

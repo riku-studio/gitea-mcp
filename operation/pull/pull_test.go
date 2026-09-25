@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
 
@@ -1135,5 +1136,51 @@ func Test_listPullRequestReviewCommentsFn_allReviews(t *testing.T) {
 
 	if len(result.Content) == 0 {
 		t.Fatalf("expected content in result")
+	}
+}
+
+func Test_pullRequestReadFn_getComments(t *testing.T) {
+	serveStub(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/repos/octo/demo/issues/7/comments" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`[]`))
+	})
+
+	result, err := pullRequestReadFn(context.Background(), map[string]any{
+		"method": "get_comments", "owner": "octo", "repo": "demo", "pull_number": float64(7),
+	})
+	if err != nil || result.IsError {
+		t.Fatalf("pullRequestReadFn() result = %v, error = %v", result, err)
+	}
+}
+
+func Test_pullRequestReadFn_getStatusWaitsWhileEmptyOrPending(t *testing.T) {
+	states := []string{"", "", "pending", "success"}
+	serveStub(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/repos/octo/demo/pulls/7":
+			_, _ = w.Write([]byte(`{"head":{"sha":"abc123"}}`))
+		case "/api/v1/repos/octo/demo/commits/abc123/status":
+			_, _ = fmt.Fprintf(w, `{"state":%q}`, states[0])
+			states = states[1:]
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	})
+	origPollInterval := statusPollInterval
+	statusPollInterval = time.Millisecond
+	t.Cleanup(func() { statusPollInterval = origPollInterval })
+
+	for _, call := range []struct {
+		waitSeconds float64
+		wantState   string
+	}{{-1e10, `"state":""`}, {5, `"state":"success"`}} {
+		result, err := pullRequestReadFn(context.Background(), map[string]any{
+			"method": "get_status", "owner": "octo", "repo": "demo", "pull_number": float64(7), "wait_seconds": call.waitSeconds,
+		})
+		if err != nil || result.IsError || !strings.Contains(result.Content[0].(*mcp.TextContent).Text, call.wantState) {
+			t.Fatalf("wait_seconds %v: result = %v, error = %v", call.waitSeconds, result, err)
+		}
 	}
 }

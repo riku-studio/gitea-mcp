@@ -65,6 +65,9 @@ func slimIssues(issues []*gitea_sdk.Issue) []map[string]any {
 		if len(i.Labels) > 0 {
 			m["labels"] = slim.LabelNames(i.Labels)
 		}
+		if len(i.Assignees) > 0 {
+			m["assignees"] = slim.UserLogins(i.Assignees)
+		}
 		if i.Milestone != nil {
 			m["milestone"] = map[string]any{
 				"id":    i.Milestone.ID,
@@ -94,4 +97,23 @@ func slimComment(c *gitea_sdk.Comment) map[string]any {
 		"created_at": c.Created,
 		"updated_at": c.Updated,
 	}
+}
+
+func slimCommentWithAssets(comment *commentWithAssets) map[string]any {
+	slimmed := slimComment(&comment.Comment)
+	slimmed["body"] = slim.BodyWithAttachments(comment.Body, comment.Assets)
+	return slimmed
+}
+
+func slimIssueRef(issue *gitea_sdk.Issue) map[string]any {
+	ref := map[string]any{
+		"number":   issue.Index,
+		"title":    issue.Title,
+		"state":    issue.State,
+		"html_url": issue.HTMLURL,
+	}
+	if issue.Repository != nil {
+		ref["repository"] = issue.Repository.FullName
+	}
+	return ref
 }

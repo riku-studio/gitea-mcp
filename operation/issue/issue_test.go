@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -61,12 +62,15 @@ func Test_listRepoIssuesFn_filters(t *testing.T) {
 	}()
 
 	args := map[string]any{
-		"owner":      owner,
-		"repo":       repo,
-		"type":       "issues",
-		"labels":     []any{"bug", "enhancement"},
-		"milestones": []any{"v1.0", "2"},
-		"since":      "2026-01-01T00:00:00Z",
+		"owner":        owner,
+		"repo":         repo,
+		"type":         "issues",
+		"labels":       []any{"bug", "enhancement"},
+		"milestones":   []any{"v1.0", "2"},
+		"since":        "2026-01-01T00:00:00Z",
+		"created_by":   "alice",
+		"assigned_by":  "bob",
+		"mentioned_by": "carol",
 	}
 
 	_, err := listRepoIssuesFn(context.Background(), args)
@@ -88,6 +92,9 @@ func Test_listRepoIssuesFn_filters(t *testing.T) {
 	}
 	if !strings.Contains(gotQuery, "type=issues") {
 		t.Fatalf("expected type query param, got %s", gotQuery)
+	}
+	if !strings.Contains(gotQuery, "created_by=alice") || !strings.Contains(gotQuery, "assigned_by=bob") || !strings.Contains(gotQuery, "mentioned_by=carol") {
+		t.Fatalf("expected user filter query params, got %s", gotQuery)
 	}
 }
 
@@ -265,51 +272,113 @@ func Test_getIssueByIndexFn_includesAttachments(t *testing.T) {
 	}
 }
 
-func Test_getIssueCommentsByIndexFn_includesAttachments(t *testing.T) {
-	const (
-		owner = "octo"
-		repo  = "demo"
-	)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Test_issueReadFn_commentsIncludeAttachments(t *testing.T) {
+	const commentWithAsset = `{"id": 1, "body": "see this", "assets": [
+		{"id": 9, "name": "log.txt", "size": 200, "browser_download_url": "https://example/log.txt"}
+	]}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/v1/version":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"version":"1.12.0"}`))
-		case fmt.Sprintf("/api/v1/repos/%s/%s/issues/7/comments", owner, repo):
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`[
-				{"id": 1, "body": "see this", "assets": [
-					{"id": 9, "name": "log.txt", "size": 200, "browser_download_url": "https://example/log.txt"}
-				]},
-				{"id": 2, "body": "no attachment", "assets": []}
-			]`))
+		case "/api/v1/repos/octo/demo/issues/7/comments":
+			_, _ = w.Write([]byte(`[` + commentWithAsset + `, {"id": 2, "body": "no attachment", "assets": []}]`))
+		case "/api/v1/repos/octo/demo/issues/comments/1":
+			_, _ = w.Write([]byte(commentWithAsset))
+		case "/api/v1/repos/octo/demo/issues/comments/5":
+			w.WriteHeader(http.StatusNoContent)
 		default:
 			http.NotFound(w, r)
 		}
-	})
-	server := httptest.NewServer(handler)
+	}))
 	defer server.Close()
+	defer func(host string) { flag.Host = host }(flag.Host)
+	flag.Host = server.URL
 
-	origHost, origToken, origVersion := flag.Host, flag.Token, flag.Version
-	flag.Host, flag.Token, flag.Version = server.URL, "", "test"
-	defer func() { flag.Host, flag.Token, flag.Version = origHost, origToken, origVersion }()
+	for _, args := range []map[string]any{
+		{"method": "get_comments", "owner": "octo", "repo": "demo", "issue_number": float64(7)},
+		{"method": "get_comment", "owner": "octo", "repo": "demo", "comment_id": float64(1)},
+	} {
+		t.Run(args["method"].(string), func(t *testing.T) {
+			res, err := issueReadFn(context.Background(), args)
+			if err != nil || res.IsError {
+				t.Fatalf("issueReadFn() result = %v, error = %v", res, err)
+			}
+			body := res.Content[0].(*mcp.TextContent).Text
+			if !strings.Contains(body, `[log.txt](https://example/log.txt)`) || strings.Contains(body, `"attachments"`) {
+				t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
+			}
+		})
+	}
+	res, err := issueReadFn(context.Background(), map[string]any{"method": "get_comment", "owner": "octo", "repo": "demo", "comment_id": float64(5)})
+	if err != nil || !res.IsError || !strings.Contains(res.Content[0].(*mcp.TextContent).Text, "not a discussion comment") {
+		t.Fatalf("expected non-discussion comment error, got %v, %v", res, err)
+	}
+}
 
-	args := map[string]any{
-		"owner": owner, "repo": repo, "issue_number": float64(7),
+func Test_issueDependencyMethods(t *testing.T) {
+	const (
+		blockerRef = `{"html_url":"","number":1,"repository":"acme/infra","state":"open","title":"CI"}`
+		issueRef   = `{"html_url":"","number":2,"repository":"octo/demo","state":"open","title":"Ship"}`
+	)
+	var gotRequest, gotBody string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		gotRequest, gotBody = r.Method+" "+r.URL.RequestURI(), string(body)
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`[{"number": 1, "title": "CI", "state": "open", "repository": {"full_name": "acme/infra"}}]`))
+		} else {
+			_, _ = w.Write([]byte(`{"number": 2, "title": "Ship", "state": "open", "repository": {"full_name": "octo/demo"}}`))
+		}
+	}))
+	defer server.Close()
+	defer func(host string) { flag.Host = host }(flag.Host)
+	flag.Host = server.URL
+
+	tests := []struct {
+		toolFn      func(context.Context, map[string]any) (*mcp.CallToolResult, error)
+		args        map[string]any
+		wantRequest string
+		wantBody    string
+		wantResult  string
+	}{
+		{
+			toolFn:      issueReadFn,
+			args:        map[string]any{"method": "get_blocked_by", "page": float64(2), "per_page": float64(10)},
+			wantRequest: "GET /api/v1/repos/octo/demo/issues/2/dependencies?limit=10&page=2",
+			wantResult:  "[" + blockerRef + "]",
+		},
+		{
+			toolFn:      issueReadFn,
+			args:        map[string]any{"method": "get_blocking"},
+			wantRequest: "GET /api/v1/repos/octo/demo/issues/2/blocks?limit=30&page=1",
+			wantResult:  "[" + blockerRef + "]",
+		},
+		{
+			toolFn:      issueWriteFn,
+			args:        map[string]any{"method": "add_dependency", "dependency_type": "blocked_by", "related_owner": "acme", "related_repo": "infra", "related_issue_number": float64(1)},
+			wantRequest: "POST /api/v1/repos/octo/demo/issues/2/dependencies",
+			wantBody:    `{"index":1,"owner":"acme","repo":"infra"}`,
+			wantResult:  issueRef,
+		},
+		{
+			toolFn:      issueWriteFn,
+			args:        map[string]any{"method": "remove_dependency", "dependency_type": "blocking", "related_owner": "", "related_issue_number": float64(3)},
+			wantRequest: "DELETE /api/v1/repos/octo/demo/issues/2/blocks",
+			wantBody:    `{"index":3,"owner":"octo","repo":"demo"}`,
+			wantResult:  issueRef,
+		},
 	}
-	res, err := getIssueCommentsByIndexFn(context.Background(), args)
-	if err != nil {
-		t.Fatalf("getIssueCommentsByIndexFn() error = %v", err)
-	}
-	if res.IsError {
-		t.Fatalf("unexpected error result: %v", res.Content)
-	}
-	body := res.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(body, `[log.txt](https://example/log.txt)`) {
-		t.Fatalf("expected attachment markdown inlined in body, got: %s", body)
-	}
-	if strings.Contains(body, `"attachments"`) {
-		t.Fatalf("attachments should be inlined into body, not a separate field: %s", body)
+	for _, tt := range tests {
+		t.Run(tt.args["method"].(string), func(t *testing.T) {
+			tt.args["owner"], tt.args["repo"], tt.args["issue_number"] = "octo", "demo", float64(2)
+			res, err := tt.toolFn(context.Background(), tt.args)
+			if err != nil || res.IsError {
+				t.Fatalf("result = %v, error = %v", res, err)
+			}
+			if gotRequest != tt.wantRequest || gotBody != tt.wantBody {
+				t.Fatalf("request = %q body %q, want %q body %q", gotRequest, gotBody, tt.wantRequest, tt.wantBody)
+			}
+			if got := res.Content[0].(*mcp.TextContent).Text; got != tt.wantResult {
+				t.Fatalf("result = %s, want %s", got, tt.wantResult)
+			}
+		})
 	}
 }

@@ -38,6 +38,8 @@ var (
 		tool.Number("artifact_id", tool.Description("for 'get_artifact'/'download_artifact'")),
 		tool.String("artifact_name", tool.Description("name filter for 'list_artifacts'/'list_run_artifacts'")),
 		tool.String("status", tool.Description("filter for 'list_runs'/'list_jobs'")),
+		tool.String("head_sha", tool.Description("full SHA filter for 'list_runs'")),
+		tool.String("branch", tool.Description("filter for 'list_runs'")),
 		tool.Number("tail_lines", tool.Description("log tail lines"), tool.Default(200), tool.Minimum(1)),
 		tool.Number("max_bytes", tool.Description("max log bytes"), tool.Default(65536), tool.Minimum(1024)),
 		tool.String("output_path", tool.Description("for 'download_job_log'/'download_artifact'")),
@@ -248,13 +250,14 @@ func listRepoActionRunsFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 		return to.ErrorResult(err)
 	}
 	page, pageSize := params.GetPagination(args, 30)
-	statusFilter, _ := args["status"].(string)
 
 	query := url.Values{}
 	query.Set("page", strconv.Itoa(page))
 	query.Set("limit", strconv.Itoa(pageSize))
-	if statusFilter != "" {
-		query.Set("status", statusFilter)
+	for _, filter := range []string{"status", "head_sha", "branch"} {
+		if value := params.GetOptionalString(args, filter, ""); value != "" {
+			query.Set(filter, value)
+		}
 	}
 
 	var result any

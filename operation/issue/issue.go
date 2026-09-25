@@ -1,9 +1,13 @@
 package issue
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strconv"
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
 	"gitea.com/gitea/gitea-mcp/pkg/gitea"
@@ -39,7 +43,7 @@ const (
 var (
 	ListRepoIssuesTool = tool.NewDefinition(
 		ListRepoIssuesToolName,
-		"List issues in a repository (or pull requests, via the 'type' filter), filterable by state, labels, milestones, and update time range.",
+		"List issues in a repository (or pull requests, via the 'type' filter), filterable by state, labels, milestones, users, and update time range.",
 		annotation.ReadOnly("List repository issues"),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
@@ -49,25 +53,31 @@ var (
 		tool.Array("milestones", tool.Description("milestone name or ID filter"), tool.Items(map[string]any{"type": "string"})),
 		tool.String("since", tool.Description("updated after ISO 8601")),
 		tool.String("before", tool.Description("updated before ISO 8601")),
+		tool.String("created_by"),
+		tool.String("assigned_by", tool.Description("assignee username")),
+		tool.String("mentioned_by", tool.Description("mentioned username")),
 		tool.Number("page", tool.Description(params.PageDesc), tool.Default(1)),
 		tool.Number("per_page", tool.Description(params.PaginationDesc), tool.Default(30)),
 	)
 
 	IssueReadTool = tool.NewDefinition(
 		IssueReadToolName,
-		"Read issue: details, comments, or labels.",
+		"Read issue: details, comments, labels, or dependencies.",
 		annotation.ReadOnly("Read issue details"),
-		tool.String("method", tool.Required(), tool.Enum("get", "get_comments", "get_labels")),
+		tool.String("method", tool.Required(), tool.Enum("get", "get_comments", "get_comment", "get_labels", "get_blocked_by", "get_blocking")),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
-		tool.Number("issue_number", tool.Required()),
+		tool.Number("issue_number", tool.Description("required except for 'get_comment'")),
+		tool.Number("comment_id", tool.Description("for 'get_comment'")),
+		tool.Number("page", tool.Description("for 'get_blocked_by'/'get_blocking'"), tool.Default(1)),
+		tool.Number("per_page", tool.Description("for 'get_blocked_by'/'get_blocking'"), tool.Default(30)),
 	)
 
 	IssueWriteTool = tool.NewDefinition(
 		IssueWriteToolName,
-		"Write issues: create, update, manage comments and labels.",
-		annotation.Write("Create or update issues, comments, and labels"),
-		tool.String("method", tool.Required(), tool.Enum("create", "update", "add_comment", "edit_comment", "add_labels", "remove_label", "replace_labels", "clear_labels")),
+		"Write issues: create, update, manage comments, labels and dependencies.",
+		annotation.Write("Create or update issues, comments, labels, and dependencies"),
+		tool.String("method", tool.Required(), tool.Enum("create", "update", "add_comment", "edit_comment", "add_labels", "remove_label", "replace_labels", "clear_labels", "add_dependency", "remove_dependency")),
 		tool.String("owner", tool.Required(), tool.Description(params.OwnerDesc)),
 		tool.String("repo", tool.Required(), tool.Description(params.RepoDesc)),
 		tool.Number("issue_number", tool.Description("required except for 'create'")),
@@ -82,8 +92,14 @@ var (
 		tool.String("ref", tool.Description("branch to associate")),
 		tool.String("deadline", tool.Description("ISO 8601")),
 		tool.Boolean("remove_deadline"),
+		tool.String("dependency_type", tool.Description("issue_number is blocked_by or blocking the related issue"), tool.Enum("blocked_by", "blocking")),
+		tool.String("related_owner", tool.Description("defaults to owner")),
+		tool.String("related_repo", tool.Description("defaults to repo")),
+		tool.Number("related_issue_number"),
 	)
 )
+
+var dependencyEndpoints = map[string]string{"blocked_by": "dependencies", "blocking": "blocks"}
 
 func init() {
 	Tool.RegisterRead(tool.ServerTool{
@@ -109,9 +125,15 @@ func issueReadFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult,
 	case "get":
 		return getIssueByIndexFn(ctx, args)
 	case "get_comments":
-		return getIssueCommentsByIndexFn(ctx, args)
+		return ListComments(ctx, args, "issue_number")
+	case "get_comment":
+		return getIssueCommentFn(ctx, args)
 	case "get_labels":
 		return getIssueLabelsFn(ctx, args)
+	case "get_blocked_by":
+		return listIssueDependenciesFn(ctx, args, dependencyEndpoints["blocked_by"])
+	case "get_blocking":
+		return listIssueDependenciesFn(ctx, args, dependencyEndpoints["blocking"])
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -139,6 +161,10 @@ func issueWriteFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult
 		return replaceIssueLabelsFn(ctx, args)
 	case "clear_labels":
 		return clearIssueLabelsFn(ctx, args)
+	case "add_dependency":
+		return writeIssueDependencyFn(ctx, args, "POST")
+	case "remove_dependency":
+		return writeIssueDependencyFn(ctx, args, "DELETE")
 	default:
 		return to.ErrorResult(fmt.Errorf("unknown method: %s", method))
 	}
@@ -184,11 +210,14 @@ func listRepoIssuesFn(ctx context.Context, args map[string]any) (*mcp.CallToolRe
 	milestones := params.GetStringSlice(args, "milestones")
 	page, pageSize := params.GetPagination(args, 30)
 	opt := gitea_sdk.ListIssueOption{
-		State:      gitea_sdk.StateType(state),
-		Labels:     labels,
-		Milestones: milestones,
-		Page:       page,
-		PageSize:   pageSize,
+		State:       gitea_sdk.StateType(state),
+		Labels:      labels,
+		Milestones:  milestones,
+		CreatedBy:   params.GetOptionalString(args, "created_by", ""),
+		AssignedBy:  params.GetOptionalString(args, "assigned_by", ""),
+		MentionedBy: params.GetOptionalString(args, "mentioned_by", ""),
+		Page:        page,
+		PageSize:    pageSize,
 	}
 	switch args["type"] {
 	case "issues":
@@ -365,7 +394,57 @@ func editIssueCommentFn(ctx context.Context, args map[string]any) (*mcp.CallTool
 	return to.TextResult(slimComment(issueComment))
 }
 
-func getIssueCommentsByIndexFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+func ListComments(ctx context.Context, args map[string]any, indexKey string) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, indexKey)
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	var comments []commentWithAssets
+	path := fmt.Sprintf("repos/%s/%s/issues/%d/comments", url.PathEscape(owner), url.PathEscape(repo), index)
+	if _, err := gitea.DoJSON(ctx, "GET", path, nil, nil, &comments); err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/%v/comments err: %v", owner, repo, index, err))
+	}
+	out := make([]map[string]any, 0, len(comments))
+	for i := range comments {
+		out = append(out, slimCommentWithAssets(&comments[i]))
+	}
+	return to.TextResult(out)
+}
+
+func getIssueCommentFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	commentID, err := params.GetIndex(args, "comment_id")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	var comment commentWithAssets
+	path := fmt.Sprintf("repos/%s/%s/issues/comments/%d", url.PathEscape(owner), url.PathEscape(repo), commentID)
+	status, err := gitea.DoJSON(ctx, "GET", path, nil, nil, &comment)
+	if status == http.StatusNoContent {
+		return to.ErrorResult(fmt.Errorf("comment %v is not a discussion comment", commentID))
+	}
+	if err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/comments/%v err: %v", owner, repo, commentID, err))
+	}
+	return to.TextResult(slimCommentWithAssets(&comment))
+}
+
+func listIssueDependenciesFn(ctx context.Context, args map[string]any, endpoint string) (*mcp.CallToolResult, error) {
 	owner, err := params.GetString(args, "owner")
 	if err != nil {
 		return to.ErrorResult(err)
@@ -378,18 +457,50 @@ func getIssueCommentsByIndexFn(ctx context.Context, args map[string]any) (*mcp.C
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	var comments []commentWithAssets
-	path := fmt.Sprintf("repos/%s/%s/issues/%d/comments", url.PathEscape(owner), url.PathEscape(repo), index)
-	if _, err := gitea.DoJSON(ctx, "GET", path, nil, nil, &comments); err != nil {
-		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/%v/comments err: %v", owner, repo, index, err))
+	page, pageSize := params.GetPagination(args, 30)
+	var issues []gitea_sdk.Issue
+	path := fmt.Sprintf("repos/%s/%s/issues/%d/%s", url.PathEscape(owner), url.PathEscape(repo), index, endpoint)
+	if _, err := gitea.DoJSON(ctx, "GET", path, url.Values{"page": {strconv.Itoa(page)}, "limit": {strconv.Itoa(pageSize)}}, nil, &issues); err != nil {
+		return to.ErrorResult(fmt.Errorf("get %v/%v/issues/%v/%v err: %v", owner, repo, index, endpoint, err))
 	}
-	out := make([]map[string]any, 0, len(comments))
-	for i := range comments {
-		m := slimComment(&comments[i].Comment)
-		m["body"] = slim.BodyWithAttachments(comments[i].Body, comments[i].Assets)
-		out = append(out, m)
+	out := make([]map[string]any, 0, len(issues))
+	for i := range issues {
+		out = append(out, slimIssueRef(&issues[i]))
 	}
 	return to.TextResult(out)
+}
+
+func writeIssueDependencyFn(ctx context.Context, args map[string]any, httpMethod string) (*mcp.CallToolResult, error) {
+	owner, err := params.GetString(args, "owner")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	repo, err := params.GetString(args, "repo")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	index, err := params.GetIndex(args, "issue_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	endpoint, ok := dependencyEndpoints[params.GetOptionalString(args, "dependency_type", "")]
+	if !ok {
+		return to.ErrorResult(errors.New("dependency_type must be 'blocked_by' or 'blocking'"))
+	}
+	relatedIssueNumber, err := params.GetIndex(args, "related_issue_number")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	var issue gitea_sdk.Issue
+	path := fmt.Sprintf("repos/%s/%s/issues/%d/%s", url.PathEscape(owner), url.PathEscape(repo), index, endpoint)
+	if _, err := gitea.DoJSON(ctx, httpMethod, path, nil, map[string]any{
+		"owner": cmp.Or(params.GetOptionalString(args, "related_owner", ""), owner),
+		"repo":  cmp.Or(params.GetOptionalString(args, "related_repo", ""), repo),
+		"index": relatedIssueNumber,
+	}, &issue); err != nil {
+		return to.ErrorResult(fmt.Errorf("%v %v/%v/issues/%v/%v err: %v", httpMethod, owner, repo, index, endpoint, err))
+	}
+	return to.TextResult(slimIssueRef(&issue))
 }
 
 func getIssueLabelsFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {

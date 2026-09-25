@@ -1,6 +1,7 @@
 package issue
 
 import (
+	"reflect"
 	"testing"
 
 	gitea_sdk "gitea.dev/sdk"
@@ -43,13 +44,14 @@ func TestSlimIssue(t *testing.T) {
 
 func TestSlimIssues_ListIsSlimmer(t *testing.T) {
 	i := &gitea_sdk.Issue{
-		ID:     5,
-		Index:  1,
-		Title:  "Issue",
-		State:  "open",
-		Body:   "Full body",
-		Poster: &gitea_sdk.User{UserName: "alice"},
-		Labels: []*gitea_sdk.Label{{Name: "enhancement"}},
+		ID:        5,
+		Index:     1,
+		Title:     "Issue",
+		State:     "open",
+		Body:      "Full body",
+		Poster:    &gitea_sdk.User{UserName: "alice"},
+		Labels:    []*gitea_sdk.Label{{Name: "enhancement"}},
+		Assignees: []*gitea_sdk.User{{UserName: "bob"}},
 	}
 
 	single := slimIssue(i)
@@ -59,8 +61,8 @@ func TestSlimIssues_ListIsSlimmer(t *testing.T) {
 	if _, ok := single["body"]; !ok {
 		t.Error("single issue should have body")
 	}
-	if _, ok := list[0]["body"]; ok || list[0]["id"] != int64(5) {
-		t.Errorf("list issue should have id and no body, got %v", list[0])
+	if _, ok := list[0]["body"]; ok || list[0]["id"] != int64(5) || !reflect.DeepEqual(list[0]["assignees"], []string{"bob"}) {
+		t.Errorf("list issue should have id, assignees and no body, got %v", list[0])
 	}
 }
 
