@@ -98,6 +98,7 @@ func TestCreateOrUpdateFileFn(t *testing.T) {
 				map[string]any{"operation": "delete", "path": "f.txt", "content": "", "sha": "sha-f"},
 			},
 		},
+		{name: "no branch", args: map[string]any{"branch_name": ""}, wantErr: "branch_name is required"},
 		{name: "no file", args: map[string]any{}, wantErr: "path or files is required"},
 		{name: "no content", args: map[string]any{"path": "a.txt"}, wantErr: "content, edits, from_path or delete is required"},
 		{name: "from_path without sha", args: map[string]any{"files": []any{map[string]any{"path": "c.txt", "from_path": "b.txt", "content": "x"}}}, wantErr: "c.txt: sha is required"},

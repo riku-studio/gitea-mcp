@@ -291,8 +291,14 @@ func CreateOrUpdateFileFn(ctx context.Context, args map[string]any) (*mcp.CallTo
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	message, _ := args["message"].(string)
-	branchName, _ := args["branch_name"].(string)
+	message, err := params.GetString(args, "message")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	branchName, err := params.GetString(args, "branch_name")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
 	newBranchName, _ := args["new_branch_name"].(string)
 
 	files, _ := args["files"].([]any)
@@ -424,8 +430,14 @@ func DeleteFileFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult
 	if err != nil {
 		return to.ErrorResult(err)
 	}
-	message, _ := args["message"].(string)
-	branchName, _ := args["branch_name"].(string)
+	message, err := params.GetString(args, "message")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
+	branchName, err := params.GetString(args, "branch_name")
+	if err != nil {
+		return to.ErrorResult(err)
+	}
 	sha, err := params.GetString(args, "sha")
 	if err != nil {
 		return to.ErrorResult(err)
