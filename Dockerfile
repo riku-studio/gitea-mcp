@@ -31,6 +31,8 @@ USER nonroot:nonroot
 
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.source="https://gitea.com/gitea/gitea-mcp"
+LABEL org.opencontainers.image.title="Gitea MCP Server"
+LABEL org.opencontainers.image.description="Connects Gitea to Model Context Protocol clients"
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD ["/app/gitea-mcp", "-healthcheck"] || exit 1
