@@ -193,7 +193,6 @@ Once configured, try `list all my repositories` in the chat box.
 | get_repository_tree          | repository   | Read   | Get the repository file tree |
 | get_file_contents            | file         | Read   | Get file content and metadata |
 | get_dir_contents             | file         | Read   | Get the entries in a directory |
-| create_or_update_file        | file         | Write  | Write files in one commit: create, update, rename, delete |
 | delete_file                  | file         | Write  | Delete a file |
 | create_branch                | branch       | Write  | Create a new branch |
 | delete_branch                | branch       | Write  | Delete a branch |
@@ -210,6 +209,16 @@ Once configured, try `list all my repositories` in the chat box.
 | get_release                  | release      | Read   | Get a release by ID |
 | get_latest_release           | release      | Read   | Get the latest release |
 | list_releases                | release      | Read   | List repository releases |
+| git_status                   | git          | Read   | Show local working tree status |
+| git_diff                     | git          | Read   | Show local changes (working tree, staged, or against a ref) |
+| git_log                      | git          | Read   | Show local commit history |
+| git_fetch                    | git          | Read   | Fetch refs and objects from a remote |
+| git_add                      | git          | Write  | Stage local files for commit |
+| git_commit                   | git          | Write  | Commit staged changes in a local repository |
+| git_push                     | git          | Write  | Push a local branch to a remote (no force push) |
+| git_pull                     | git          | Write  | Pull into the current branch (fast-forward only or rebase) |
+| git_branch                   | git          | Write  | List, create or delete local branches |
+| git_checkout                 | git          | Write  | Switch local branches (git switch) |
 
 > **Note:** Several tools are consolidated, action-based tools, a single tool exposes multiple operations through a `method` parameter. Tools with `Write` access are hidden when the server runs in read-only mode (`-r` / `GITEA_READONLY`), and the exposed tool set can be filtered by scope with `-S` / `--scope` (`GITEA_SCOPES`) and/or by individual tool name with `-O` / `--tools` (`GITEA_TOOLS`).
 

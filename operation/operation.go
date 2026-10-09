@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gitea.com/gitea/gitea-mcp/operation/actions"
+	"gitea.com/gitea/gitea-mcp/operation/git"
 	"gitea.com/gitea/gitea-mcp/operation/issue"
 	"gitea.com/gitea/gitea-mcp/operation/label"
 	"gitea.com/gitea/gitea-mcp/operation/milestone"
@@ -51,7 +52,8 @@ var (
 		user.Tool, actions.Tool, repo.Tool, notification.Tool, issue.Tool,
 		label.Tool, milestone.Tool, packages.Tool, pull.Tool, search.Tool,
 		project.Tool, version.Tool, wiki.Tool, timetracking.Tool,
-		repo.FileTool, repo.BranchTool, repo.TagTool, repo.CommitTool, repo.ReleaseTool,
+		fileTool, repo.BranchTool, repo.TagTool, repo.CommitTool, repo.ReleaseTool,
+		git.Tool,
 	}
 )
 

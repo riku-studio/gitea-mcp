@@ -4,7 +4,7 @@
 
 ## 与上游的差异
 
-1. **移除 `create_or_update_file`**：这个工具要求把文件全文写进请求参数里，大批量改动时非常低效。现在改用本地 git 提交。
+1. **移除 `create_or_update_file`**：这个工具要求把文件全文写进请求参数里，大批量改动时非常低效。现在改用本地 git 提交。过滤逻辑在 `operation/riku.go`，上游的 `operation/repo` 代码未做改动。
 2. **新增本地 git 工具**：直接对 MCP 服务器所在机器上的工作副本执行 `git` 命令，文件内容不经过工具参数传递。
 
 | 工具 | 作用 | 说明 |
@@ -19,6 +19,8 @@
 | `git_pull` | 拉取并合并 | 默认 `--ff-only`；`rebase=true` 改为 rebase；不会产生 merge commit |
 | `git_branch` | 列出、新建、删除分支 | 删除用 `-d`，拒绝删除未合并的分支 |
 | `git_checkout` | 切换分支（`git switch`） | `create=true` 时新建分支；不丢弃任何文件改动 |
+
+对上游的全部改动：`operation/git/`（新增）、`operation/riku.go`（新增）、`operation/operation.go`（注册）、三个 README 的工具表、`.github/workflows/ci.yml`、`RIKU.md`、`RIKU_VERSION`。
 
 ## 安全限制
 
@@ -56,4 +58,10 @@ git remote set-url origin https://git.lan/riku-studio/<repo>.git
 
 ## 构建
 
-GitHub Actions（`.github/workflows/build.yml`）会在 Ubuntu 和 Windows 上运行测试，然后交叉编译 windows/linux/darwin 版本。如果 `RIKU_VERSION` 对应的 Release 还不存在，会自动创建 `v<RIKU_VERSION>`。
+`.github/workflows/ci.yml` 会在每次推送到 `main` 时运行：
+
+1. 如果仓库里还没有上游源码，就导入官方 v1.8.0（只执行一次）。
+2. 在 Ubuntu 和 Windows 上运行 `go vet` 和 `go test`。
+3. 交叉编译 windows/linux/darwin 版本。如果 `RIKU_VERSION` 对应的 Release 还不存在，就自动发布 `v<RIKU_VERSION>`；如果已存在，就更新其中的文件。
+
+要发布新版本，修改 `RIKU_VERSION` 即可。
