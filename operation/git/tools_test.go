@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"gitea.com/gitea/gitea-mcp/pkg/flag"
+	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func sh(t *testing.T, dir string, args ...string) string {
@@ -27,24 +27,22 @@ func sh(t *testing.T, dir string, args ...string) string {
 	return string(out)
 }
 
-func call(t *testing.T, fn server.ToolHandlerFunc, args map[string]any) (string, bool) {
+func call(t *testing.T, fn tool.Handler, args map[string]any) (string, bool) {
 	t.Helper()
-	req := mcp.CallToolRequest{}
-	req.Params.Arguments = args
-	res, err := fn(context.Background(), req)
+	res, err := fn(context.Background(), args)
 	if err != nil {
 		t.Fatalf("handler returned Go error: %v", err)
 	}
 	var b strings.Builder
 	for _, c := range res.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
+		if tc, ok := c.(*mcp.TextContent); ok {
 			b.WriteString(tc.Text)
 		}
 	}
 	return b.String(), res.IsError
 }
 
-func mustOK(t *testing.T, fn server.ToolHandlerFunc, args map[string]any) string {
+func mustOK(t *testing.T, fn tool.Handler, args map[string]any) string {
 	t.Helper()
 	out, isErr := call(t, fn, args)
 	if isErr {
@@ -53,7 +51,7 @@ func mustOK(t *testing.T, fn server.ToolHandlerFunc, args map[string]any) string
 	return out
 }
 
-func mustErr(t *testing.T, fn server.ToolHandlerFunc, args map[string]any, want string) {
+func mustErr(t *testing.T, fn tool.Handler, args map[string]any, want string) {
 	t.Helper()
 	out, isErr := call(t, fn, args)
 	if !isErr {

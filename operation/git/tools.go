@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"gitea.com/gitea/gitea-mcp/pkg/annotation"
+	"gitea.com/gitea/gitea-mcp/pkg/to"
 	"gitea.com/gitea/gitea-mcp/pkg/tool"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-var Tool = tool.New()
+// Tool holds the local git working-copy tools (scope "git").
+var Tool = tool.New("git")
 
 const (
 	StatusToolName   = "git_status"
@@ -30,121 +31,121 @@ const (
 	repoPathDesc = "absolute path of the local git working copy (must be inside " + AllowedRootsEnv + ")"
 )
 
-func repoPathParam() mcp.ToolOption {
-	return mcp.WithString("repo_path", mcp.Required(), mcp.Description(repoPathDesc))
+func repoPathParam() tool.Property {
+	return tool.String("repo_path", tool.Required(), tool.Description(repoPathDesc))
 }
 
-func stringArray(name, desc string) mcp.ToolOption {
-	return mcp.WithArray(name, mcp.Description(desc), mcp.Items(map[string]any{"type": "string"}))
+func stringArray(name, desc string) tool.Property {
+	return tool.Array(name, tool.Description(desc), tool.Items(map[string]any{"type": "string"}))
 }
 
 var (
-	StatusTool = mcp.NewTool(StatusToolName,
-		mcp.WithDescription("Show the working tree status of a local repository (branch, ahead/behind, staged/unstaged/untracked files)."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Local git status")),
+	StatusTool = tool.NewDefinition(StatusToolName,
+		"Show the working tree status of a local repository (branch, ahead/behind, staged/unstaged/untracked files).",
+		annotation.ReadOnly("Local git status"),
 		repoPathParam(),
 	)
 
-	DiffTool = mcp.NewTool(DiffToolName,
-		mcp.WithDescription("Show changes in a local repository. Default: unstaged changes. Use staged=true for what will be committed, or target to compare against a commit/branch."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Local git diff")),
+	DiffTool = tool.NewDefinition(DiffToolName,
+		"Show changes in a local repository. Default: unstaged changes. Use staged=true for what will be committed, or target to compare against a commit/branch.",
+		annotation.ReadOnly("Local git diff"),
 		repoPathParam(),
-		mcp.WithBoolean("staged", mcp.Description("diff the index (staged changes) instead of the working tree")),
-		mcp.WithString("target", mcp.Description("commit, branch or range to diff against (e.g. HEAD~1, main, main...feature)")),
+		tool.Boolean("staged", tool.Description("diff the index (staged changes) instead of the working tree")),
+		tool.String("target", tool.Description("commit, branch or range to diff against (e.g. HEAD~1, main, main...feature)")),
 		stringArray("paths", "limit the diff to these paths (relative to repo root)"),
-		mcp.WithBoolean("stat", mcp.Description("only show a diffstat summary")),
-		mcp.WithBoolean("name_only", mcp.Description("only list changed file names")),
-		mcp.WithNumber("context_lines", mcp.Description("lines of context (default 3)")),
+		tool.Boolean("stat", tool.Description("only show a diffstat summary")),
+		tool.Boolean("name_only", tool.Description("only list changed file names")),
+		tool.Number("context_lines", tool.Description("lines of context (default 3)")),
 	)
 
-	AddTool = mcp.NewTool(AddToolName,
-		mcp.WithDescription("Stage files for the next commit. Give paths, or all=true to stage every change including deletions and untracked files."),
-		mcp.WithToolAnnotation(annotation.Write("Local git add")),
+	AddTool = tool.NewDefinition(AddToolName,
+		"Stage files for the next commit. Give paths, or all=true to stage every change including deletions and untracked files.",
+		annotation.Write("Local git add"),
 		repoPathParam(),
 		stringArray("paths", "paths to stage (relative to repo root; directories and globs allowed)"),
-		mcp.WithBoolean("all", mcp.Description("stage all changes (git add -A)")),
+		tool.Boolean("all", tool.Description("stage all changes (git add -A)")),
 	)
 
-	CommitTool = mcp.NewTool(CommitToolName,
-		mcp.WithDescription("Create a commit from the staged changes in a local repository. Returns the new commit hash and stat."),
-		mcp.WithToolAnnotation(annotation.Write("Local git commit")),
+	CommitTool = tool.NewDefinition(CommitToolName,
+		"Create a commit from the staged changes in a local repository. Returns the new commit hash and stat.",
+		annotation.Write("Local git commit"),
 		repoPathParam(),
-		mcp.WithString("message", mcp.Required(), mcp.Description("full commit message (subject, blank line, body, trailers)")),
-		mcp.WithBoolean("all", mcp.Description("also stage modified/deleted tracked files first (git commit -a); untracked files are not added")),
-		mcp.WithString("author_name", mcp.Description("override author name (default: git config user.name)")),
-		mcp.WithString("author_email", mcp.Description("override author email (default: git config user.email)")),
+		tool.String("message", tool.Required(), tool.Description("full commit message (subject, blank line, body, trailers)")),
+		tool.Boolean("all", tool.Description("also stage modified/deleted tracked files first (git commit -a); untracked files are not added")),
+		tool.String("author_name", tool.Description("override author name (default: git config user.name)")),
+		tool.String("author_email", tool.Description("override author email (default: git config user.email)")),
 	)
 
-	PushTool = mcp.NewTool(PushToolName,
-		mcp.WithDescription("Push a local branch to a remote. Force push is not supported. If the remote is https on the configured Gitea host, the server's Gitea token is used automatically."),
-		mcp.WithToolAnnotation(annotation.Write("Local git push")),
+	PushTool = tool.NewDefinition(PushToolName,
+		"Push a local branch to a remote. Force push is not supported. If the remote is https on the configured Gitea host, the server's Gitea token is used automatically.",
+		annotation.Write("Local git push"),
 		repoPathParam(),
-		mcp.WithString("remote", mcp.Description("remote name (default: origin)")),
-		mcp.WithString("branch", mcp.Description("local branch to push (default: current branch)")),
-		mcp.WithString("remote_branch", mcp.Description("destination branch name on the remote (default: same as branch)")),
-		mcp.WithBoolean("set_upstream", mcp.Description("set the pushed branch as upstream (-u)")),
-		mcp.WithBoolean("tags", mcp.Description("also push tags reachable from the pushed commits (--follow-tags)")),
+		tool.String("remote", tool.Description("remote name (default: origin)")),
+		tool.String("branch", tool.Description("local branch to push (default: current branch)")),
+		tool.String("remote_branch", tool.Description("destination branch name on the remote (default: same as branch)")),
+		tool.Boolean("set_upstream", tool.Description("set the pushed branch as upstream (-u)")),
+		tool.Boolean("tags", tool.Description("also push tags reachable from the pushed commits (--follow-tags)")),
 	)
 
-	PullTool = mcp.NewTool(PullToolName,
-		mcp.WithDescription("Fetch from a remote and integrate into the current branch. Fast-forward only by default; set rebase=true to rebase local commits instead. Never creates merge commits."),
-		mcp.WithToolAnnotation(annotation.Write("Local git pull")),
+	PullTool = tool.NewDefinition(PullToolName,
+		"Fetch from a remote and integrate into the current branch. Fast-forward only by default; set rebase=true to rebase local commits instead. Never creates merge commits.",
+		annotation.Write("Local git pull"),
 		repoPathParam(),
-		mcp.WithString("remote", mcp.Description("remote name (default: origin)")),
-		mcp.WithString("branch", mcp.Description("remote branch (default: the current branch's upstream)")),
-		mcp.WithBoolean("rebase", mcp.Description("rebase local commits onto the remote branch instead of fast-forward only")),
+		tool.String("remote", tool.Description("remote name (default: origin)")),
+		tool.String("branch", tool.Description("remote branch (default: the current branch's upstream)")),
+		tool.Boolean("rebase", tool.Description("rebase local commits onto the remote branch instead of fast-forward only")),
 	)
 
-	FetchTool = mcp.NewTool(FetchToolName,
-		mcp.WithDescription("Download objects and refs from a remote without changing the working tree."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Local git fetch")),
+	FetchTool = tool.NewDefinition(FetchToolName,
+		"Download objects and refs from a remote without changing the working tree.",
+		annotation.ReadOnly("Local git fetch"),
 		repoPathParam(),
-		mcp.WithString("remote", mcp.Description("remote name (default: origin)")),
-		mcp.WithBoolean("prune", mcp.Description("remove remote-tracking refs that no longer exist on the remote")),
-		mcp.WithBoolean("tags", mcp.Description("also fetch all tags")),
+		tool.String("remote", tool.Description("remote name (default: origin)")),
+		tool.Boolean("prune", tool.Description("remove remote-tracking refs that no longer exist on the remote")),
+		tool.Boolean("tags", tool.Description("also fetch all tags")),
 	)
 
-	BranchTool = mcp.NewTool(BranchToolName,
-		mcp.WithDescription("List, create or delete local branches. Delete refuses branches that are not fully merged."),
-		mcp.WithToolAnnotation(annotation.Write("Local git branch")),
+	BranchTool = tool.NewDefinition(BranchToolName,
+		"List, create or delete local branches. Delete refuses branches that are not fully merged.",
+		annotation.Write("Local git branch"),
 		repoPathParam(),
-		mcp.WithString("action", mcp.Description("list (default) | create | delete"), mcp.Enum("list", "create", "delete")),
-		mcp.WithString("name", mcp.Description("branch name, for create/delete")),
-		mcp.WithString("start_point", mcp.Description("commit/branch to start the new branch from (default: HEAD), for create")),
-		mcp.WithBoolean("remotes", mcp.Description("for list: include remote-tracking branches")),
+		tool.String("action", tool.Description("list (default) | create | delete"), tool.Enum("list", "create", "delete")),
+		tool.String("name", tool.Description("branch name, for create/delete")),
+		tool.String("start_point", tool.Description("commit/branch to start the new branch from (default: HEAD), for create")),
+		tool.Boolean("remotes", tool.Description("for list: include remote-tracking branches")),
 	)
 
-	CheckoutTool = mcp.NewTool(CheckoutToolName,
-		mcp.WithDescription("Switch to a branch (git switch). With create=true, create it first. Refuses to switch if it would overwrite uncommitted changes. Does not discard file changes."),
-		mcp.WithToolAnnotation(annotation.Write("Local git checkout")),
+	CheckoutTool = tool.NewDefinition(CheckoutToolName,
+		"Switch to a branch (git switch). With create=true, create it first. Refuses to switch if it would overwrite uncommitted changes. Does not discard file changes.",
+		annotation.Write("Local git checkout"),
 		repoPathParam(),
-		mcp.WithString("branch", mcp.Required(), mcp.Description("branch to switch to")),
-		mcp.WithBoolean("create", mcp.Description("create the branch (git switch -c)")),
-		mcp.WithString("start_point", mcp.Description("with create: commit/branch to start from (default: HEAD)")),
+		tool.String("branch", tool.Required(), tool.Description("branch to switch to")),
+		tool.Boolean("create", tool.Description("create the branch (git switch -c)")),
+		tool.String("start_point", tool.Description("with create: commit/branch to start from (default: HEAD)")),
 	)
 
-	LogTool = mcp.NewTool(LogToolName,
-		mcp.WithDescription("Show commit history of a local repository."),
-		mcp.WithToolAnnotation(annotation.ReadOnly("Local git log")),
+	LogTool = tool.NewDefinition(LogToolName,
+		"Show commit history of a local repository.",
+		annotation.ReadOnly("Local git log"),
 		repoPathParam(),
-		mcp.WithString("ref", mcp.Description("branch, commit or range (default: HEAD)")),
-		mcp.WithNumber("max_count", mcp.Description("number of commits (default 20, max 500)")),
+		tool.String("ref", tool.Description("branch, commit or range (default: HEAD)")),
+		tool.Number("max_count", tool.Description("number of commits (default 20, max 500)")),
 		stringArray("paths", "only commits touching these paths"),
-		mcp.WithBoolean("stat", mcp.Description("include changed files per commit")),
+		tool.Boolean("stat", tool.Description("include changed files per commit")),
 	)
 )
 
 func init() {
-	Tool.RegisterRead(server.ServerTool{Tool: StatusTool, Handler: StatusFn})
-	Tool.RegisterRead(server.ServerTool{Tool: DiffTool, Handler: DiffFn})
-	Tool.RegisterRead(server.ServerTool{Tool: LogTool, Handler: LogFn})
-	Tool.RegisterRead(server.ServerTool{Tool: FetchTool, Handler: FetchFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: AddTool, Handler: AddFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: CommitTool, Handler: CommitFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: PushTool, Handler: PushFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: PullTool, Handler: PullFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: BranchTool, Handler: BranchFn})
-	Tool.RegisterWrite(server.ServerTool{Tool: CheckoutTool, Handler: CheckoutFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: StatusTool, Handler: StatusFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: DiffTool, Handler: DiffFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: LogTool, Handler: LogFn})
+	Tool.RegisterRead(tool.ServerTool{Tool: FetchTool, Handler: FetchFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: AddTool, Handler: AddFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: CommitTool, Handler: CommitFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: PushTool, Handler: PushFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: PullTool, Handler: PullFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: BranchTool, Handler: BranchFn})
+	Tool.RegisterWrite(tool.ServerTool{Tool: CheckoutTool, Handler: CheckoutFn})
 }
 
 // ---- argument helpers ----
@@ -212,27 +213,25 @@ func textResult(s string) (*mcp.CallToolResult, error) {
 	if s == "" {
 		s = "(no output)"
 	}
-	return mcp.NewToolResultText(s), nil
+	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: s}}}, nil
 }
 
 func errResult(err error) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultError(err.Error()), nil
+	return to.ErrorResult(err)
 }
 
 func gitErr(op string, r result) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultError(fmt.Sprintf("git %s failed: %s", op, r.combined())), nil
+	return to.ErrorResult(fmt.Errorf("git %s failed: %s", op, r.combined()))
 }
 
-func open(ctx context.Context, req mcp.CallToolRequest) (map[string]any, string, error) {
-	args := req.GetArguments()
-	dir, err := resolveRepo(ctx, argString(args, "repo_path"))
-	return args, dir, err
+func open(ctx context.Context, args map[string]any) (string, error) {
+	return resolveRepo(ctx, argString(args, "repo_path"))
 }
 
 // ---- handlers ----
 
-func StatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	_, dir, err := open(ctx, req)
+func StatusFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -247,8 +246,8 @@ func StatusFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	return textResult(out)
 }
 
-func DiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func DiffFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -288,8 +287,8 @@ func DiffFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, 
 	return textResult(r.stdout)
 }
 
-func AddFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func AddFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -315,8 +314,8 @@ func AddFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, e
 	return textResult("staged.\n" + st.stdout)
 }
 
-func CommitFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func CommitFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -349,8 +348,8 @@ func CommitFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	return textResult(show.stdout)
 }
 
-func PushFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func PushFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -393,8 +392,8 @@ func PushFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, 
 	return textResult(r.combined())
 }
 
-func PullFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func PullFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -443,8 +442,8 @@ func upstreamRemote(ctx context.Context, dir string) string {
 	return "origin"
 }
 
-func FetchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func FetchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -475,8 +474,8 @@ func FetchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult,
 	return textResult(out)
 }
 
-func BranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func BranchFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -527,8 +526,8 @@ func BranchFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 	}
 }
 
-func CheckoutFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func CheckoutFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
@@ -563,8 +562,8 @@ func CheckoutFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResu
 	return textResult(strings.TrimSpace(r.combined()) + "\n" + st.stdout)
 }
 
-func LogFn(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args, dir, err := open(ctx, req)
+func LogFn(ctx context.Context, args map[string]any) (*mcp.CallToolResult, error) {
+	dir, err := open(ctx, args)
 	if err != nil {
 		return errResult(err)
 	}
