@@ -1,0 +1,120 @@
+name: ci
+
+# 1) prepare: one-time import of official gitea-mcp v1.8.0 (full history) from gitea.com
+# 2) test:    go vet + go test on Ubuntu and Windows
+# 3) build:   cross-compile; publish Release v<RIKU_VERSION> once the git tools are wired in
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.import.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: import
+        name: Import upstream v1.8.0 (only if go.mod is missing)
+        env:
+          UPSTREAM: https://gitea.com/gitea/gitea-mcp.git
+          TAG: v1.8.0
+        run: |
+          set -euo pipefail
+          if [ ! -f go.mod ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git fetch --no-tags "$UPSTREAM" "+refs/tags/${TAG}:refs/tags/${TAG}"
+            git log -1 --format='upstream %H %ad %s' "${TAG}^{commit}"
+            git merge --allow-unrelated-histories --no-edit \
+              -m "Import upstream gitea-mcp ${TAG} from ${UPSTREAM}" "${TAG}^{commit}"
+            git push origin "refs/tags/${TAG}"
+            git push origin "${TAG}^{commit}:refs/heads/upstream"
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: git identity for tests
+        run: |
+          git config --global user.name ci
+          git config --global user.email ci@example.com
+          git config --global init.defaultBranch main
+      - run: go vet ./...
+      - run: go test -count=1 ./...
+
+  build:
+    needs: [prepare, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d ' \r\n' < RIKU_VERSION)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p dist
+          for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/arm64; do
+            os="${target%/*}"; arch="${target#*/}"
+            ext=""; [ "$os" = windows ] && ext=".exe"
+            d="build/${os}-${arch}"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
+              go build -trimpath -ldflags "-s -w -X main.Version=${VERSION}" -o "${d}/gitea-mcp${ext}" .
+            cp LICENSE RIKU.md "$d/"
+            if [ "$os" = windows ]; then
+              (cd "$d" && zip -q "../../dist/gitea-mcp_${VERSION}_${os}_${arch}.zip" ./*)
+            else
+              tar -C "$d" -czf "dist/gitea-mcp_${VERSION}_${os}_${arch}.tar.gz" .
+            fi
+          done
+          (cd dist && sha256sum * > checksums.txt)
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitea-mcp-${{ env.VERSION }}
+          path: dist/*
+      - name: Release (only when git tools are registered)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! grep -q 'git\.Tool' operation/operation.go; then
+            echo "git tools not wired into operation.go yet; skipping release."
+            exit 0
+          fi
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --target "${{ needs.prepare.outputs.sha }}" \
+              --title "gitea-mcp $VERSION" --notes-file RIKU.md
+          fi
