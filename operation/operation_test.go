@@ -1,0 +1,116 @@
+package operation
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"gitea.com/gitea/gitea-mcp/pkg/flag"
+)
+
+const metadataPath = "/.well-known/oauth-protected-resource" + mcpPath
+
+func TestNewHTTPServerOAuth(t *testing.T) {
+	origOAuth, origURL, origHost := flag.OAuth, flag.OAuthPublicURL, flag.Host
+	t.Cleanup(func() { flag.OAuth, flag.OAuthPublicURL, flag.Host = origOAuth, origURL, origHost })
+	flag.OAuth, flag.OAuthPublicURL, flag.Host = true, "https://mcp.example.com", "https://gitea.example.com"
+	handler := newHTTPServer("", newMCPServer("test")).Handler
+
+	// Only the flag wiring is checked here, pkg/oauth pins the document itself.
+	t.Run("serves discovery metadata", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, metadataPath, nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+		}
+		want := `"resource":"https://mcp.example.com/mcp","authorization_servers":["https://gitea.example.com"]`
+		if got := recorder.Body.String(); !strings.Contains(got, want) {
+			t.Errorf("body = %s, want it to contain %s", got, want)
+		}
+	})
+
+	// The SDK 403s a public Host on a loopback connection unless localhost
+	// protection is off, and only a real connection triggers it.
+	t.Run("accepts a proxied non-loopback Host", func(t *testing.T) {
+		server := httptest.NewServer(handler)
+		t.Cleanup(server.Close)
+
+		request, err := http.NewRequest(http.MethodPost, server.URL+mcpPath, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Host = "mcp.example.com"
+		request.Header.Set("Authorization", "Bearer sometoken")
+
+		response, err := server.Client().Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		if response.StatusCode == http.StatusForbidden {
+			t.Error("proxied Host rejected as DNS rebinding")
+		}
+	})
+
+	t.Run("challenges unauthenticated MCP requests", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodPost, mcpPath, nil)
+		request.Host = "mcp.example.com"
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want %d", recorder.Code, http.StatusUnauthorized)
+		}
+		if recorder.Header().Get("WWW-Authenticate") == "" {
+			t.Error("WWW-Authenticate header missing")
+		}
+	})
+
+	t.Run("stays off without the flag", func(t *testing.T) {
+		flag.OAuth = false
+		handler := newHTTPServer("", newMCPServer("test")).Handler
+
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, metadataPath, nil))
+		if recorder.Code != http.StatusNotFound {
+			t.Errorf("metadata status = %d, want %d", recorder.Code, http.StatusNotFound)
+		}
+
+		recorder = httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, mcpPath, nil))
+		if recorder.Code == http.StatusUnauthorized {
+			t.Error("unauthenticated request challenged with OAuth disabled")
+		}
+	})
+}
+
+func TestNewHTTPServerConfig(t *testing.T) {
+	server := newHTTPServer(":12345", newMCPServer("test"))
+	if server.Addr != ":12345" {
+		t.Errorf("Addr = %q, want %q", server.Addr, ":12345")
+	}
+	if server.Handler == nil {
+		t.Error("Handler is nil")
+	}
+	if server.ReadHeaderTimeout != httpReadHeaderTimeout {
+		t.Errorf("ReadHeaderTimeout = %v, want %v", server.ReadHeaderTimeout, httpReadHeaderTimeout)
+	}
+	if server.WriteTimeout != 0 {
+		t.Errorf("WriteTimeout = %v, want zero for SSE", server.WriteTimeout)
+	}
+}
+
+func TestHealthzEndpoint(t *testing.T) {
+	server := newHTTPServer(":0", newMCPServer("test"))
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if body := rec.Body.String(); body == "" {
+		t.Error("body is empty, want a non-empty health message")
+	}
+}
