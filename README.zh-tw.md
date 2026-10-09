@@ -193,7 +193,6 @@ Cursor 等客戶端可使用 stdio 命令：
 | get_repository_tree          | repository   | 讀取 | 取得倉庫檔案樹 |
 | get_file_contents            | file         | 讀取 | 取得檔案內容與中繼資料 |
 | get_dir_contents             | file         | 讀取 | 取得目錄中的項目 |
-| create_or_update_file        | file         | 寫入 | 在單次提交中寫入檔案：創建、更新、重新命名、刪除 |
 | delete_file                  | file         | 寫入 | 刪除檔案 |
 | create_branch                | branch       | 寫入 | 創建新分支 |
 | delete_branch                | branch       | 寫入 | 刪除分支 |
@@ -210,6 +209,16 @@ Cursor 等客戶端可使用 stdio 命令：
 | get_release                  | release      | 讀取 | 依 ID 取得版本發布 |
 | get_latest_release           | release      | 讀取 | 取得最新版本發布 |
 | list_releases                | release      | 讀取 | 列出倉庫版本發布 |
+| git_status                   | git          | 讀取 | 查看本機工作區狀態 |
+| git_diff                     | git          | 讀取 | 查看本機變更（工作區、暫存區或與指定 ref 比較） |
+| git_log                      | git          | 讀取 | 查看本機提交歷史 |
+| git_fetch                    | git          | 讀取 | 從遠端取得參照與物件 |
+| git_add                      | git          | 寫入 | 暫存本機檔案 |
+| git_commit                   | git          | 寫入 | 在本機倉庫提交已暫存的變更 |
+| git_push                     | git          | 寫入 | 將本機分支推送到遠端（不支援強制推送） |
+| git_pull                     | git          | 寫入 | 拉取到目前分支（僅快轉或變基） |
+| git_branch                   | git          | 寫入 | 列出、建立或刪除本機分支 |
+| git_checkout                 | git          | 寫入 | 切換本機分支（git switch） |
 
 > **說明：** 部分工具是聚合的、基於操作的工具，單個工具透過 `method` 參數暴露多個操作。當伺服器以唯讀模式執行時（`-r` / `GITEA_READONLY`），存取為「寫入」的工具會被隱藏；可透過 `-S` / `--scope`（`GITEA_SCOPES`）依範圍過濾，或透過 `-O` / `--tools`（`GITEA_TOOLS`）依工具名稱過濾對外暴露的工具集合。
 
