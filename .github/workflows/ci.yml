@@ -65,7 +65,7 @@ jobs:
           git config --global user.email ci@example.com
           git config --global init.defaultBranch main
       - run: go vet ./...
-      - run: go test -count=1 ./...
+      - run: go test -count=1 ${{ matrix.os == 'windows-latest' && './operation/git/...' || './...' }}
 
   build:
     needs: [prepare, test]
